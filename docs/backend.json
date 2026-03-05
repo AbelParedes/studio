@@ -1,0 +1,893 @@
+{
+  "entities": {
+    "Client": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Client",
+      "type": "object",
+      "description": "Represents a client company or individual for whom services are performed.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Client entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The common or business name of the client."
+        },
+        "legalName": {
+          "type": "string",
+          "description": "The official legal name of the client, if different from the common name."
+        },
+        "taxId": {
+          "type": "string",
+          "description": "The tax identification number of the client (e.g., RFC, VAT ID)."
+        },
+        "phone": {
+          "type": "string",
+          "description": "The primary contact phone number for the client."
+        },
+        "email": {
+          "type": "string",
+          "description": "The primary contact email address for the client.",
+          "format": "email"
+        },
+        "billingAddressLine1": {
+          "type": "string",
+          "description": "The first line of the client's primary billing address."
+        },
+        "billingAddressLine2": {
+          "type": "string",
+          "description": "The second line of the client's primary billing address, if applicable."
+        },
+        "billingCity": {
+          "type": "string",
+          "description": "The city of the client's primary billing address."
+        },
+        "billingState": {
+          "type": "string",
+          "description": "The state or province of the client's primary billing address."
+        },
+        "billingZipCode": {
+          "type": "string",
+          "description": "The postal code of the client's primary billing address."
+        },
+        "billingCountry": {
+          "type": "string",
+          "description": "The country of the client's primary billing address."
+        },
+        "notes": {
+          "type": "string",
+          "description": "General notes or comments about the client."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "email",
+        "billingAddressLine1",
+        "billingCity",
+        "billingState",
+        "billingZipCode",
+        "billingCountry"
+      ]
+    },
+    "ContactPerson": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ContactPerson",
+      "type": "object",
+      "description": "Represents an individual contact person associated with a client.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ContactPerson entity."
+        },
+        "clientId": {
+          "type": "string",
+          "description": "Reference to Client. (Relationship: Client 1:N ContactPerson)"
+        },
+        "firstName": {
+          "type": "string",
+          "description": "The first name of the contact person."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "The last name of the contact person."
+        },
+        "position": {
+          "type": "string",
+          "description": "The job title or role of the contact person."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the contact person.",
+          "format": "email"
+        },
+        "phone": {
+          "type": "string",
+          "description": "The phone number of the contact person."
+        },
+        "isPrimary": {
+          "type": "boolean",
+          "description": "Indicates if this is the primary contact for the client."
+        }
+      },
+      "required": [
+        "id",
+        "clientId",
+        "firstName",
+        "lastName",
+        "email",
+        "phone"
+      ]
+    },
+    "ServiceLocation": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ServiceLocation",
+      "type": "object",
+      "description": "Represents a physical location where services are performed for a client.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ServiceLocation entity."
+        },
+        "clientId": {
+          "type": "string",
+          "description": "Reference to Client. (Relationship: Client 1:N ServiceLocation)"
+        },
+        "name": {
+          "type": "string",
+          "description": "A descriptive name for the service location (e.g., 'Main Office', 'Warehouse A')."
+        },
+        "addressLine1": {
+          "type": "string",
+          "description": "The first line of the service location's address."
+        },
+        "addressLine2": {
+          "type": "string",
+          "description": "The second line of the service location's address, if applicable."
+        },
+        "city": {
+          "type": "string",
+          "description": "The city of the service location."
+        },
+        "state": {
+          "type": "string",
+          "description": "The state or province of the service location."
+        },
+        "zipCode": {
+          "type": "string",
+          "description": "The postal code of the service location."
+        },
+        "country": {
+          "type": "string",
+          "description": "The country of the service location."
+        },
+        "contactPersonIds": {
+          "type": "array",
+          "description": "References to ContactPeople associated with this specific service location. (Relationship: ServiceLocation N:N ContactPerson)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "notes": {
+          "type": "string",
+          "description": "General notes or comments about the service location."
+        }
+      },
+      "required": [
+        "id",
+        "clientId",
+        "name",
+        "addressLine1",
+        "city",
+        "state",
+        "zipCode",
+        "country"
+      ]
+    },
+    "ServiceType": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ServiceType",
+      "type": "object",
+      "description": "Defines the different types of services offered (e.g., Extinguisher Inspection, Fumigation, Refill).",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ServiceType entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the service type (e.g., 'Extinguisher Inspection', 'Residential Fumigation')."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description of the service type."
+        },
+        "estimatedDurationHours": {
+          "type": "number",
+          "description": "The estimated duration in hours for performing this service type."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description"
+      ]
+    },
+    "Technician": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Technician",
+      "type": "object",
+      "description": "Represents a technician responsible for performing services.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Technician entity."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "The first name of the technician."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "The last name of the technician."
+        },
+        "phone": {
+          "type": "string",
+          "description": "The primary phone number of the technician."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the technician.",
+          "format": "email"
+        },
+        "specialties": {
+          "type": "array",
+          "description": "A list of specialties or certifications the technician holds (e.g., 'Extinguisher', 'Fumigation').",
+          "items": {
+            "type": "string"
+          }
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Indicates if the technician is currently active and available for assignments."
+        }
+      },
+      "required": [
+        "id",
+        "firstName",
+        "lastName",
+        "email",
+        "isActive"
+      ]
+    },
+    "ServiceAppointment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ServiceAppointment",
+      "type": "object",
+      "description": "Represents a scheduled and completed service appointment for a client at a specific location.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ServiceAppointment entity."
+        },
+        "clientId": {
+          "type": "string",
+          "description": "Reference to Client. (Relationship: Client 1:N ServiceAppointment)"
+        },
+        "serviceLocationId": {
+          "type": "string",
+          "description": "Reference to ServiceLocation where the service is to be or was performed. (Relationship: ServiceLocation 1:N ServiceAppointment)"
+        },
+        "serviceTypeId": {
+          "type": "string",
+          "description": "Reference to ServiceType describing the nature of the service. (Relationship: ServiceType 1:N ServiceAppointment)"
+        },
+        "assignedTechnicianId": {
+          "type": "string",
+          "description": "Reference to the Technician assigned to this appointment. (Relationship: Technician 1:N ServiceAppointment)"
+        },
+        "scheduledDateTime": {
+          "type": "string",
+          "description": "The date and time the service is scheduled to begin.",
+          "format": "date-time"
+        },
+        "actualStartDateTime": {
+          "type": "string",
+          "description": "The actual date and time the service began.",
+          "format": "date-time"
+        },
+        "actualEndDateTime": {
+          "type": "string",
+          "description": "The actual date and time the service concluded.",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the service appointment (e.g., 'Scheduled', 'InProgress', 'Completed', 'Cancelled')."
+        },
+        "notes": {
+          "type": "string",
+          "description": "General notes or comments regarding the service appointment."
+        },
+        "totalCost": {
+          "type": "number",
+          "description": "The total cost of the service performed during this appointment."
+        },
+        "nextServiceRecommendedDate": {
+          "type": "string",
+          "description": "The date when the next service for this client/location/equipment is recommended.",
+          "format": "date"
+        }
+      },
+      "required": [
+        "id",
+        "clientId",
+        "serviceLocationId",
+        "serviceTypeId",
+        "assignedTechnicianId",
+        "scheduledDateTime",
+        "status"
+      ]
+    },
+    "ExtinguisherType": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ExtinguisherType",
+      "type": "object",
+      "description": "Defines the characteristics of different fire extinguisher models or types.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ExtinguisherType entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The common name of the extinguisher type (e.g., 'ABC Dry Chemical', 'CO2', 'Water Mist')."
+        },
+        "agent": {
+          "type": "string",
+          "description": "The extinguishing agent used (e.g., 'Dry Chemical', 'Carbon Dioxide', 'Water')."
+        },
+        "capacityValue": {
+          "type": "number",
+          "description": "The numerical value of the extinguisher's capacity (e.g., 5, 10, 20)."
+        },
+        "capacityUnit": {
+          "type": "string",
+          "description": "The unit of measure for the extinguisher's capacity (e.g., 'lbs', 'kg', 'liters')."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description of the extinguisher type, including its class ratings and uses."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "agent",
+        "capacityValue",
+        "capacityUnit"
+      ]
+    },
+    "Extinguisher": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Extinguisher",
+      "type": "object",
+      "description": "Represents an individual fire extinguisher unit tracked in inventory.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Extinguisher entity."
+        },
+        "serialNumber": {
+          "type": "string",
+          "description": "The unique serial number identifying this specific extinguisher unit."
+        },
+        "extinguisherTypeId": {
+          "type": "string",
+          "description": "Reference to ExtinguisherType defining the model of this extinguisher. (Relationship: ExtinguisherType 1:N Extinguisher)"
+        },
+        "serviceLocationId": {
+          "type": "string",
+          "description": "Reference to ServiceLocation where this extinguisher is physically located. (Relationship: ServiceLocation 1:N Extinguisher)"
+        },
+        "installationDate": {
+          "type": "string",
+          "description": "The date when the extinguisher was first installed at its current location.",
+          "format": "date"
+        },
+        "manufactureDate": {
+          "type": "string",
+          "description": "The date when the extinguisher was manufactured.",
+          "format": "date"
+        },
+        "lastServiceDate": {
+          "type": "string",
+          "description": "The date of the last service performed on this extinguisher.",
+          "format": "date"
+        },
+        "nextServiceDueDate": {
+          "type": "string",
+          "description": "The next scheduled service due date for this extinguisher.",
+          "format": "date"
+        },
+        "status": {
+          "type": "string",
+          "description": "The current operational status of the extinguisher (e.g., 'Operational', 'Needs Service', 'Disposed')."
+        },
+        "locationDescription": {
+          "type": "string",
+          "description": "A specific description of where the extinguisher is located within the service location (e.g., '2nd floor, near main entrance')."
+        },
+        "notes": {
+          "type": "string",
+          "description": "General notes or comments about the extinguisher."
+        }
+      },
+      "required": [
+        "id",
+        "serialNumber",
+        "extinguisherTypeId",
+        "serviceLocationId",
+        "installationDate",
+        "manufactureDate",
+        "status"
+      ]
+    },
+    "ExtinguisherServiceDetail": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ExtinguisherServiceDetail",
+      "type": "object",
+      "description": "Records specific details of a service performed on an individual extinguisher during a service appointment.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ExtinguisherServiceDetail entity."
+        },
+        "serviceAppointmentId": {
+          "type": "string",
+          "description": "Reference to the ServiceAppointment during which this extinguisher service was performed. (Relationship: ServiceAppointment 1:N ExtinguisherServiceDetail)"
+        },
+        "extinguisherId": {
+          "type": "string",
+          "description": "Reference to the Extinguisher that was serviced. (Relationship: Extinguisher 1:N ExtinguisherServiceDetail)"
+        },
+        "servicePerformed": {
+          "type": "string",
+          "description": "Description of the specific service action performed (e.g., 'Inspection', 'Refill', 'Hydrostatic Test')."
+        },
+        "pressureReading": {
+          "type": "number",
+          "description": "The pressure reading recorded during the service, if applicable."
+        },
+        "weightReading": {
+          "type": "number",
+          "description": "The weight reading recorded during the service, if applicable."
+        },
+        "defectsFound": {
+          "type": "string",
+          "description": "Any defects or issues found during the service."
+        },
+        "actionTaken": {
+          "type": "string",
+          "description": "The actions taken to address any defects or perform the service."
+        },
+        "isOperational": {
+          "type": "boolean",
+          "description": "Indicates if the extinguisher is operational after the service."
+        },
+        "nextDueDate": {
+          "type": "string",
+          "description": "The next service due date for this specific extinguisher, updated after this service.",
+          "format": "date"
+        },
+        "technicianNotes": {
+          "type": "string",
+          "description": "Notes from the technician regarding this specific extinguisher service."
+        }
+      },
+      "required": [
+        "id",
+        "serviceAppointmentId",
+        "extinguisherId",
+        "servicePerformed",
+        "isOperational"
+      ]
+    },
+    "Chemical": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Chemical",
+      "type": "object",
+      "description": "Defines chemicals used in fumigation services.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Chemical entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The common name of the chemical (e.g., 'Pyrethrin', 'Chlorpyrifos')."
+        },
+        "activeIngredient": {
+          "type": "string",
+          "description": "The primary active ingredient of the chemical."
+        },
+        "safetyPrecautions": {
+          "type": "string",
+          "description": "Important safety precautions associated with the chemical's use."
+        },
+        "msdsLink": {
+          "type": "string",
+          "description": "A URI to the Material Safety Data Sheet (MSDS) for the chemical.",
+          "format": "uri"
+        },
+        "unitOfMeasure": {
+          "type": "string",
+          "description": "The standard unit of measure for this chemical (e.g., 'ml', 'grams', 'liters')."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "activeIngredient",
+        "unitOfMeasure"
+      ]
+    },
+    "FumigationRecord": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "FumigationRecord",
+      "type": "object",
+      "description": "Records specific details of a fumigation service performed during a service appointment.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the FumigationRecord entity."
+        },
+        "serviceAppointmentId": {
+          "type": "string",
+          "description": "Reference to the ServiceAppointment during which this fumigation was performed. (Relationship: ServiceAppointment 1:N FumigationRecord)"
+        },
+        "areaTreated": {
+          "type": "string",
+          "description": "A description of the specific area or zones treated during fumigation."
+        },
+        "targetPests": {
+          "type": "array",
+          "description": "A list of the primary pests targeted by the fumigation service.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "preServiceConditions": {
+          "type": "string",
+          "description": "Observations about the conditions before the fumigation service."
+        },
+        "postServiceRecommendations": {
+          "type": "string",
+          "description": "Recommendations provided to the client after the fumigation service."
+        },
+        "durationHours": {
+          "type": "number",
+          "description": "The actual duration of the fumigation service in hours."
+        },
+        "temperature": {
+          "type": "number",
+          "description": "The temperature recorded during the fumigation service (e.g., in Celsius or Fahrenheit)."
+        },
+        "humidity": {
+          "type": "number",
+          "description": "The humidity recorded during the fumigation service (e.g., as a percentage)."
+        },
+        "technicianNotes": {
+          "type": "string",
+          "description": "Notes from the technician regarding the fumigation service."
+        }
+      },
+      "required": [
+        "id",
+        "serviceAppointmentId",
+        "areaTreated",
+        "targetPests",
+        "durationHours"
+      ]
+    },
+    "FumigationChemical": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "FumigationChemical",
+      "type": "object",
+      "description": "Links a specific chemical to a fumigation record, including the quantity used.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the FumigationChemical linking entity."
+        },
+        "fumigationRecordId": {
+          "type": "string",
+          "description": "Reference to the FumigationRecord this chemical usage is part of. (Relationship: FumigationRecord N:N Chemical)"
+        },
+        "chemicalId": {
+          "type": "string",
+          "description": "Reference to the Chemical used. (Relationship: FumigationRecord N:N Chemical)"
+        },
+        "quantityUsed": {
+          "type": "number",
+          "description": "The quantity of the chemical used in this specific fumigation record."
+        },
+        "unit": {
+          "type": "string",
+          "description": "The unit of measure for the quantity used (e.g., 'ml', 'grams', 'liters'). This should ideally match the Chemical's unitOfMeasure."
+        }
+      },
+      "required": [
+        "id",
+        "fumigationRecordId",
+        "chemicalId",
+        "quantityUsed",
+        "unit"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/company_users/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "User profiles for Servifumiga Pro employees, mapping Firebase auth UID to an employee profile and their role. Used for top-level authorization. An entry here indicates an authorized company user. Includes `role` for role-based access control.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the employee, corresponding to their Firebase Authentication UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/serviceTypes/{serviceTypeId}",
+        "definition": {
+          "entityName": "ServiceType",
+          "schema": {
+            "$ref": "#/backend/entities/ServiceType"
+          },
+          "description": "Defines various types of services offered by Servifumiga Pro. This is a global configuration collection, accessible by all authorized company users and manageable by administrators.",
+          "params": [
+            {
+              "name": "serviceTypeId",
+              "description": "The unique identifier for the ServiceType."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/technicians/{technicianId}",
+        "definition": {
+          "entityName": "Technician",
+          "schema": {
+            "$ref": "#/backend/entities/Technician"
+          },
+          "description": "Profiles for technicians. This is a global configuration collection, accessible by all authorized company users and manageable by administrators.",
+          "params": [
+            {
+              "name": "technicianId",
+              "description": "The unique identifier for the Technician."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/extinguisherTypes/{extinguisherTypeId}",
+        "definition": {
+          "entityName": "ExtinguisherType",
+          "schema": {
+            "$ref": "#/backend/entities/ExtinguisherType"
+          },
+          "description": "Definitions for different fire extinguisher models. This is a global configuration collection, accessible by all authorized company users and manageable by administrators.",
+          "params": [
+            {
+              "name": "extinguisherTypeId",
+              "description": "The unique identifier for the ExtinguisherType."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/chemicals/{chemicalId}",
+        "definition": {
+          "entityName": "Chemical",
+          "schema": {
+            "$ref": "#/backend/entities/Chemical"
+          },
+          "description": "Definitions for chemicals used in fumigation services. This is a global configuration collection, accessible by all authorized company users and manageable by administrators.",
+          "params": [
+            {
+              "name": "chemicalId",
+              "description": "The unique identifier for the Chemical."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/clients/{clientId}",
+        "definition": {
+          "entityName": "Client",
+          "schema": {
+            "$ref": "#/backend/entities/Client"
+          },
+          "description": "Root collection for client companies/individuals. Contains client master data. All related client-specific data is nested under this path, ensuring implicit `clientId` for authorization and QAPs.",
+          "params": [
+            {
+              "name": "clientId",
+              "description": "The unique identifier for the client."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/clients/{clientId}/contactPersons/{contactPersonId}",
+        "definition": {
+          "entityName": "ContactPerson",
+          "schema": {
+            "$ref": "#/backend/entities/ContactPerson"
+          },
+          "description": "Contact persons associated with a specific client. Includes denormalized `clientId` for authorization independence and efficient queries, ensuring that the `clientId` in the document matches the path.",
+          "params": [
+            {
+              "name": "clientId",
+              "description": "The unique identifier of the parent client."
+            },
+            {
+              "name": "contactPersonId",
+              "description": "The unique identifier for the contact person."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/clients/{clientId}/serviceLocations/{serviceLocationId}",
+        "definition": {
+          "entityName": "ServiceLocation",
+          "schema": {
+            "$ref": "#/backend/entities/ServiceLocation"
+          },
+          "description": "Physical locations where services are performed for a specific client. Includes denormalized `clientId` for authorization independence and efficient queries, ensuring that the `clientId` in the document matches the path.",
+          "params": [
+            {
+              "name": "clientId",
+              "description": "The unique identifier of the parent client."
+            },
+            {
+              "name": "serviceLocationId",
+              "description": "The unique identifier for the service location."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/clients/{clientId}/extinguishers/{extinguisherId}",
+        "definition": {
+          "entityName": "Extinguisher",
+          "schema": {
+            "$ref": "#/backend/entities/Extinguisher"
+          },
+          "description": "Individual fire extinguisher units located at client's service locations. Includes denormalized `serviceLocationId` and implicitly inherits `clientId` from the path, ensuring authorization independence.",
+          "params": [
+            {
+              "name": "clientId",
+              "description": "The unique identifier of the parent client."
+            },
+            {
+              "name": "extinguisherId",
+              "description": "The unique identifier for the extinguisher unit."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/clients/{clientId}/serviceAppointments/{serviceAppointmentId}",
+        "definition": {
+          "entityName": "ServiceAppointment",
+          "schema": {
+            "$ref": "#/backend/entities/ServiceAppointment"
+          },
+          "description": "Scheduled and completed service appointments for a client. Includes denormalized `clientId` (which also exists in the path) for authorization independence and efficient queries.",
+          "params": [
+            {
+              "name": "clientId",
+              "description": "The unique identifier of the parent client."
+            },
+            {
+              "name": "serviceAppointmentId",
+              "description": "The unique identifier for the service appointment."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/clients/{clientId}/serviceAppointments/{serviceAppointmentId}/extinguisherServiceDetails/{extinguisherServiceDetailId}",
+        "definition": {
+          "entityName": "ExtinguisherServiceDetail",
+          "schema": {
+            "$ref": "#/backend/entities/ExtinguisherServiceDetail"
+          },
+          "description": "Records specific details of service performed on an individual extinguisher during a service appointment. Includes denormalized `serviceAppointmentId` and implicitly inherits `clientId` from the path for robust authorization independence.",
+          "params": [
+            {
+              "name": "clientId",
+              "description": "The unique identifier of the grandparent client."
+            },
+            {
+              "name": "serviceAppointmentId",
+              "description": "The unique identifier of the parent service appointment."
+            },
+            {
+              "name": "extinguisherServiceDetailId",
+              "description": "The unique identifier for the extinguisher service detail record."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/clients/{clientId}/serviceAppointments/{serviceAppointmentId}/fumigationRecords/{fumigationRecordId}",
+        "definition": {
+          "entityName": "FumigationRecord",
+          "schema": {
+            "$ref": "#/backend/entities/FumigationRecord"
+          },
+          "description": "Records details of a fumigation service performed during an appointment. Includes denormalized `serviceAppointmentId` and implicitly inherits `clientId` from the path for robust authorization independence.",
+          "params": [
+            {
+              "name": "clientId",
+              "description": "The unique identifier of the grandparent client."
+            },
+            {
+              "name": "serviceAppointmentId",
+              "description": "The unique identifier of the parent service appointment."
+            },
+            {
+              "name": "fumigationRecordId",
+              "description": "The unique identifier for the fumigation record."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/clients/{clientId}/serviceAppointments/{serviceAppointmentId}/fumigationRecords/{fumigationRecordId}/fumigationChemicals/{fumigationChemicalId}",
+        "definition": {
+          "entityName": "FumigationChemical",
+          "schema": {
+            "$ref": "#/backend/entities/FumigationChemical"
+          },
+          "description": "Links specific chemicals to a fumigation record, including quantity used. Includes denormalized `fumigationRecordId`, and implicitly inherits `serviceAppointmentId` and `clientId` from the path for full authorization independence.",
+          "params": [
+            {
+              "name": "clientId",
+              "description": "The unique identifier of the great-grandparent client."
+            },
+            {
+              "name": "serviceAppointmentId",
+              "description": "The unique identifier of the grandparent service appointment."
+            },
+            {
+              "name": "fumigationRecordId",
+              "description": "The unique identifier of the parent fumigation record."
+            },
+            {
+              "name": "fumigationChemicalId",
+              "description": "The unique identifier for the fumigation chemical record."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The recommended Firestore structure prioritizes security, scalability, and debuggability by strictly adhering to the core design principles and strategy mandates. The overarching strategy is to establish a clear hierarchy, primarily based on the 'Client' entity, to ensure robust authorization independence and efficient query patterns (QAPs). \n\n1.  **Authorization Independence (CRITICAL) & QAPs via Structural Segregation:** To achieve Authorization Independence and enable secure QAPs, all client-specific data is structured hierarchically under a top-level `/clients/{clientId}` collection. This means that entities like `ContactPerson`, `ServiceLocation`, `Extinguisher`, and `ServiceAppointment` (and their respective sub-entities) are nested under their owning `Client`. This ensures that the `clientId` (and other parent IDs like `serviceAppointmentId` or `fumigationRecordId`) is always present in the document's path. Consequently, security rules can directly compare the path's wildcard `clientId` with a denormalized `clientId` field within the document (`resource.data.clientId == clientId`), eliminating the need for slow and complex `get()` calls to parent documents for authorization checks. For instance, to access a `ContactPerson`, the rule would simply confirm the `request.auth.uid` is an authorized company user and `resource.data.clientId` matches the `{clientId}` in the path. This structure naturally enforces QAPs where queries for client-specific data automatically include the client context in their path, preventing broad, unauthorized list operations.\n\n2.  **DBAC (No Custom Claims) & Global Roles:** Authorization relies on a `company_users` collection where each document represents an authorized employee of 'Servifumiga Pro' and contains their role (e.g., 'admin', 'technician'). Security rules check for the existence of `request.auth.uid` in this collection (`exists(/databases/$(database)/documents/company_users/$(request.auth.uid))`) for general access to client data, and can further check the `role` field for administrative privileges on global configuration data.\n\n3.  **Structural Segregation for Homogeneous Security:** Global configuration entities such as `ServiceType`, `Technician`, `ExtinguisherType`, and `Chemical` are stored in top-level collections (e.g., `/serviceTypes/{serviceTypeId}`). These collections have a homogeneous security posture: they are readable by all authorized company users and writable only by administrators. This segregation keeps their security rules simple and distinct from client-specific data. Each document in these collections holds its own complete data and doesn't rely on parent documents for authorization.\n\n4.  **Denormalization:** While the hierarchical path already provides strong authorization context, critical IDs are also denormalized within the documents (e.g., `clientId` in `ContactPerson`, `serviceAppointmentId` in `ExtinguisherServiceDetail`). This redundancy ensures that even if a document were accessed via a collection group query, its intrinsic data contains the necessary authorization context, maintaining integrity and rule simplicity without needing `get()` calls.\n\n5.  **Clarity & Predictability:** Consistent semantic naming conventions are used for paths and parameters (e.g., `{clientId}`, `{serviceAppointmentId}`). Explicit `status` fields are used where state modeling is required, aiding in clarity and debuggability. This design ensures that CRUD operations are fast and reliable by minimizing rule complexity and optimizing for query performance with appropriate indexing strategies."
+  }
+}
