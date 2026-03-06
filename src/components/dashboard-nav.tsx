@@ -25,6 +25,7 @@ import Image from "next/image"
 
 const navItems = [
   { name: "Resumen", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Empresas", href: "/dashboard/companies", icon: Building2 },
   { name: "Clientes", href: "/dashboard/clients", icon: Users },
   { name: "Usuarios", href: "/dashboard/users", icon: UserCheck },
   { name: "Roles y Permisos", href: "/dashboard/roles", icon: ShieldCheck },
