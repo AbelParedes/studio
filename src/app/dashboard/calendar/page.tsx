@@ -208,21 +208,21 @@ export default function CalendarPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <Card className="lg:col-span-4 shadow-sm border-none bg-white">
-          <CardHeader className="pb-2">
+        <Card className="lg:col-span-4 shadow-sm border-none bg-white flex flex-col items-center">
+          <CardHeader className="w-full">
             <CardTitle className="text-sm font-bold uppercase">Calendario de Rutas</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="flex justify-center">
+          <CardContent className="w-full flex flex-col items-center">
+            <div className="w-full max-w-[320px] mx-auto border rounded-lg overflow-hidden bg-white shadow-inner p-1">
               <Calendar
                 mode="single"
                 selected={date}
                 onSelect={setDate}
                 locale={es}
-                className="rounded-md border border-muted sm:border-none p-2 sm:p-0"
+                className="rounded-md"
               />
             </div>
-            <div className="mt-6 space-y-3">
+            <div className="mt-6 w-full space-y-3">
               <h4 className="text-[10px] font-bold uppercase text-muted-foreground border-b pb-1">Técnicos del Sistema</h4>
               <div className="flex flex-wrap gap-2">
                 {technicians?.map(tech => (
