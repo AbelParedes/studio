@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useEffect } from "react"
@@ -6,7 +7,8 @@ import { DashboardNav } from "@/components/dashboard-nav"
 import { Search, User, Bell, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { useUser } from "@/firebase"
+import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase"
+import { doc } from "firebase/firestore"
 
 export default function DashboardLayout({
   children,
@@ -14,7 +16,15 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const { user, isUserLoading } = useUser()
+  const db = useFirestore()
   const router = useRouter()
+
+  // Intentamos obtener el perfil detallado del usuario desde Firestore
+  const userProfileRef = useMemoFirebase(() => 
+    user ? doc(db, "company_users", user.uid) : null, 
+  [db, user])
+  
+  const { data: profile } = useDoc(userProfileRef)
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -30,6 +40,9 @@ export default function DashboardLayout({
       </div>
     )
   }
+
+  // Prioridad de nombre: Perfil Firestore > Display Name Auth > Email > "Usuario"
+  const displayName = profile?.name || user.displayName || user.email?.split('@')[0] || "Usuario"
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
@@ -60,11 +73,15 @@ export default function DashboardLayout({
             <div className="h-8 w-px bg-border mx-2"></div>
             <div className="flex items-center space-x-3 pl-2">
               <div className="text-right hidden sm:block">
-                <p className="text-xs font-bold text-primary uppercase leading-tight">{user.displayName || user.email?.split('@')[0] || "Usuario"}</p>
-                <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-tighter">Personal Autorizado</p>
+                <p className="text-xs font-bold text-primary uppercase leading-tight">
+                  {displayName}
+                </p>
+                <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-tighter">
+                  {profile?.role || "Personal Autorizado"}
+                </p>
               </div>
-              <div className="h-9 w-9 bg-primary rounded-full flex items-center justify-center text-white shadow-md uppercase font-bold text-xs">
-                {user.email?.[0] || <User className="h-5 w-5" />}
+              <div className="h-9 w-9 bg-primary rounded-full flex items-center justify-center text-white shadow-md uppercase font-bold text-xs border-2 border-accent/20">
+                {displayName[0]}
               </div>
             </div>
           </div>
