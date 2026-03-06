@@ -1,57 +1,110 @@
-import { automatedServiceReminder } from "@/ai/flows/automated-service-reminder"
+
+"use client"
+
+import { useState } from "react"
+import { automatedServiceReminder, type AutomatedServiceReminderOutput } from "@/ai/flows/automated-service-reminder"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Bell, Sparkles, Send, CheckCircle } from "lucide-react"
+import { Bell, Sparkles, Send, CheckCircle, Loader2, Search, RefreshCw } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase"
+import { collection, getDocs, query, limit } from "firebase/firestore"
+import { toast } from "@/hooks/use-toast"
 
-export default async function RemindersPage() {
-  // Mock input for the AI flow
-  const aiInput = {
-    clientName: "Plaza Central Commercial Center",
-    serviceLocation: "Avenida Central #45, Edificio Principal",
-    serviceHistory: [
-      {
-        date: "2023-05-15",
-        type: "extinguisher_maintenance" as const,
-        description: "Recarga anual de 25 extintores PQS y 5 de CO2.",
-        nextRecommendedDate: "2024-05-15",
-        lastTechnicianNotes: "Varios equipos presentan desgaste en mangueras, se recomienda cambio en la próxima visita."
-      },
-      {
-        date: "2024-02-10",
-        type: "fumigation_follow_up" as const,
-        description: "Control preventivo de plagas rastreras en área de comida.",
-        nextRecommendedDate: "2024-03-10",
-        lastTechnicianNotes: "Se observó actividad mínima. Reforzar cebaderos exteriores."
+export default function RemindersPage() {
+  const db = useFirestore()
+  const [isScanning, setIsScanning] = useState(false)
+  const [reminders, setReminders] = useState<AutomatedServiceReminderOutput['reminders']>([])
+
+  // Fetch clients to have a base for scanning
+  const clientsRef = useMemoFirebase(() => collection(db, "clients"), [db])
+  const { data: clients, isLoading: loadingClients } = useCollection(clientsRef)
+
+  const handleGenerateReminders = async () => {
+    if (!clients || clients.length === 0) {
+      toast({ title: "Sin clientes", description: "No hay clientes registrados para analizar." })
+      return
+    }
+
+    setIsScanning(true)
+    setReminders([])
+
+    try {
+      const allGeneratedReminders: AutomatedServiceReminderOutput['reminders'] = []
+      
+      // Limit to first 5 clients for speed in this prototype
+      const scanLimit = clients.slice(0, 5)
+
+      for (const client of scanLimit) {
+        // Fetch appointments for this client
+        const appointmentsRef = collection(db, "clients", client.id, "serviceAppointments")
+        const snapshot = await getDocs(query(appointmentsRef, limit(10)))
+        const history = snapshot.docs.map(doc => {
+          const data = doc.data()
+          return {
+            date: data.scheduledDateTime?.split('T')[0] || "2024-01-01",
+            type: (data.serviceTypeId === "fumigation" ? "fumigation_follow_up" : "extinguisher_maintenance") as any,
+            description: data.notes || "Servicio rutinario",
+            nextRecommendedDate: data.nextServiceRecommendedDate || undefined,
+            lastTechnicianNotes: data.notes || undefined
+          }
+        })
+
+        if (history.length > 0) {
+          const result = await automatedServiceReminder({
+            clientName: client.name,
+            serviceLocation: client.billingAddressLine1 || "Ubicación principal",
+            serviceHistory: history,
+            currentDate: new Date().toISOString().split('T')[0]
+          })
+          allGeneratedReminders.push(...result.reminders)
+        }
       }
-    ],
-    currentDate: "2024-03-01"
-  }
 
-  const { reminders } = await automatedServiceReminder(aiInput)
+      setReminders(allGeneratedReminders)
+      if (allGeneratedReminders.length === 0) {
+        toast({ title: "Escaneo completado", description: "No se detectaron servicios urgentes." })
+      } else {
+        toast({ title: "Recordatorios generados", description: `Se han identificado ${allGeneratedReminders.length} necesidades de servicio.` })
+      }
+    } catch (error) {
+      console.error("AI Reminders failed", error)
+      toast({ variant: "destructive", title: "Error de IA", description: "No se pudieron generar los recordatorios." })
+    } finally {
+      setIsScanning(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight mb-1 flex items-center">
+          <h2 className="text-2xl font-bold tracking-tight mb-1 flex items-center text-primary">
             RECORDATORIOS AI <Sparkles className="ml-2 h-5 w-5 text-accent animate-pulse" />
           </h2>
           <p className="text-muted-foreground text-sm">
-            Análisis inteligente de historial para detección proactiva de necesidades.
+            Análisis proactivo de historiales para detectar mantenimientos vencidos o próximos.
           </p>
         </div>
-        <Button variant="outline" className="h-9 border-accent text-accent hover:bg-accent hover:text-white">
-          <Bell className="mr-2 h-4 w-4" /> Configurar Automatización
+        <Button 
+          onClick={handleGenerateReminders} 
+          disabled={isScanning || loadingClients}
+          className="bg-accent hover:bg-accent/90 text-white font-bold uppercase text-[11px] h-9"
+        >
+          {isScanning ? (
+            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Analizando Historiales...</>
+          ) : (
+            <><RefreshCw className="mr-2 h-4 w-4" /> Escanear Clientes</>
+          )}
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {reminders.length > 0 ? (
-          reminders.map((reminder, idx) => (
-            <Card key={idx} className="shadow-md border-t-4 border-t-accent hover:shadow-lg transition-shadow bg-white">
-              <CardHeader className="pb-2">
+      {reminders.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {reminders.map((reminder, idx) => (
+            <Card key={idx} className="shadow-md border-t-4 border-t-accent hover:shadow-lg transition-shadow bg-white overflow-hidden">
+              <CardHeader className="pb-2 bg-muted/30">
                 <div className="flex justify-between items-start mb-2">
                   <Badge variant="secondary" className={cn(
                     "text-[10px] uppercase font-bold",
@@ -61,51 +114,59 @@ export default async function RemindersPage() {
                   )}>
                     Prioridad {reminder.priority}
                   </Badge>
-                  <span className="text-[10px] text-muted-foreground font-bold uppercase">Due: {reminder.dueDate}</span>
+                  <span className="text-[10px] text-muted-foreground font-bold uppercase">Vence: {reminder.dueDate}</span>
                 </div>
                 <CardTitle className="text-sm font-bold text-primary truncate uppercase">
                   {reminder.serviceType === "extinguisher_maintenance" ? "Mantenimiento Extintores" : "Seguimiento Fumigación"}
                 </CardTitle>
                 <p className="text-[11px] text-muted-foreground font-medium truncate">{reminder.clientName}</p>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="p-3 bg-background rounded border border-border text-[12px] leading-relaxed italic text-[#333]">
+              <CardContent className="space-y-4 pt-4">
+                <div className="p-3 bg-accent/5 rounded border border-accent/10 text-[12px] leading-relaxed italic text-[#333]">
                   "{reminder.reminderMessage}"
                 </div>
                 <div className="flex gap-2">
-                  <Button size="sm" className="flex-1 bg-primary text-white h-8 text-[11px]">
+                  <Button size="sm" className="flex-1 bg-primary text-white h-8 text-[11px] font-bold uppercase">
                     <Send className="mr-1.5 h-3 w-3" /> Enviar Aviso
                   </Button>
-                  <Button size="sm" variant="outline" className="h-8 text-[11px]">
+                  <Button size="sm" variant="outline" className="h-8 text-[11px] font-bold uppercase">
                     <CheckCircle className="mr-1.5 h-3 w-3" /> Agendar
                   </Button>
                 </div>
               </CardContent>
             </Card>
-          ))
-        ) : (
-          <div className="col-span-full py-20 text-center">
-            <Bell className="h-12 w-12 text-muted mx-auto mb-4" />
-            <h3 className="text-lg font-bold">No hay recordatorios pendientes</h3>
-            <p className="text-muted-foreground text-sm">La IA no ha detectado servicios próximos a vencer en los próximos 60 días.</p>
-          </div>
-        )}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <Card className="border-dashed border-2 bg-muted/10">
+          <CardContent className="py-20 text-center">
+            <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4 opacity-50">
+              <Bell className="h-8 w-8 text-primary" />
+            </div>
+            <h3 className="text-lg font-bold uppercase text-primary">Sin Recordatorios Generados</h3>
+            <p className="text-muted-foreground text-sm max-w-md mx-auto mt-2">
+              Presione el botón "Escanear Clientes" para que la IA analice los historiales de servicio y detecte necesidades automáticas.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
-      <Card className="bg-primary text-white">
+      <Card className="bg-primary text-white shadow-xl border-none">
         <CardContent className="p-6 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center">
+            <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center shrink-0">
               <Sparkles className="h-6 w-6 text-accent" />
             </div>
             <div>
-              <h3 className="font-bold text-lg uppercase">Análisis Predictivo Activado</h3>
-              <p className="text-sm opacity-80">Nuestro motor de IA está procesando 450 registros de servicio para optimizar sus rutas de mañana.</p>
+              <h3 className="font-bold text-lg uppercase tracking-tight">Motor de IA Predictivo</h3>
+              <p className="text-sm opacity-80">
+                Analizando patrones de servicio para maximizar la seguridad de sus clientes.
+              </p>
             </div>
           </div>
-          <Button variant="outline" className="border-white/30 text-white hover:bg-white hover:text-primary">
-            Ver Reporte de Eficiencia
-          </Button>
+          <div className="text-[10px] uppercase font-bold text-accent bg-white px-3 py-1 rounded-full">
+            Servifumiga Pro AI v1.0
+          </div>
         </CardContent>
       </Card>
     </div>
