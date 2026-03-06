@@ -1,4 +1,3 @@
-
 "use client"
 
 import Link from "next/link"
@@ -13,13 +12,15 @@ import {
   History, 
   BarChart3,
   Settings,
-  LogOut
+  LogOut,
+  UserCheck
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navItems = [
   { name: "Resumen", href: "/dashboard", icon: LayoutDashboard },
   { name: "Clientes", href: "/dashboard/clients", icon: Users },
+  { name: "Usuarios", href: "/dashboard/users", icon: UserCheck },
   { name: "Inventario", href: "/dashboard/inventory", icon: Flame },
   { name: "Calendario", href: "/dashboard/calendar", icon: Calendar },
   { name: "Fumigación", href: "/dashboard/fumigation", icon: Bug },
