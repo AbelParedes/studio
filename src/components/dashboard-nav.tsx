@@ -13,7 +13,8 @@ import {
   BarChart3,
   Settings,
   LogOut,
-  UserCheck
+  UserCheck,
+  ShieldCheck
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -21,6 +22,7 @@ const navItems = [
   { name: "Resumen", href: "/dashboard", icon: LayoutDashboard },
   { name: "Clientes", href: "/dashboard/clients", icon: Users },
   { name: "Usuarios", href: "/dashboard/users", icon: UserCheck },
+  { name: "Roles y Permisos", href: "/dashboard/roles", icon: ShieldCheck },
   { name: "Inventario", href: "/dashboard/inventory", icon: Flame },
   { name: "Calendario", href: "/dashboard/calendar", icon: Calendar },
   { name: "Fumigación", href: "/dashboard/fumigation", icon: Bug },
