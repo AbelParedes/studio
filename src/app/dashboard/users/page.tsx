@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState } from "react"
@@ -72,10 +73,10 @@ export default function UsersPage() {
         updateDocumentNonBlocking(doc(db, "company_users", editingUser.id), userData)
         toast({ title: "Perfil actualizado", description: "Los datos del colaborador se han guardado." })
       } else {
-        const newUser = { ...userData, createdAt: new Date().toISOString() }
+        const newUser = { ...userData, id: crypto.randomUUID(), createdAt: new Date().toISOString() }
         addDocumentNonBlocking(usersRef, newUser)
 
-        // Creación automática en Auth usando instancia secundaria
+        // Creación automática en Auth usando instancia secundaria para no cerrar la sesión del administrador
         const secondaryAppName = `AuthCreator_${Date.now()}`
         const secondaryApp = initializeApp(firebaseConfig, secondaryAppName)
         const secondaryAuth = getAuth(secondaryApp)
@@ -148,7 +149,7 @@ export default function UsersPage() {
                 <div className="bg-blue-50 border border-blue-100 p-3 rounded-md flex items-start gap-2">
                   <Info className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
                   <p className="text-[10px] text-blue-700 leading-tight">
-                    <strong>Sincronización Automática:</strong> Al guardar, el sistema crea el perfil en Firestore y las credenciales en Auth de forma simultánea. Para accesos manuales, use la Consola de Firebase &gt; Authentication.
+                    <strong>Sincronización Automática:</strong> Al guardar, el sistema crea el perfil en Firestore y las credenciales en Auth de forma simultánea. Para accesos manuales, use la Consola de Firebase.
                   </p>
                 </div>
 
@@ -162,7 +163,7 @@ export default function UsersPage() {
                 </div>
                 {!editingUser && (
                   <div className="grid gap-2">
-                    <Label htmlFor="password" name="password" className="text-xs uppercase font-bold">Contraseña Inicial</Label>
+                    <Label htmlFor="password" className="text-xs uppercase font-bold">Contraseña Inicial</Label>
                     <div className="relative">
                       <Input id="password" name="password" type="password" required placeholder="Mínimo 6 caracteres" />
                       <Key className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
