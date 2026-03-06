@@ -66,6 +66,25 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "clientType", "name", "taxId", "email", "address"]
+    },
+    "ServiceAppointment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ServiceAppointment",
+      "type": "object",
+      "description": "Cita de servicio técnico programada.",
+      "properties": {
+        "id": { "type": "string" },
+        "clientId": { "type": "string" },
+        "clientName": { "type": "string" },
+        "serviceType": { "type": "string", "enum": ["Extintores", "Fumigación", "Inspección"] },
+        "technicianId": { "type": "string" },
+        "technicianName": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "time": { "type": "string" },
+        "status": { "type": "string", "enum": ["Pendiente", "Confirmado", "Completado", "Cancelado"] },
+        "notes": { "type": "string" }
+      },
+      "required": ["id", "clientId", "clientName", "serviceType", "date", "time", "status"]
     }
   },
   "auth": {
@@ -83,6 +102,10 @@
     "clients": {
       "schema": { "$ref": "#/backend/entities/Client" },
       "description": "Colección de clientes."
+    },
+    "appointments": {
+      "schema": { "$ref": "#/backend/entities/ServiceAppointment" },
+      "description": "Programación global de servicios técnicos."
     }
   }
 }
