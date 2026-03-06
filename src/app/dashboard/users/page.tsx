@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { UserPlus, Search, Shield, Mail, Trash2, Edit2, Loader2, UserCog, ShieldCheck, ShieldAlert } from "lucide-react"
+import { UserPlus, Search, Shield, Mail, Trash2, Edit2, Loader2, UserCog, ShieldCheck, ShieldAlert, AlertCircle } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, deleteDocumentNonBlocking, addDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase"
 import { collection, doc } from "firebase/firestore"
 import {
@@ -23,6 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import Link from "next/link"
 
 export default function UsersPage() {
   const db = useFirestore()
@@ -44,18 +45,26 @@ export default function UsersPage() {
   const handleSaveUser = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
+    const roleId = formData.get("roleId") as string
+
+    if (!roleId || roleId === "none") {
+      toast({ variant: "destructive", title: "Error", description: "Debe seleccionar un rol válido." })
+      return
+    }
+
     const userData = {
       name: formData.get("name") as string,
       email: formData.get("email") as string,
-      roleId: formData.get("roleId") as string,
+      roleId: roleId,
       status: formData.get("status") as string || "Activo",
+      updatedAt: new Date().toISOString()
     }
 
     if (editingUser) {
       updateDocumentNonBlocking(doc(db, "company_users", editingUser.id), userData)
       toast({ title: "Usuario actualizado", description: "Los cambios se han guardado exitosamente." })
     } else {
-      const newUser = { ...userData, id: crypto.randomUUID(), createdAt: new Date().toISOString() }
+      const newUser = { ...userData, createdAt: new Date().toISOString() }
       addDocumentNonBlocking(usersRef, newUser)
       toast({ title: "Usuario registrado", description: "El colaborador ha sido dado de alta en el sistema." })
     }
@@ -76,7 +85,7 @@ export default function UsersPage() {
 
   const getRoleTitle = (roleId: string) => {
     const role = roles?.find(r => r.id === roleId)
-    return role?.title || "Sin Rol"
+    return role?.title || "Rol no encontrado"
   }
 
   return (
@@ -100,6 +109,17 @@ export default function UsersPage() {
                 <DialogDescription>Asigne uno de los roles creados en el módulo de Roles.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
+                {roles?.length === 0 && !loadingRoles && (
+                  <div className="bg-status-error/5 border border-status-error/20 p-3 rounded-md flex items-start gap-2 mb-2">
+                    <AlertCircle className="h-4 w-4 text-status-error shrink-0 mt-0.5" />
+                    <div className="text-[11px] text-status-error">
+                      <p className="font-bold uppercase">No hay roles configurados</p>
+                      <p>Para crear un usuario, primero debe definir al menos un rol.</p>
+                      <Link href="/dashboard/roles" className="underline font-bold mt-1 block">Ir a Roles y Permisos</Link>
+                    </div>
+                  </div>
+                )}
+                
                 <div className="grid gap-2">
                   <Label htmlFor="name">Nombre Completo</Label>
                   <Input id="name" name="name" defaultValue={editingUser?.name} required placeholder="Ej. Juan Pérez" />
@@ -112,7 +132,7 @@ export default function UsersPage() {
                   <Label htmlFor="roleId">Rol Asignado</Label>
                   <Select name="roleId" defaultValue={editingUser?.roleId} required>
                     <SelectTrigger>
-                      <SelectValue placeholder="Seleccione un rol de la lista" />
+                      <SelectValue placeholder="Seleccione un rol" />
                     </SelectTrigger>
                     <SelectContent>
                       {roles?.map(role => (
@@ -120,16 +140,27 @@ export default function UsersPage() {
                           {role.title}
                         </SelectItem>
                       ))}
-                      {roles?.length === 0 && (
-                        <SelectItem value="none" disabled>No hay roles creados</SelectItem>
+                      {(!roles || roles.length === 0) && (
+                        <SelectItem value="none" disabled>No hay roles disponibles</SelectItem>
                       )}
                     </SelectContent>
                   </Select>
-                  <p className="text-[10px] text-muted-foreground">Vaya al módulo "Roles" para crear nuevas opciones.</p>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="status">Estado</Label>
+                  <Select name="status" defaultValue={editingUser?.status || "Activo"}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Estado" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Activo">Activo</SelectItem>
+                      <SelectItem value="Inactivo">Inactivo</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit" disabled={roles?.length === 0}>
+                <Button type="submit" disabled={!roles || roles.length === 0}>
                   {editingUser ? "Actualizar" : "Confirmar Alta"}
                 </Button>
               </DialogFooter>
@@ -177,7 +208,10 @@ export default function UsersPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="text-[9px] uppercase font-bold text-status-success border-status-success/20">
+                      <Badge variant="outline" className={cn(
+                        "text-[9px] uppercase font-bold border-status-success/20",
+                        u.status === "Activo" ? "text-status-success" : "text-muted-foreground"
+                      )}>
                         {u.status || "Activo"}
                       </Badge>
                     </TableCell>
@@ -193,7 +227,7 @@ export default function UsersPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {filteredUsers?.length === 0 && (
+                {(!filteredUsers || filteredUsers.length === 0) && (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-20 text-muted-foreground uppercase text-[10px] font-bold tracking-widest">
                       No hay colaboradores registrados
