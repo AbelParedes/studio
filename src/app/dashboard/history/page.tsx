@@ -1,10 +1,9 @@
-
 "use client"
 
 import { useState, useEffect } from "react"
 import { serviceHistorySummary } from "@/ai/flows/service-history-summary-flow"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { History, FileText, Search, Sparkles, Loader2, User, ChevronRight } from "lucide-react"
 import { Input } from "@/components/ui/input"
@@ -25,7 +24,6 @@ export default function HistoryPage() {
   const { data: clients, isLoading: loadingClients } = useCollection(clientsRef)
 
   // Fetch Service History for Selected Client
-  // Note: For this MVP we'll show global history if no client is selected or filter locally
   const appointmentsRef = useMemoFirebase(() => {
     if (!selectedClientId) return null
     return collection(db, "clients", selectedClientId, "serviceAppointments")
