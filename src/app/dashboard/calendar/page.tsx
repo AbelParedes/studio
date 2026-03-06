@@ -34,7 +34,7 @@ export default function CalendarPage() {
           <h2 className="text-2xl font-bold tracking-tight mb-1">PROGRAMACIÓN Y DESPACHO</h2>
           <p className="text-muted-foreground text-sm">Organice visitas técnicas y controle la disponibilidad de equipos.</p>
         </div>
-        <Button className="bg-primary text-white h-9">
+        <Button className="bg-primary text-white h-9 w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" /> Nueva Cita
         </Button>
       </div>
@@ -45,12 +45,14 @@ export default function CalendarPage() {
             <CardTitle className="text-sm font-bold uppercase">Calendario</CardTitle>
           </CardHeader>
           <CardContent>
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={setDate}
-              className="rounded-md border-none mx-auto scale-110"
-            />
+            <div className="flex justify-center">
+              <Calendar
+                mode="single"
+                selected={date}
+                onSelect={setDate}
+                className="rounded-md border border-muted sm:border-none p-2 sm:p-0"
+              />
+            </div>
             <div className="mt-6 space-y-3">
               <h4 className="text-[10px] font-bold uppercase text-muted-foreground border-b pb-1">Técnicos Disponibles</h4>
               <div className="flex flex-wrap gap-2">
@@ -66,7 +68,7 @@ export default function CalendarPage() {
         </Card>
 
         <Card className="lg:col-span-8 shadow-sm border-none">
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <CardTitle className="text-sm font-bold uppercase flex items-center">
               <CalendarDays className="mr-2 h-4 w-4 text-accent" />
               AGENDA DEL DÍA: {date?.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })}
@@ -76,25 +78,25 @@ export default function CalendarPage() {
               <Button variant="ghost" size="icon" className="h-8 w-8"><ChevronRight className="h-4 w-4" /></Button>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 px-4 sm:px-6">
             {appointments.map((apt) => (
-              <div key={apt.id} className="group relative pl-4 border-l-4 border-l-primary bg-background/50 p-4 rounded-r-lg border border-border transition-all hover:bg-white hover:shadow-md cursor-pointer">
+              <div key={apt.id} className="group relative pl-4 border-l-4 border-l-primary bg-background/50 p-3 sm:p-4 rounded-r-lg border border-border transition-all hover:bg-white hover:shadow-md cursor-pointer">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-bold uppercase text-primary">{apt.client}</span>
                       <Badge className={cn(
                         "text-[9px] uppercase",
                         apt.type === "Extintores" ? "bg-accent/10 text-accent border-accent/20" : "bg-blue-100 text-blue-700 border-blue-200"
                       )}>{apt.type}</Badge>
                     </div>
-                    <div className="flex flex-wrap items-center gap-4 text-[11px] text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
                       <span className="flex items-center"><Clock className="h-3 w-3 mr-1" /> {apt.time}</span>
-                      <span className="flex items-center"><User className="h-3 w-3 mr-1" /> Técnico: {apt.tech}</span>
-                      <span className="flex items-center"><MapPin className="h-3 w-3 mr-1" /> Ver ubicación</span>
+                      <span className="flex items-center"><User className="h-3 w-3 mr-1" /> {apt.tech}</span>
+                      <span className="flex items-center"><MapPin className="h-3 w-3 mr-1" /> Ubicación</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 pt-3 sm:pt-0">
                     <Badge variant={apt.status === "Confirmado" ? "secondary" : "outline"} className={cn(
                       "text-[10px] uppercase font-bold",
                       apt.status === "Confirmado" ? "bg-status-success/10 text-status-success" : "text-muted-foreground"

@@ -1,3 +1,6 @@
+
+"use client"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { 
   TrendingUp, 
@@ -29,12 +32,12 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight mb-1 font-headline">PANEL DE CONTROL</h2>
-        <p className="text-muted-foreground">Bienvenido de nuevo. Aquí está el resumen operativo de hoy en Perú.</p>
+      <div className="flex flex-col gap-1">
+        <h2 className="text-2xl font-bold tracking-tight font-headline">PANEL DE CONTROL</h2>
+        <p className="text-muted-foreground text-sm">Bienvenido de nuevo. Aquí está el resumen operativo de hoy en Perú.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat) => (
           <Card key={stat.title} className="shadow-sm border-none">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -60,40 +63,42 @@ export default function DashboardPage() {
               SERVICIOS RECIENTES
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
-            <Table className="dense-table">
-              <TableHeader className="bg-primary hover:bg-primary">
-                <TableRow>
-                  <TableHead className="text-white">ID</TableHead>
-                  <TableHead className="text-white">CLIENTE</TableHead>
-                  <TableHead className="text-white">TIPO</TableHead>
-                  <TableHead className="text-white">ESTADO</TableHead>
-                  <TableHead className="text-white">HORA</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {recentServices.map((service) => (
-                  <TableRow key={service.id}>
-                    <TableCell className="font-bold text-primary">{service.id}</TableCell>
-                    <TableCell>{service.client}</TableCell>
-                    <TableCell>{service.type}</TableCell>
-                    <TableCell>
-                      <Badge variant={service.status === "Completado" ? "secondary" : "outline"} 
-                        className={cn(
-                          "text-[9px] uppercase font-bold px-2 py-0",
-                          service.status === "Completado" && "bg-status-success/10 text-status-success border-status-success/20",
-                          service.status === "En Proceso" && "bg-status-warning/10 text-status-warning border-status-warning/20",
-                          service.status === "Pendiente" && "bg-muted text-muted-foreground"
-                        )}
-                      >
-                        {service.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{service.date}</TableCell>
+          <CardContent className="p-0 overflow-x-auto">
+            <div className="min-w-[600px]">
+              <Table className="dense-table">
+                <TableHeader className="bg-primary hover:bg-primary">
+                  <TableRow>
+                    <TableHead className="text-white">ID</TableHead>
+                    <TableHead className="text-white">CLIENTE</TableHead>
+                    <TableHead className="text-white">TIPO</TableHead>
+                    <TableHead className="text-white">ESTADO</TableHead>
+                    <TableHead className="text-white">HORA</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {recentServices.map((service) => (
+                    <TableRow key={service.id}>
+                      <TableCell className="font-bold text-primary">{service.id}</TableCell>
+                      <TableCell>{service.client}</TableCell>
+                      <TableCell>{service.type}</TableCell>
+                      <TableCell>
+                        <Badge variant={service.status === "Completado" ? "secondary" : "outline"} 
+                          className={cn(
+                            "text-[9px] uppercase font-bold px-2 py-0",
+                            service.status === "Completado" && "bg-status-success/10 text-status-success border-status-success/20",
+                            service.status === "En Proceso" && "bg-status-warning/10 text-status-warning border-status-warning/20",
+                            service.status === "Pendiente" && "bg-muted text-muted-foreground"
+                          )}
+                        >
+                          {service.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{service.date}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
 
@@ -107,14 +112,14 @@ export default function DashboardPage() {
           <CardContent className="space-y-4">
             <div className="p-3 bg-white/10 rounded-md border border-white/20">
               <p className="text-xs font-bold uppercase mb-1">Extintores Vencidos</p>
-              <p className="text-[11px] opacity-80">Hay 12 equipos en San Borja que requieren recarga inmediata.</p>
-              <button className="mt-2 h-7 px-3 text-[10px] font-bold uppercase border border-white/30 text-white hover:bg-white hover:text-primary rounded-md transition-colors">
+              <p className="text-[11px] opacity-80 leading-relaxed">Hay 12 equipos en San Borja que requieren recarga inmediata.</p>
+              <button className="mt-3 h-8 px-4 text-[10px] font-bold uppercase border border-white/30 text-white hover:bg-white hover:text-primary rounded-md transition-colors w-full sm:w-auto">
                 Generar Orden
               </button>
             </div>
             <div className="p-3 bg-white/10 rounded-md border border-white/20">
               <p className="text-xs font-bold uppercase mb-1">Fumigación Pendiente</p>
-              <p className="text-[11px] opacity-80">Almacén Callao requiere refuerzo de control de plagas antes del viernes.</p>
+              <p className="text-[11px] opacity-80 leading-relaxed">Almacén Callao requiere refuerzo de control de plagas antes del viernes.</p>
             </div>
           </CardContent>
         </Card>
