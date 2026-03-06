@@ -15,8 +15,8 @@ import { cn } from "@/lib/utils"
 export default function DashboardPage() {
   const stats = [
     { title: "Clientes Activos", value: "1,284", icon: Users, color: "text-blue-600" },
-    { title: "Servicios hoy", value: "24", icon: CheckCircle2, color: "text-green-600" },
-    { title: "Extintores por Vencer", value: "12", icon: AlertTriangle, color: "text-status-warning" },
+    { title: "Servicios Hoy", value: "24", icon: CheckCircle2, color: "text-green-600" },
+    { title: "Equipos por Vencer", value: "12", icon: AlertTriangle, color: "text-status-warning" },
     { title: "Próximos 7 días", value: "86", icon: Clock, color: "text-status-success" },
   ]
 
@@ -30,22 +30,22 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight mb-1">PANEL DE CONTROL</h2>
-        <p className="text-muted-foreground">Bienvenido de nuevo. Aquí está el resumen operativo de hoy.</p>
+        <h2 className="text-2xl font-bold tracking-tight mb-1 font-headline">PANEL DE CONTROL</h2>
+        <p className="text-muted-foreground">Bienvenido de nuevo. Aquí está el resumen operativo de hoy en Perú.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat) => (
           <Card key={stat.title} className="shadow-sm border-none">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs font-medium uppercase text-muted-foreground">{stat.title}</CardTitle>
+              <CardTitle className="text-xs font-bold uppercase text-muted-foreground tracking-wider">{stat.title}</CardTitle>
               <stat.icon className={cn("h-4 w-4", stat.color)} />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stat.value}</div>
               <div className="flex items-center text-[10px] text-muted-foreground mt-1">
                 <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
-                <span>+4% desde el mes pasado</span>
+                <span>+4% vs mes anterior</span>
               </div>
             </CardContent>
           </Card>
@@ -55,7 +55,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2 shadow-sm border-none">
           <CardHeader>
-            <CardTitle className="text-sm font-bold flex items-center">
+            <CardTitle className="text-sm font-bold flex items-center uppercase tracking-wider">
               <Flame className="mr-2 h-4 w-4 text-accent" />
               SERVICIOS RECIENTES
             </CardTitle>
@@ -65,22 +65,22 @@ export default function DashboardPage() {
               <TableHeader className="bg-primary hover:bg-primary">
                 <TableRow>
                   <TableHead className="text-white">ID</TableHead>
-                  <TableHead className="text-white">Cliente</TableHead>
-                  <TableHead className="text-white">Tipo</TableHead>
-                  <TableHead className="text-white">Estado</TableHead>
-                  <TableHead className="text-white">Hora</TableHead>
+                  <TableHead className="text-white">CLIENTE</TableHead>
+                  <TableHead className="text-white">TIPO</TableHead>
+                  <TableHead className="text-white">ESTADO</TableHead>
+                  <TableHead className="text-white">HORA</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {recentServices.map((service) => (
                   <TableRow key={service.id}>
-                    <TableCell className="font-medium">{service.id}</TableCell>
+                    <TableCell className="font-bold text-primary">{service.id}</TableCell>
                     <TableCell>{service.client}</TableCell>
                     <TableCell>{service.type}</TableCell>
                     <TableCell>
                       <Badge variant={service.status === "Completado" ? "secondary" : "outline"} 
                         className={cn(
-                          "text-[10px] px-2 py-0",
+                          "text-[9px] uppercase font-bold px-2 py-0",
                           service.status === "Completado" && "bg-status-success/10 text-status-success border-status-success/20",
                           service.status === "En Proceso" && "bg-status-warning/10 text-status-warning border-status-warning/20",
                           service.status === "Pendiente" && "bg-muted text-muted-foreground"
@@ -99,22 +99,22 @@ export default function DashboardPage() {
 
         <Card className="shadow-sm border-none bg-primary text-white">
           <CardHeader>
-            <CardTitle className="text-sm font-bold flex items-center text-white">
+            <CardTitle className="text-sm font-bold flex items-center text-white uppercase tracking-wider">
               <Bell className="mr-2 h-4 w-4 text-accent" />
-              ALERTAS DEL SISTEMA
+              ALERTAS CRÍTICAS
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="p-3 bg-white/10 rounded-md border border-white/20">
-              <p className="text-xs font-bold uppercase mb-1">CRÍTICO: Extintores Vencidos</p>
-              <p className="text-[12px] opacity-80">Hay 12 equipos en Plaza San Juan que requieren recarga inmediata.</p>
-              <button className="mt-2 h-7 px-3 text-[10px] border border-white/30 text-white hover:bg-white hover:text-primary rounded-md transition-colors">
+              <p className="text-xs font-bold uppercase mb-1">Extintores Vencidos</p>
+              <p className="text-[11px] opacity-80">Hay 12 equipos en San Borja que requieren recarga inmediata.</p>
+              <button className="mt-2 h-7 px-3 text-[10px] font-bold uppercase border border-white/30 text-white hover:bg-white hover:text-primary rounded-md transition-colors">
                 Generar Orden
               </button>
             </div>
             <div className="p-3 bg-white/10 rounded-md border border-white/20">
               <p className="text-xs font-bold uppercase mb-1">Fumigación Pendiente</p>
-              <p className="text-[12px] opacity-80">Bodega Norte requiere refuerzo de control de plagas antes del viernes.</p>
+              <p className="text-[11px] opacity-80">Almacén Callao requiere refuerzo de control de plagas antes del viernes.</p>
             </div>
           </CardContent>
         </Card>

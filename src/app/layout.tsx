@@ -4,8 +4,8 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'Servifumiga Pro - Fire & Pest Control Management',
-  description: 'Enterprise management for fire extinguishers and fumigation services.',
+  title: 'Servifumiga Pro - Gestión de Seguridad y Plagas en Perú',
+  description: 'Sistema integral para la gestión de extintores y servicios de fumigación profesional en el mercado peruano.',
 };
 
 export default function RootLayout({

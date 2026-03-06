@@ -1,4 +1,3 @@
-
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,8 +9,6 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  LineChart,
-  Line,
   PieChart,
   Pie,
   Cell
@@ -43,14 +40,14 @@ export default function ReportsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight mb-1">REPORTES Y ANALÍTICA</h2>
-          <p className="text-muted-foreground text-sm">Visualización del desempeño operativo y financiero.</p>
+          <p className="text-muted-foreground text-sm">Visualización del desempeño operativo y financiero en Soles (S/).</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="h-9">
+          <Button variant="outline" className="h-9 text-[11px] font-bold uppercase">
             <Filter className="mr-2 h-4 w-4" /> Periodo
           </Button>
-          <Button className="bg-primary text-white h-9">
-            <Download className="mr-2 h-4 w-4" /> Descargar PDF
+          <Button className="bg-primary text-white h-9 text-[11px] font-bold uppercase">
+            <Download className="mr-2 h-4 w-4" /> Exportar PDF
           </Button>
         </div>
       </div>
@@ -58,12 +55,12 @@ export default function ReportsPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="shadow-sm border-none bg-white">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-bold uppercase text-muted-foreground">Ingresos Totales (Mes)</CardTitle>
+            <CardTitle className="text-xs font-bold uppercase text-muted-foreground tracking-wider">Ingresos Totales (Mes)</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold flex items-center">
-              <DollarSign className="h-5 w-5 text-green-500 mr-1" />
-              $12,450.00
+              <span className="text-green-600 mr-2 text-xl font-bold">S/</span>
+              12,450.00
             </div>
             <div className="flex items-center text-[11px] text-green-600 mt-1">
               <TrendingUp className="h-3 w-3 mr-1" /> +12.5% vs mes anterior
@@ -72,23 +69,23 @@ export default function ReportsPage() {
         </Card>
         <Card className="shadow-sm border-none bg-white">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-bold uppercase text-muted-foreground">Servicios Completados</CardTitle>
+            <CardTitle className="text-xs font-bold uppercase text-muted-foreground tracking-wider">Servicios Completados</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold flex items-center">
-              <Activity className="h-5 w-5 text-blue-500 mr-1" />
+            <div className="text-2xl font-bold flex items-center text-primary">
+              <Activity className="h-5 w-5 text-blue-500 mr-2" />
               342
             </div>
-            <div className="text-[11px] text-muted-foreground mt-1">Meta mensual: 400</div>
+            <div className="text-[11px] text-muted-foreground mt-1 font-medium">Meta mensual: 400</div>
           </CardContent>
         </Card>
         <Card className="shadow-sm border-none bg-white">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-bold uppercase text-muted-foreground">Retención de Clientes</CardTitle>
+            <CardTitle className="text-xs font-bold uppercase text-muted-foreground tracking-wider">Retención de Clientes</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">98.2%</div>
-            <div className="text-[11px] text-muted-foreground mt-1">Basado en renovaciones anuales</div>
+            <div className="text-2xl font-bold text-accent">98.2%</div>
+            <div className="text-[11px] text-muted-foreground mt-1 font-medium">Basado en renovaciones anuales</div>
           </CardContent>
         </Card>
       </div>
@@ -96,15 +93,16 @@ export default function ReportsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="shadow-sm border-none">
           <CardHeader>
-            <CardTitle className="text-sm font-bold uppercase">Servicios e Ingresos Mensuales</CardTitle>
+            <CardTitle className="text-sm font-bold uppercase tracking-wider">Servicios e Ingresos Mensuales</CardTitle>
           </CardHeader>
           <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={dataMonthly}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} style={{ fontSize: '10px' }} />
-                <YAxis axisLine={false} tickLine={false} style={{ fontSize: '10px' }} />
+                <XAxis dataKey="month" axisLine={false} tickLine={false} style={{ fontSize: '10px', fontWeight: 'bold' }} />
+                <YAxis axisLine={false} tickLine={false} style={{ fontSize: '10px', fontWeight: 'bold' }} />
                 <Tooltip 
+                  formatter={(value) => `S/ ${value}`}
                   contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                   labelStyle={{ fontWeight: 'bold', fontSize: '12px' }}
                 />
@@ -116,7 +114,7 @@ export default function ReportsPage() {
 
         <Card className="shadow-sm border-none">
           <CardHeader>
-            <CardTitle className="text-sm font-bold uppercase">Distribución por Tipo de Servicio</CardTitle>
+            <CardTitle className="text-sm font-bold uppercase tracking-wider">Distribución por Tipo de Servicio</CardTitle>
           </CardHeader>
           <CardContent className="h-[300px] flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
