@@ -108,7 +108,7 @@ export default function DashboardLayout({
             <div className="flex items-center gap-2">
               {companyLogo ? (
                 <div className="relative h-8 w-8 rounded overflow-hidden border bg-white">
-                  <Image src={companyLogo} alt="Logo" fill className="object-contain p-1" />
+                  <Image src={companyLogo} alt="Logo" fill className="object-contain p-1" unoptimized />
                 </div>
               ) : (
                 <Building2 className="h-5 w-5 text-primary" />

@@ -58,7 +58,7 @@ export function DashboardNav({ onNavItemClick, companyName, logoUrl }: Dashboard
       <div className="p-6 flex items-center gap-3">
         {logoUrl ? (
           <div className="relative h-10 w-10 bg-white rounded border overflow-hidden">
-            <Image src={logoUrl} alt="Logo" fill className="object-contain p-1" />
+            <Image src={logoUrl} alt="Logo" fill className="object-contain p-1" unoptimized />
           </div>
         ) : (
           <div className="h-10 w-10 bg-white/10 rounded flex items-center justify-center">
