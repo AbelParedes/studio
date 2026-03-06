@@ -107,8 +107,8 @@ export default function ClientsPage() {
                     </Select>
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="taxId">RUC / RFC (Identificación Fiscal)</Label>
-                    <Input id="taxId" name="taxId" required placeholder="Ej. 20123456789" />
+                    <Label htmlFor="taxId">RUC / DNI (Identificación)</Label>
+                    <Input id="taxId" name="taxId" required placeholder="Ej. 20123456789 o 12345678" />
                   </div>
                 </div>
 
@@ -176,7 +176,7 @@ export default function ClientsPage() {
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input 
-                placeholder="Buscar por RUC, nombre o email..." 
+                placeholder="Buscar por RUC/DNI, nombre o email..." 
                 className="pl-9 h-9" 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -193,7 +193,7 @@ export default function ClientsPage() {
             <Table className="dense-table">
               <TableHeader className="bg-primary">
                 <TableRow>
-                  <TableHead className="text-white">Identidad Fiscal</TableHead>
+                  <TableHead className="text-white">Identidad (RUC/DNI)</TableHead>
                   <TableHead className="text-white">Nombre / Razón Social</TableHead>
                   <TableHead className="text-white">Giro</TableHead>
                   <TableHead className="text-white">Contacto</TableHead>

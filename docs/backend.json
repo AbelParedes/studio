@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "UserProfile": {
@@ -44,7 +43,7 @@
         },
         "taxId": {
           "type": "string",
-          "description": "The tax identification number of the client (RUC, RFC, VAT ID)."
+          "description": "The identification number of the client (RUC or DNI)."
         },
         "industry": {
           "type": "string",
