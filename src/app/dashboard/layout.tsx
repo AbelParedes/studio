@@ -80,14 +80,18 @@ export default function DashboardLayout({
   }
 
   const displayName = profile?.name || user?.email?.split('@')[0] || "Usuario"
-  const displayRole = roleData?.title || "Administrador"
+  const displayRole = roleData?.title || "Colaborador"
   const companyLogo = company?.logoUrl || null
 
   return (
     <div className="flex h-screen bg-background dark:bg-slate-950 overflow-hidden text-foreground">
       {/* Sidebar Desktop */}
       <aside className="w-64 bg-sidebar shrink-0 hidden lg:block border-r border-sidebar-border shadow-xl">
-        <DashboardNav companyName={company?.name || "SERVIFUMIGA"} logoUrl={companyLogo} />
+        <DashboardNav 
+          companyName={company?.name || "SERVIFUMIGA"} 
+          logoUrl={companyLogo} 
+          userRole={displayRole}
+        />
       </aside>
 
       {/* Main Content Area */}
@@ -101,7 +105,12 @@ export default function DashboardLayout({
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="p-0 w-64 bg-sidebar border-none">
-                <DashboardNav onNavItemClick={() => setIsMobileMenuOpen(false)} companyName={company?.name || "SERVIFUMIGA"} logoUrl={companyLogo} />
+                <DashboardNav 
+                  onNavItemClick={() => setIsMobileMenuOpen(false)} 
+                  companyName={company?.name || "SERVIFUMIGA"} 
+                  logoUrl={companyLogo} 
+                  userRole={displayRole}
+                />
               </SheetContent>
             </Sheet>
 

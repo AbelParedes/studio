@@ -25,10 +25,10 @@ import Image from "next/image"
 
 const navItems = [
   { name: "Resumen", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Empresas", href: "/dashboard/companies", icon: Building2 },
+  { name: "Empresas", href: "/dashboard/companies", icon: Building2, superAdminOnly: true },
   { name: "Clientes", href: "/dashboard/clients", icon: Users },
   { name: "Usuarios", href: "/dashboard/users", icon: UserCheck },
-  { name: "Roles y Permisos", href: "/dashboard/roles", icon: ShieldCheck },
+  { name: "Roles y Permisos", href: "/dashboard/roles", icon: ShieldCheck, adminOnly: true },
   { name: "Inventario", href: "/dashboard/inventory", icon: Flame },
   { name: "Calendario", href: "/dashboard/calendar", icon: Calendar },
   { name: "Fumigación", href: "/dashboard/fumigation", icon: Bug },
@@ -41,9 +41,10 @@ interface DashboardNavProps {
   onNavItemClick?: () => void
   companyName?: string
   logoUrl?: string | null
+  userRole?: string
 }
 
-export function DashboardNav({ onNavItemClick, companyName, logoUrl }: DashboardNavProps) {
+export function DashboardNav({ onNavItemClick, companyName, logoUrl, userRole }: DashboardNavProps) {
   const pathname = usePathname()
   const auth = useAuth()
   const router = useRouter()
@@ -52,6 +53,17 @@ export function DashboardNav({ onNavItemClick, companyName, logoUrl }: Dashboard
     await signOut(auth)
     router.push("/login")
   }
+
+  // Lógica de filtrado de navegación basada en el rol
+  const filteredItems = navItems.filter(item => {
+    // Solo el "Administrador" (Super Admin) ve el módulo de Empresas
+    if (item.superAdminOnly && userRole !== "Administrador") return false
+    
+    // Roles operativos solo ven lo esencial (esto se puede ajustar después)
+    if (item.adminOnly && userRole !== "Administrador" && userRole !== "Coordinador de Servicios") return false
+
+    return true
+  })
 
   return (
     <div className="flex flex-col h-full text-sidebar-foreground">
@@ -76,7 +88,7 @@ export function DashboardNav({ onNavItemClick, companyName, logoUrl }: Dashboard
       </div>
       
       <nav className="flex-1 space-y-1 px-4 overflow-y-auto">
-        {navItems.map((item) => {
+        {filteredItems.map((item) => {
           const isActive = pathname === item.href
           return (
             <Link

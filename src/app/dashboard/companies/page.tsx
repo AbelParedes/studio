@@ -1,14 +1,15 @@
 
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Search, Building2, Globe, Palette, Trash2, Edit2, Loader2, LogIn } from "lucide-react"
-import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, useUser } from "@/firebase"
-import { collection, doc, query, where, getDocs, updateDoc } from "firebase/firestore"
+import { Plus, Search, Building2, Globe, Palette, Trash2, Edit2, Loader2, LogIn, ShieldAlert } from "lucide-react"
+import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, useUser, useDoc } from "@/firebase"
+import { collection, doc, query, where, getDocs, updateDoc, limit } from "firebase/firestore"
 import {
   Dialog,
   DialogContent,
@@ -27,13 +28,51 @@ import Image from "next/image"
 export default function CompaniesPage() {
   const db = useFirestore()
   const { user } = useUser()
+  const router = useRouter()
   const [searchTerm, setSearchTerm] = useState("")
   const [isAdding, setIsAdding] = useState(false)
   const [editingCompany, setEditingCompany] = useState<any | null>(null)
   const [isSwitching, setIsSwitching] = useState<string | null>(null)
 
+  // Verificación de Super Admin
+  const userProfileQuery = useMemoFirebase(() => 
+    user?.email ? query(collection(db, "company_users"), where("email", "==", user.email), limit(1)) : null,
+  [db, user?.email])
+  const { data: profiles, isLoading: loadingProfile } = useCollection(userProfileQuery)
+  const profile = profiles?.[0]
+  
+  const roleRef = useMemoFirebase(() => profile?.roleId ? doc(db, "system_roles", profile.roleId) : null, [db, profile?.roleId])
+  const { data: roleData, isLoading: loadingRole } = useDoc(roleRef)
+
   const companiesRef = useMemoFirebase(() => collection(db, "companies"), [db])
   const { data: companies, isLoading } = useCollection(companiesRef)
+
+  // Guardia de ruta: Solo el rol "Administrador" puede ver esta página
+  useEffect(() => {
+    if (!loadingProfile && !loadingRole && roleData && roleData.title !== "Administrador") {
+      toast({ variant: "destructive", title: "Acceso denegado", description: "No tienes permisos para gestionar empresas." })
+      router.push("/dashboard")
+    }
+  }, [roleData, loadingProfile, loadingRole, router])
+
+  if (loadingProfile || loadingRole || !roleData) {
+    return (
+      <div className="flex items-center justify-center p-20">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  if (roleData.title !== "Administrador") {
+    return (
+      <div className="flex flex-col items-center justify-center p-20 space-y-4">
+        <ShieldAlert className="h-12 w-12 text-destructive" />
+        <h2 className="text-xl font-bold uppercase">Área Restringida</h2>
+        <p className="text-muted-foreground">Solo el administrador del sistema puede acceder aquí.</p>
+        <Button onClick={() => router.push("/dashboard")}>Volver al Inicio</Button>
+      </div>
+    )
+  }
 
   const filteredCompanies = companies?.filter(c => 
     c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -71,20 +110,16 @@ export default function CompaniesPage() {
     setEditingCompany(null)
   }
 
-  // Función para "Entrar" a una empresa como administrador
   const handleSwitchCompany = async (companyId: string) => {
     if (!user?.email) return
     setIsSwitching(companyId)
     
     try {
-      const userProfileQuery = query(collection(db, "company_users"), where("email", "==", user.email))
-      const snapshot = await getDocs(userProfileQuery)
-      
+      const snapshot = await getDocs(query(collection(db, "company_users"), where("email", "==", user.email)))
       if (!snapshot.empty) {
-        const profileDoc = snapshot.docs[0]
-        await updateDoc(doc(db, "company_users", profileDoc.id), { companyId })
-        toast({ title: "Cambiando de organización", description: "El dashboard se actualizará con la nueva identidad." })
-        window.location.reload() // Recargar para aplicar temas y filtros
+        await updateDoc(doc(db, "company_users", snapshot.docs[0].id), { companyId })
+        toast({ title: "Cambiando de organización..." })
+        window.location.reload()
       }
     } catch (error) {
       toast({ variant: "destructive", title: "Error al cambiar empresa" })
@@ -277,13 +312,6 @@ export default function CompaniesPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {filteredCompanies?.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-20 text-muted-foreground">
-                      No se encontraron organizaciones registradas.
-                    </TableCell>
-                  </TableRow>
-                )}
               </TableBody>
             </Table>
           )}
