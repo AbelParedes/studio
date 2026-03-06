@@ -58,7 +58,9 @@ export default function CalendarPage() {
   const { data: technicians } = useCollection(techsRef)
 
   const selectedDateStr = date ? format(date, "yyyy-MM-dd") : ""
-  const dailyAppointments = allAppointments?.filter(apt => apt.date === selectedDateStr) || []
+  
+  // Daily appointments ordered by time
+  const dailyAppointments = [...(allAppointments?.filter(apt => apt.date === selectedDateStr) || [])].sort((a, b) => a.time.localeCompare(b.time))
 
   const handleSaveAppointment = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
