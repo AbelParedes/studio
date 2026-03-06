@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useEffect, useState } from "react"
@@ -21,7 +20,7 @@ export default function DashboardLayout({
   const router = useRouter()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
-  // Buscar el perfil del usuario por su correo electrónico
+  // Buscar el perfil del usuario por su correo electrónico (Sincronización por Email)
   const userProfileQuery = useMemoFirebase(() => 
     user?.email ? query(collection(db, "company_users"), where("email", "==", user.email), limit(1)) : null,
   [db, user?.email])
@@ -95,7 +94,7 @@ export default function DashboardLayout({
             <div className="h-8 w-px bg-border mx-1 hidden sm:block"></div>
             <div className="flex items-center space-x-2 sm:space-x-3 pl-1">
               <div className="text-right hidden sm:block">
-                <p className="text-xs font-bold text-primary uppercase leading-tight max-w-[150px] truncate">
+                <p className="text-xs font-bold text-primary uppercase leading-tight max-w-[200px] truncate">
                   {displayName}
                 </p>
                 <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-tighter">

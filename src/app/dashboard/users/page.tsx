@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState } from "react"
@@ -6,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { UserPlus, Search, Shield, Mail, Trash2, Edit2, Loader2, Key, AlertCircle, Sparkles } from "lucide-react"
+import { UserPlus, Search, Shield, Mail, Trash2, Edit2, Loader2, Key, AlertCircle, Sparkles, Info } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, deleteDocumentNonBlocking, addDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase"
 import { collection, doc } from "firebase/firestore"
 import { initializeApp, deleteApp, getApps } from "firebase/app"
@@ -26,7 +25,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import Link from "next/link"
 
 export default function UsersPage() {
   const db = useFirestore()
@@ -74,11 +72,10 @@ export default function UsersPage() {
         updateDocumentNonBlocking(doc(db, "company_users", editingUser.id), userData)
         toast({ title: "Perfil actualizado", description: "Los datos del colaborador se han guardado." })
       } else {
-        // 1. Guardar en Firestore primero
         const newUser = { ...userData, createdAt: new Date().toISOString() }
         addDocumentNonBlocking(usersRef, newUser)
 
-        // 2. Crear en Firebase Auth automáticamente usando una instancia secundaria
+        // Creación automática en Auth usando instancia secundaria
         const secondaryAppName = `AuthCreator_${Date.now()}`
         const secondaryApp = initializeApp(firebaseConfig, secondaryAppName)
         const secondaryAuth = getAuth(secondaryApp)
@@ -96,8 +93,8 @@ export default function UsersPage() {
           console.error("Error Auth:", authErr)
           toast({ 
             variant: "destructive", 
-            title: "Aviso de Autenticación", 
-            description: "El perfil se guardó, pero debe habilitar el acceso manual en Firebase Console si el correo ya existe." 
+            title: "Aviso de Registro", 
+            description: "El perfil se guardó en la base de datos, pero el acceso debe habilitarse manualmente en la consola si el correo ya existe." 
           })
         }
       }
@@ -130,7 +127,7 @@ export default function UsersPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight mb-1 font-headline">COLABORADORES PERÚ</h2>
+          <h2 className="text-2xl font-bold tracking-tight mb-1">COLABORADORES PERÚ</h2>
           <p className="text-muted-foreground text-sm">Gestión de personal con sincronización automática de accesos.</p>
         </div>
         
@@ -149,9 +146,9 @@ export default function UsersPage() {
               <div className="grid gap-4 py-4">
                 
                 <div className="bg-blue-50 border border-blue-100 p-3 rounded-md flex items-start gap-2">
-                  <Sparkles className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
+                  <Info className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
                   <p className="text-[10px] text-blue-700 leading-tight">
-                    <strong>Sincronización Pro:</strong> Al guardar, el sistema crea la cuenta en la base de datos y en el sistema de Login al mismo tiempo.
+                    <strong>Sincronización Automática:</strong> Al guardar, el sistema crea el perfil en Firestore y las credenciales en Auth de forma simultánea. Para accesos manuales, use la Consola de Firebase &gt; Authentication.
                   </p>
                 </div>
 
