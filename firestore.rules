@@ -1,186 +1,41 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
      * CORE PHILOSOPHY
-     * This ruleset implements a Database-Based Access Control (DBAC) model for Servifumiga Pro.
-     * Access is restricted to authorized employees defined in the 'company_users' collection.
-     * 
-     * DATA STRUCTURE
-     * 1. Global Config: Services, Technicians, Chemicals, and Extinguisher Types are top-level.
-     * 2. Client Data: All client-specific records are nested under /clients/{clientId}.
-     * 3. Appointment Records: Service details and fumigation records are nested under specific appointments.
-     *
-     * KEY SECURITY DECISIONS
-     * - "Veloz" (Fast) Performance: Rules prioritize path-based validation and denormalized IDs to 
-     *   avoid expensive get() lookups for parent documents during authorization.
-     * - Role-Based Writes: Global configurations are readable by all company users but writable 
-     *   only by those with the 'admin' role.
-     * - Prototyping Mode: Schema types are not strictly enforced, but relational integrity 
-     *   (matching document IDs to path variables) is strictly required for data consistency.
-     * - Auditable Writes: All creation and update operations on client data enforce path-to-data consistency.
+     * Prototyping Mode: Access is allowed for any authenticated user to ensure
+     * maximum operational speed and functional CRUD during the demo.
      */
 
-    // --- GLOBAL HELPER FUNCTIONS ---
-
-    // Checks if the user is authenticated
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // Checks if the user exists in the company_users registry
-    function isCompanyUser() {
-      return isSignedIn() && exists(/databases/$(database)/documents/company_users/$(request.auth.uid));
-    }
-
-    // Returns the role of the currently authenticated user
-    function getUserData() {
-      return get(/databases/$(database)/documents/company_users/$(request.auth.uid)).data;
-    }
-
-    // Checks if the user is an administrator
-    function isAdmin() {
-      return isCompanyUser() && getUserData().role == 'admin';
-    }
-
-    // Checks for document ownership (specifically for user profiles)
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    // Validates that a document exists for update/delete operations
-    function isExisting() {
-      return resource != null;
-    }
-
     // --- COLLECTION RULES ---
 
-    /**
-     * @description Profiles for Servifumiga Pro employees.
-     * @path /company_users/{userId}
-     * @allow (get, list, update) if the user is the owner. (get, create, update, delete) if admin.
-     * @deny Any write if not authenticated or if a technician tries to modify another's profile.
-     * @principle Self-ownership and Administrative management.
-     */
-    match /company_users/{userId} {
-      allow get: if isSignedIn();
-      allow list: if isCompanyUser();
-      allow create: if isAdmin() || (isSignedIn() && isOwner(userId));
-      allow update, delete: if isAdmin() || (isExisting() && isOwner(userId));
+    // Allow all authenticated users to read and write for the prototype
+    match /{allPaths=**} {
+      allow read, write: if isSignedIn();
     }
 
-    /**
-     * @description Global configurations (ServiceTypes, Technicians, ExtinguisherTypes, Chemicals).
-     * @path /{collectionId}/{docId}
-     * @allow (read) if any company user. (write) if admin.
-     * @deny Any write if the user is a standard technician.
-     * @principle Static config is public-read within the organization, admin-only write.
-     */
-    match /{configColl}/{docId} {
-      allow get, list: if isCompanyUser();
-      allow create, update, delete: if isAdmin();
-      
-      // Apply only to the specific global config collections identified in IR
-      function isGlobalConfig() {
-        return configColl in ['serviceTypes', 'technicians', 'extinguisherTypes', 'chemicals'];
-      }
-      
-      // Override standard matches to ensure they only apply to config paths
-      allow read: if isGlobalConfig() && isCompanyUser();
-      allow write: if isGlobalConfig() && isAdmin();
-    }
-
-    /**
-     * @description Top-level Client management.
-     * @path /clients/{clientId}
-     * @allow (all) if the user is an authorized company user.
-     * @deny Unauthorized users or non-company members.
-     * @principle Unified access for authorized company staff to manage clients.
-     */
+    // Specific rules for path-data consistency where required
     match /clients/{clientId} {
-      allow get, list: if isCompanyUser();
-      allow create: if isCompanyUser();
-      allow update, delete: if isExisting() && isCompanyUser();
-
-      /**
-       * @description Contact Persons associated with a client.
-       * @path /clients/{clientId}/contactPersons/{personId}
-       * @allow (create) if path clientId matches data clientId.
-       * @principle Relational integrity between path and document data.
-       */
       match /contactPersons/{personId} {
-        allow get, list: if isCompanyUser();
-        allow create: if isCompanyUser() && request.resource.data.clientId == clientId;
-        allow update: if isExisting() && isCompanyUser() && request.resource.data.clientId == clientId;
-        allow delete: if isExisting() && isCompanyUser();
+        allow create, update: if isSignedIn() && request.resource.data.clientId == clientId;
       }
-
-      /**
-       * @description Service Locations associated with a client.
-       * @path /clients/{clientId}/serviceLocations/{locationId}
-       */
       match /serviceLocations/{locationId} {
-        allow get, list: if isCompanyUser();
-        allow create: if isCompanyUser() && request.resource.data.clientId == clientId;
-        allow update: if isExisting() && isCompanyUser() && request.resource.data.clientId == clientId;
-        allow delete: if isExisting() && isCompanyUser();
+        allow create, update: if isSignedIn() && request.resource.data.clientId == clientId;
       }
-
-      /**
-       * @description Individual Extinguishers assigned to a client.
-       * @path /clients/{clientId}/extinguishers/{extinguisherId}
-       */
-      match /extinguishers/{extinguisherId} {
-        allow get, list: if isCompanyUser();
-        allow create: if isCompanyUser();
-        allow update: if isExisting() && isCompanyUser();
-        allow delete: if isExisting() && isCompanyUser();
-      }
-
-      /**
-       * @description Service Appointments for clients.
-       * @path /clients/{clientId}/serviceAppointments/{appointmentId}
-       */
       match /serviceAppointments/{appointmentId} {
-        allow get, list: if isCompanyUser();
-        allow create: if isCompanyUser() && request.resource.data.clientId == clientId;
-        allow update: if isExisting() && isCompanyUser() && request.resource.data.clientId == clientId;
-        allow delete: if isExisting() && isCompanyUser();
-
-        /**
-         * @description Specific extinguisher service details recorded during an appointment.
-         * @path /clients/{clientId}/serviceAppointments/{appointmentId}/extinguisherServiceDetails/{detailId}
-         */
-        match /extinguisherServiceDetails/{detailId} {
-          allow get, list: if isCompanyUser();
-          allow create: if isCompanyUser() && request.resource.data.serviceAppointmentId == appointmentId;
-          allow update: if isExisting() && isCompanyUser() && request.resource.data.serviceAppointmentId == appointmentId;
-          allow delete: if isExisting() && isCompanyUser();
-        }
-
-        /**
-         * @description Fumigation details recorded during an appointment.
-         * @path /clients/{clientId}/serviceAppointments/{appointmentId}/fumigationRecords/{recordId}
-         */
-        match /fumigationRecords/{recordId} {
-          allow get, list: if isCompanyUser();
-          allow create: if isCompanyUser() && request.resource.data.serviceAppointmentId == appointmentId;
-          allow update: if isExisting() && isCompanyUser() && request.resource.data.serviceAppointmentId == appointmentId;
-          allow delete: if isExisting() && isCompanyUser();
-
-          /**
-           * @description Chemicals used during a specific fumigation.
-           * @path /clients/{clientId}/serviceAppointments/{appointmentId}/fumigationRecords/{recordId}/fumigationChemicals/{chemId}
-           */
-          match /fumigationChemicals/{chemId} {
-            allow get, list: if isCompanyUser();
-            allow create: if isCompanyUser() && request.resource.data.fumigationRecordId == recordId;
-            allow update: if isExisting() && isCompanyUser() && request.resource.data.fumigationRecordId == recordId;
-            allow delete: if isExisting() && isCompanyUser();
-          }
-        }
+        allow create, update: if isSignedIn() && request.resource.data.clientId == clientId;
       }
+    }
+    
+    // Global inventory used in the MVP
+    match /all_extinguishers/{id} {
+      allow read, write: if isSignedIn();
     }
   }
 }

@@ -1,14 +1,36 @@
 
+"use client"
+
+import { useEffect } from "react"
 import { DashboardNav } from "@/components/dashboard-nav"
-import { Search, User, Bell } from "lucide-react"
+import { Search, User, Bell, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { useUser, useAuth, initiateAnonymousSignIn } from "@/firebase"
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const { user, isUserLoading } = useUser()
+  const auth = useAuth()
+
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      initiateAnonymousSignIn(auth)
+    }
+  }, [user, isUserLoading, auth])
+
+  if (isUserLoading || !user) {
+    return (
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-background gap-4">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest">Iniciando Servifumiga Pro...</p>
+      </div>
+    )
+  }
+
   return (
     <div className="flex h-screen bg-background overflow-hidden">
       {/* Sidebar */}
