@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState } from "react"
@@ -71,7 +70,7 @@ export default function CalendarPage() {
           <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <CardTitle className="text-sm font-bold uppercase flex items-center">
               <CalendarDays className="mr-2 h-4 w-4 text-accent" />
-              AGENDA DEL DÍA: {date?.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })}
+              AGENDA DEL DÍA: {date?.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' }).toUpperCase()}
             </CardTitle>
             <div className="flex items-center gap-1">
               <Button variant="ghost" size="icon" className="h-8 w-8"><ChevronLeft className="h-4 w-4" /></Button>
