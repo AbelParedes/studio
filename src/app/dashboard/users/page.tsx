@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { UserPlus, Search, Shield, Mail, Trash2, Edit2, Loader2, BadgeCheck, ShieldAlert, ShieldCheck, UserCog, UserCircle } from "lucide-react"
+import { UserPlus, Search, Shield, Mail, Trash2, Edit2, Loader2, UserCog, ShieldCheck, ShieldAlert } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, deleteDocumentNonBlocking, addDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase"
 import { collection, doc } from "firebase/firestore"
 import {
@@ -24,13 +24,6 @@ import { toast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
-const ROLES = [
-  { value: "Administrator", label: "Administrador", icon: ShieldAlert, color: "text-status-error", bg: "bg-status-error/10", border: "border-status-error/20" },
-  { value: "Technician", label: "Técnico de Campo", icon: UserCog, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-200" },
-  { value: "Client", label: "Cliente", icon: UserCircle, color: "text-status-success", bg: "bg-status-success/10", border: "border-status-success/20" },
-  { value: "Support", label: "Soporte Técnico", icon: ShieldCheck, color: "text-status-warning", bg: "bg-status-warning/10", border: "border-status-warning/20" }
-]
-
 export default function UsersPage() {
   const db = useFirestore()
   const [searchTerm, setSearchTerm] = useState("")
@@ -38,7 +31,10 @@ export default function UsersPage() {
   const [editingUser, setEditingUser] = useState<any | null>(null)
   
   const usersRef = useMemoFirebase(() => collection(db, "company_users"), [db])
-  const { data: users, isLoading } = useCollection(usersRef)
+  const { data: users, isLoading: loadingUsers } = useCollection(usersRef)
+
+  const rolesRef = useMemoFirebase(() => collection(db, "system_roles"), [db])
+  const { data: roles, isLoading: loadingRoles } = useCollection(rolesRef)
 
   const filteredUsers = users?.filter(u => 
     u.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -51,17 +47,17 @@ export default function UsersPage() {
     const userData = {
       name: formData.get("name") as string,
       email: formData.get("email") as string,
-      role: formData.get("role") as string,
+      roleId: formData.get("roleId") as string,
       status: formData.get("status") as string || "Activo",
     }
 
     if (editingUser) {
       updateDocumentNonBlocking(doc(db, "company_users", editingUser.id), userData)
-      toast({ title: "Usuario actualizado" })
+      toast({ title: "Usuario actualizado", description: "Los cambios se han guardado exitosamente." })
     } else {
       const newUser = { ...userData, id: crypto.randomUUID(), createdAt: new Date().toISOString() }
       addDocumentNonBlocking(usersRef, newUser)
-      toast({ title: "Usuario registrado" })
+      toast({ title: "Usuario registrado", description: "El colaborador ha sido dado de alta en el sistema." })
     }
 
     setIsAdding(false)
@@ -78,29 +74,30 @@ export default function UsersPage() {
     setIsAdding(true)
   }
 
-  const getRoleInfo = (roleName: string) => {
-    return ROLES.find(r => r.value === roleName) || ROLES[1]
+  const getRoleTitle = (roleId: string) => {
+    const role = roles?.find(r => r.id === roleId)
+    return role?.title || "Sin Rol"
   }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight mb-1">GESTIÓN DE USUARIOS Y ROLES</h2>
-          <p className="text-muted-foreground text-sm">Controle el acceso al sistema y defina las responsabilidades de su equipo.</p>
+          <h2 className="text-2xl font-bold tracking-tight mb-1">COLABORADORES PERÚ</h2>
+          <p className="text-muted-foreground text-sm">Administre el personal y asigne roles dinámicos del sistema.</p>
         </div>
         
         <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) setEditingUser(null); }}>
           <DialogTrigger asChild>
             <Button className="bg-primary text-white h-9">
-              <UserPlus className="mr-2 h-4 w-4" /> Registrar Usuario
+              <UserPlus className="mr-2 h-4 w-4" /> Registrar Colaborador
             </Button>
           </DialogTrigger>
           <DialogContent>
             <form onSubmit={handleSaveUser}>
               <DialogHeader>
-                <DialogTitle>{editingUser ? "Editar Usuario" : "Nuevo Registro de Usuario"}</DialogTitle>
-                <DialogDescription>Asigne un rol específico para determinar los permisos de acceso.</DialogDescription>
+                <DialogTitle>{editingUser ? "Editar Colaborador" : "Nuevo Registro"}</DialogTitle>
+                <DialogDescription>Asigne uno de los roles creados en el módulo de Roles.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
@@ -112,26 +109,29 @@ export default function UsersPage() {
                   <Input id="email" name="email" type="email" defaultValue={editingUser?.email} required placeholder="juan@servifumiga.com" />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="role">Rol del Sistema</Label>
-                  <Select name="role" defaultValue={editingUser?.role || "Technician"} required>
+                  <Label htmlFor="roleId">Rol Asignado</Label>
+                  <Select name="roleId" defaultValue={editingUser?.roleId} required>
                     <SelectTrigger>
-                      <SelectValue placeholder="Seleccione un rol" />
+                      <SelectValue placeholder="Seleccione un rol de la lista" />
                     </SelectTrigger>
                     <SelectContent>
-                      {ROLES.map(role => (
-                        <SelectItem key={role.value} value={role.value}>
-                          <div className="flex items-center">
-                            <role.icon className={cn("mr-2 h-4 w-4", role.color)} />
-                            {role.label}
-                          </div>
+                      {roles?.map(role => (
+                        <SelectItem key={role.id} value={role.id}>
+                          {role.title}
                         </SelectItem>
                       ))}
+                      {roles?.length === 0 && (
+                        <SelectItem value="none" disabled>No hay roles creados</SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
+                  <p className="text-[10px] text-muted-foreground">Vaya al módulo "Roles" para crear nuevas opciones.</p>
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit">{editingUser ? "Actualizar" : "Confirmar Registro"}</Button>
+                <Button type="submit" disabled={roles?.length === 0}>
+                  {editingUser ? "Actualizar" : "Confirmar Alta"}
+                </Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -143,7 +143,7 @@ export default function UsersPage() {
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
-              placeholder="Buscar por nombre, correo o rol..." 
+              placeholder="Buscar colaborador..." 
               className="pl-9 h-9" 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -151,7 +151,7 @@ export default function UsersPage() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          {isLoading ? (
+          {loadingUsers || loadingRoles ? (
             <div className="flex items-center justify-center p-20">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
@@ -161,41 +161,45 @@ export default function UsersPage() {
                 <TableRow>
                   <TableHead className="text-white">Nombre</TableHead>
                   <TableHead className="text-white">Contacto</TableHead>
-                  <TableHead className="text-white">Rol</TableHead>
+                  <TableHead className="text-white">Rol Asignado</TableHead>
                   <TableHead className="text-white">Estado</TableHead>
                   <TableHead className="text-white w-[100px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredUsers?.map((u) => {
-                  const roleInfo = getRoleInfo(u.role)
-                  return (
-                    <TableRow key={u.id}>
-                      <TableCell className="font-bold">{u.name}</TableCell>
-                      <TableCell>{u.email}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={cn("text-[9px] uppercase font-bold", roleInfo.color, roleInfo.bg)}>
-                          {roleInfo.label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-[9px] uppercase font-bold text-status-success border-status-success/20">
-                          {u.status || "Activo"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(u)}>
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive" onClick={() => handleDeleteUser(u.id)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
+                {filteredUsers?.map((u) => (
+                  <TableRow key={u.id}>
+                    <TableCell className="font-bold">{u.name}</TableCell>
+                    <TableCell>{u.email}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-[9px] uppercase font-bold bg-blue-50 text-blue-600 border-blue-200">
+                        {getRoleTitle(u.roleId)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-[9px] uppercase font-bold text-status-success border-status-success/20">
+                        {u.status || "Activo"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(u)}>
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive" onClick={() => handleDeleteUser(u.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {filteredUsers?.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-20 text-muted-foreground uppercase text-[10px] font-bold tracking-widest">
+                      No hay colaboradores registrados
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           )}

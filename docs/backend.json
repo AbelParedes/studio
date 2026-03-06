@@ -10,14 +10,34 @@
         "id": { "type": "string" },
         "name": { "type": "string" },
         "email": { "type": "string", "format": "email" },
-        "role": { 
-          "type": "string", 
-          "enum": ["Administrator", "Technician", "Client", "Support"] 
-        },
+        "roleId": { "type": "string", "description": "ID del rol asignado desde la colección de roles." },
         "status": { "type": "string", "enum": ["Active", "Inactive"] },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "name", "email", "role"]
+      "required": ["id", "name", "email", "roleId"]
+    },
+    "RoleDefinition": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "RoleDefinition",
+      "type": "object",
+      "description": "Define un rol del sistema con sus respectivos permisos.",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "permissions": {
+          "type": "object",
+          "properties": {
+            "manage_users": { "type": "boolean" },
+            "manage_inventory": { "type": "boolean" },
+            "view_reports": { "type": "boolean" },
+            "manage_clients": { "type": "boolean" },
+            "field_operations": { "type": "boolean" }
+          }
+        },
+        "color": { "type": "string" }
+      },
+      "required": ["id", "title", "permissions"]
     },
     "Client": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -46,35 +66,6 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "clientType", "name", "taxId", "email", "address"]
-    },
-    "Extinguisher": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Extinguisher",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "serialNumber": { "type": "string" },
-        "type": { "type": "string" },
-        "size": { "type": "string" },
-        "location": { "type": "string" },
-        "status": { "type": "string" },
-        "lastService": { "type": "string" },
-        "nextDue": { "type": "string" }
-      }
-    },
-    "FumigationService": {
-      "title": "FumigationService",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "clientId": { "type": "string" },
-        "clientName": { "type": "string" },
-        "type": { "type": "string" },
-        "areas": { "type": "string" },
-        "chemicals": { "type": "string" },
-        "date": { "type": "string" },
-        "status": { "type": "string", "enum": ["Programado", "En Proceso", "Completado"] }
-      }
     }
   },
   "auth": {
@@ -85,17 +76,13 @@
       "schema": { "$ref": "#/backend/entities/UserProfile" },
       "description": "Perfiles de usuarios del sistema."
     },
+    "system_roles": {
+      "schema": { "$ref": "#/backend/entities/RoleDefinition" },
+      "description": "Definiciones de roles y permisos del sistema."
+    },
     "clients": {
       "schema": { "$ref": "#/backend/entities/Client" },
       "description": "Colección de clientes."
-    },
-    "all_extinguishers": {
-      "schema": { "$ref": "#/backend/entities/Extinguisher" },
-      "description": "Inventario global de extintores."
-    },
-    "fumigation_services": {
-      "schema": { "$ref": "#/backend/entities/FumigationService" },
-      "description": "Registros de servicios de fumigación."
     }
   }
 }
