@@ -15,14 +15,10 @@ import {
   Loader2,
   Trash2,
   Edit2,
-  CheckCircle2,
-  XCircle,
-  ChevronLeft,
-  ChevronRight
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase"
-import { collection, doc, query, where } from "firebase/firestore"
+import { collection, doc } from "firebase/firestore"
 import {
   Dialog,
   DialogContent,
@@ -53,7 +49,7 @@ export default function CalendarPage() {
   const clientsRef = useMemoFirebase(() => collection(db, "clients"), [db])
   const { data: clients } = useCollection(clientsRef)
 
-  // Fetch technicians (users with specific roles)
+  // Fetch technicians
   const techsRef = useMemoFirebase(() => collection(db, "company_users"), [db])
   const { data: technicians } = useCollection(techsRef)
 
@@ -210,22 +206,22 @@ export default function CalendarPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <Card className="lg:col-span-4 shadow-sm border-none bg-white flex flex-col items-center">
-          <CardHeader className="w-full">
+        <Card className="lg:col-span-5 shadow-sm border-none bg-white">
+          <CardHeader>
             <CardTitle className="text-sm font-bold uppercase">Calendario de Rutas</CardTitle>
           </CardHeader>
-          <CardContent className="w-full flex flex-col items-center">
-            <div className="w-full max-w-[320px] mx-auto border rounded-lg overflow-hidden bg-white shadow-inner p-1">
+          <CardContent className="flex flex-col items-center">
+            <div className="w-full border rounded-lg overflow-hidden bg-white shadow-inner p-1">
               <Calendar
                 mode="single"
                 selected={date}
                 onSelect={setDate}
                 locale={es}
-                className="rounded-md"
+                className="rounded-md w-full"
               />
             </div>
             <div className="mt-6 w-full space-y-3">
-              <h4 className="text-[10px] font-bold uppercase text-muted-foreground border-b pb-1">Técnicos del Sistema</h4>
+              <h4 className="text-[10px] font-bold uppercase text-muted-foreground border-b pb-1">Leyenda de Técnicos</h4>
               <div className="flex flex-wrap gap-2">
                 {technicians?.map(tech => (
                   <Badge key={tech.id} variant="secondary" className="text-[10px] bg-primary/5 text-primary border-primary/10">
@@ -233,22 +229,19 @@ export default function CalendarPage() {
                     {tech.name}
                   </Badge>
                 ))}
-                {(!technicians || technicians.length === 0) && (
-                  <p className="text-[10px] text-muted-foreground">No hay técnicos registrados.</p>
-                )}
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-8 shadow-sm border-none">
+        <Card className="lg:col-span-7 shadow-sm border-none">
           <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <CardTitle className="text-sm font-bold uppercase flex items-center">
               <CalendarDays className="mr-2 h-4 w-4 text-accent" />
               AGENDA DEL DÍA: {date ? format(date, "d 'de' MMMM, yyyy", { locale: es }).toUpperCase() : "SELECCIONE FECHA"}
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4 px-4 sm:px-6">
+          <CardContent className="space-y-4">
             {loadingApts ? (
               <div className="flex flex-col items-center justify-center py-20 gap-2">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -262,7 +255,7 @@ export default function CalendarPage() {
               </div>
             ) : (
               dailyAppointments.map((apt) => (
-                <div key={apt.id} className="group relative pl-4 border-l-4 border-l-primary bg-background/50 p-3 sm:p-4 rounded-r-lg border border-border transition-all hover:bg-white hover:shadow-md">
+                <div key={apt.id} className="group relative pl-4 border-l-4 border-l-primary bg-background/50 p-4 rounded-r-lg border border-border transition-all hover:bg-white hover:shadow-md">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
