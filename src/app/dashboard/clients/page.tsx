@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Plus, Search, MapPin, Phone, Mail, Trash2, Edit2, Loader2, Building2, User, FileText, MessageSquare, UserPlus, Users } from "lucide-react"
-import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase"
-import { collection, doc } from "firebase/firestore"
+import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, useUser } from "@/firebase"
+import { collection, doc, query, where } from "firebase/firestore"
 import {
   Dialog,
   DialogContent,
@@ -28,12 +28,23 @@ import { cn } from "@/lib/utils"
 
 export default function ClientsPage() {
   const db = useFirestore()
+  const { user } = useUser()
   const [searchTerm, setSearchTerm] = useState("")
   const [isAdding, setIsAdding] = useState(false)
   const [editingClient, setEditingClient] = useState<any | null>(null)
   const [clientType, setClientType] = useState<"Empresa" | "Persona">("Empresa")
-  
-  const clientsRef = useMemoFirebase(() => collection(db, "clients"), [db])
+
+  // Obtener perfil para companyId
+  const userProfileQuery = useMemoFirebase(() => 
+    user?.email ? query(collection(db, "company_users"), where("email", "==", user.email)) : null,
+  [db, user?.email])
+  const { data: profiles } = useCollection(userProfileQuery)
+  const companyId = profiles?.[0]?.companyId
+
+  // Filtrar clientes por empresa
+  const clientsRef = useMemoFirebase(() => 
+    companyId ? query(collection(db, "clients"), where("companyId", "==", companyId)) : null,
+  [db, companyId])
   const { data: clients, isLoading } = useCollection(clientsRef)
 
   const filteredClients = clients?.filter(c => 
@@ -44,9 +55,11 @@ export default function ClientsPage() {
 
   const handleSaveClient = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    if (!companyId) return
+
     const formData = new FormData(e.currentTarget)
-    
     const clientData = {
+      companyId: companyId,
       clientType: clientType,
       taxId: formData.get("taxId") as string,
       name: formData.get("name") as string,
@@ -65,11 +78,11 @@ export default function ClientsPage() {
 
     if (editingClient) {
       updateDocumentNonBlocking(doc(db, "clients", editingClient.id), clientData)
-      toast({ title: "Cliente actualizado", description: `El cliente ${clientData.name} se ha guardado correctamente.` })
+      toast({ title: "Cliente actualizado" })
     } else {
       const newClient = { ...clientData, id: crypto.randomUUID(), createdAt: new Date().toISOString() }
-      addDocumentNonBlocking(clientsRef, newClient)
-      toast({ title: "Cliente registrado", description: `El cliente ${clientData.name} se ha añadido exitosamente.` })
+      addDocumentNonBlocking(collection(db, "clients"), newClient)
+      toast({ title: "Cliente registrado" })
     }
 
     setIsAdding(false)
@@ -91,8 +104,8 @@ export default function ClientsPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight mb-1">GESTIÓN DE CLIENTES</h2>
-          <p className="text-muted-foreground text-sm">Base de datos centralizada para servicios técnicos y comerciales.</p>
+          <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase">Clientes</h2>
+          <p className="text-muted-foreground text-sm">Gestione la base de datos exclusiva de su empresa.</p>
         </div>
         
         <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) setEditingClient(null); }}>
@@ -104,8 +117,8 @@ export default function ClientsPage() {
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <form onSubmit={handleSaveClient}>
               <DialogHeader>
-                <DialogTitle>{editingClient ? "Editar Cliente" : "Registrar Nuevo Expediente"}</DialogTitle>
-                <DialogDescription>Complete los datos del cliente para la gestión de servicios e inspecciones.</DialogDescription>
+                <DialogTitle>{editingClient ? "Editar Cliente" : "Registrar Nuevo Cliente"}</DialogTitle>
+                <DialogDescription>Los datos serán visibles solo para los colaboradores de su empresa.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-6 py-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -123,72 +136,68 @@ export default function ClientsPage() {
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="taxId">{clientType === "Empresa" ? "RUC" : "DNI"}</Label>
-                    <Input id="taxId" name="taxId" defaultValue={editingClient?.taxId} required placeholder={clientType === "Empresa" ? "Ej. 20123456789" : "Ej. 12345678"} />
+                    <Input id="taxId" name="taxId" defaultValue={editingClient?.taxId} required placeholder="Identificación fiscal" />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="name">Nombre Comercial / Nombre Completo</Label>
-                    <Input id="name" name="name" defaultValue={editingClient?.name} required placeholder="Ej. Restaurante El Faro" />
+                    <Label htmlFor="name">Nombre Comercial / Completo</Label>
+                    <Input id="name" name="name" defaultValue={editingClient?.name} required />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="legalName">Razón Social (Opcional)</Label>
-                    <Input id="legalName" name="legalName" defaultValue={editingClient?.legalName} placeholder="Ej. El Faro S.A.C." />
+                    <Label htmlFor="legalName">Razón Social</Label>
+                    <Input id="legalName" name="legalName" defaultValue={editingClient?.legalName} />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="industry">Giro del Negocio</Label>
-                    <Input id="industry" name="industry" defaultValue={editingClient?.industry} placeholder="Ej. Alimentación, Almacén" />
+                    <Input id="industry" name="industry" defaultValue={editingClient?.industry} />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="phone">Teléfono Principal</Label>
-                    <Input id="phone" name="phone" defaultValue={editingClient?.phone} required placeholder="+51 987..." />
+                    <Label htmlFor="phone">Teléfono</Label>
+                    <Input id="phone" name="phone" defaultValue={editingClient?.phone} required />
                   </div>
                 </div>
 
                 <div className="grid gap-2">
-                  <Label htmlFor="email">Correo Electrónico Principal</Label>
-                  <Input id="email" name="email" defaultValue={editingClient?.email} type="email" required placeholder="correo@cliente.com" />
+                  <Label htmlFor="email">Email Principal</Label>
+                  <Input id="email" name="email" defaultValue={editingClient?.email} type="email" required />
                 </div>
 
                 <div className="grid gap-2">
-                  <Label htmlFor="address">Dirección Completa</Label>
-                  <Input id="address" name="address" defaultValue={editingClient?.address} required placeholder="Av. Los Pinos 123, Of. 402, Lima" />
+                  <Label htmlFor="address">Dirección</Label>
+                  <Input id="address" name="address" defaultValue={editingClient?.address} required />
                 </div>
 
                 <Separator />
-                <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase">
-                  <UserPlus className="h-3 w-3" /> Persona de Contacto
-                </div>
+                <div className="text-primary font-bold text-xs uppercase">Persona de Contacto</div>
 
                 <div className="grid grid-cols-3 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="contactName">Nombre de Contacto</Label>
-                    <Input id="contactName" name="contactName" defaultValue={editingClient?.contactPerson?.name} placeholder="Ej. Juan Pérez" />
+                    <Label htmlFor="contactName">Nombre</Label>
+                    <Input id="contactName" name="contactName" defaultValue={editingClient?.contactPerson?.name} />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="contactPosition">Cargo</Label>
-                    <Input id="contactPosition" name="contactPosition" defaultValue={editingClient?.contactPerson?.position} placeholder="Ej. Administrador" />
+                    <Input id="contactPosition" name="contactPosition" defaultValue={editingClient?.contactPerson?.position} />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="contactPhone">Celular Contacto</Label>
-                    <Input id="contactPhone" name="contactPhone" defaultValue={editingClient?.contactPerson?.phone} placeholder="Ej. 999 888 777" />
+                    <Label htmlFor="contactPhone">Celular</Label>
+                    <Input id="contactPhone" name="contactPhone" defaultValue={editingClient?.contactPerson?.phone} />
                   </div>
                 </div>
 
                 <Separator />
                 <div className="grid gap-2">
-                  <Label htmlFor="notes" className="flex items-center gap-2">
-                    <MessageSquare className="h-3 w-3" /> Notas Técnicas / Observaciones
-                  </Label>
-                  <Textarea id="notes" name="notes" defaultValue={editingClient?.notes} placeholder="Detalles sobre acceso..." className="min-h-[100px]" />
+                  <Label htmlFor="notes" className="flex items-center gap-2">Notas Técnicas</Label>
+                  <Textarea id="notes" name="notes" defaultValue={editingClient?.notes} className="min-h-[100px]" />
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit" className="w-full">{editingClient ? "Actualizar Cliente" : "Crear Expediente de Cliente"}</Button>
+                <Button type="submit" className="w-full">{editingClient ? "Actualizar" : "Crear Expediente"}</Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -197,16 +206,14 @@ export default function ClientsPage() {
 
       <Card className="shadow-sm border-none">
         <CardHeader className="pb-3 border-b">
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Buscar por identificación, nombre o email..." 
-                className="pl-9 h-9" 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input 
+              placeholder="Buscar clientes de mi empresa..." 
+              className="pl-9 h-9" 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -219,7 +226,7 @@ export default function ClientsPage() {
               <TableHeader className="bg-primary">
                 <TableRow>
                   <TableHead className="text-white">Identidad</TableHead>
-                  <TableHead className="text-white">Cliente / Razón Social</TableHead>
+                  <TableHead className="text-white">Nombre / Empresa</TableHead>
                   <TableHead className="text-white">Contacto</TableHead>
                   <TableHead className="text-white">Dirección</TableHead>
                   <TableHead className="text-white w-[100px]"></TableHead>
@@ -230,59 +237,39 @@ export default function ClientsPage() {
                   <TableRow key={client.id} className="hover:bg-muted/30 transition-colors">
                     <TableCell>
                       <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-1.5">
-                          {client.clientType === "Empresa" ? (
-                            <Building2 className="h-3 w-3 text-primary" />
-                          ) : (
-                            <User className="h-3 w-3 text-accent" />
-                          )}
-                          <span className="font-bold text-[10px] uppercase text-muted-foreground">{client.clientType}</span>
-                        </div>
-                        <div className="flex items-center text-[10px] font-mono bg-muted px-1.5 py-0.5 rounded w-fit">
-                          <FileText className="h-2.5 w-2.5 mr-1 text-primary" />
-                          <span className="font-bold">{client.clientType === "Empresa" ? "RUC: " : "DNI: "}</span>
-                          {client.taxId}
-                        </div>
+                        <Badge variant="outline" className="text-[9px] uppercase font-bold w-fit">
+                          {client.clientType}
+                        </Badge>
+                        <span className="font-mono text-[10px]">{client.taxId}</span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
                         <span className="font-bold text-primary">{client.name}</span>
-                        <span className="text-[10px] text-muted-foreground italic">{client.legalName || "-"}</span>
-                        {client.industry && (
-                          <div className="mt-1">
-                            <Badge variant="outline" className="text-[8px] uppercase font-bold border-accent/20 text-accent h-4">
-                              {client.industry}
-                            </Badge>
-                          </div>
-                        )}
+                        <span className="text-[10px] text-muted-foreground">{client.industry}</span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex flex-col gap-0.5">
-                        <div className="flex items-center text-[11px] font-bold text-[#444]">
-                          <User className="h-3 w-3 mr-1 text-primary" /> {client.contactPerson?.name || "No asignado"}
-                        </div>
-                        <div className="flex items-center text-[10px] text-muted-foreground">
-                          <Phone className="h-2.5 w-2.5 mr-1" /> {client.phone}
-                        </div>
+                      <div className="flex flex-col text-[11px]">
+                        <span className="font-bold">{client.contactPerson?.name}</span>
+                        <span className="text-muted-foreground">{client.phone}</span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center text-[11px] text-muted-foreground max-w-[200px] leading-tight">
-                        <MapPin className="h-3 w-3 mr-1 text-accent shrink-0" />
+                      <div className="flex items-center text-[11px] text-muted-foreground max-w-[200px] truncate">
+                        <MapPin className="h-3 w-3 mr-1 shrink-0" />
                         {client.address}
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => openEdit(client)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(client)}>
                           <Edit2 className="h-3.5 w-3.5" />
                         </Button>
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          className="h-8 w-8 hover:text-destructive"
                           onClick={() => handleDeleteClient(client.id)}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -294,10 +281,7 @@ export default function ClientsPage() {
                 {filteredClients?.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-20 text-muted-foreground">
-                      <div className="flex flex-col items-center gap-2">
-                        <Users className="h-10 w-10 opacity-10" />
-                        <p className="text-sm font-medium uppercase tracking-widest">No hay clientes registrados</p>
-                      </div>
+                      No hay clientes registrados en su empresa.
                     </TableCell>
                   </TableRow>
                 )}

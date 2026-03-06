@@ -8,8 +8,8 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Bug, Plus, Droplets, ShieldCheck, Thermometer, Search, Loader2, Trash2, Edit2 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase"
-import { collection, doc } from "firebase/firestore"
+import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, useUser } from "@/firebase"
+import { collection, doc, query, where } from "firebase/firestore"
 import {
   Dialog,
   DialogContent,
@@ -26,17 +26,31 @@ import { toast } from "@/hooks/use-toast"
 
 export default function FumigationPage() {
   const db = useFirestore()
+  const { user } = useUser()
   const [searchTerm, setSearchTerm] = useState("")
   const [isAdding, setIsAdding] = useState(false)
   const [editingService, setEditingService] = useState<any | null>(null)
 
-  const fumigationRef = useMemoFirebase(() => collection(db, "fumigation_services"), [db])
+  // Obtener perfil para companyId
+  const userProfileQuery = useMemoFirebase(() => 
+    user?.email ? query(collection(db, "company_users"), where("email", "==", user.email)) : null,
+  [db, user?.email])
+  const { data: profiles } = useCollection(userProfileQuery)
+  const companyId = profiles?.[0]?.companyId
+
+  // Filtrar servicios por empresa
+  const fumigationRef = useMemoFirebase(() => 
+    companyId ? query(collection(db, "fumigation_services"), where("companyId", "==", companyId)) : null,
+  [db, companyId])
   const { data: records, isLoading } = useCollection(fumigationRef)
 
   const handleSaveService = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    if (!companyId) return
+
     const formData = new FormData(e.currentTarget)
     const serviceData = {
+      companyId: companyId,
       clientName: formData.get("client") as string,
       type: formData.get("type") as string,
       areas: formData.get("areas") as string,
@@ -50,7 +64,7 @@ export default function FumigationPage() {
       toast({ title: "Servicio actualizado" })
     } else {
       const newService = { ...serviceData, id: crypto.randomUUID() }
-      addDocumentNonBlocking(fumigationRef, newService)
+      addDocumentNonBlocking(collection(db, "fumigation_services"), newService)
       toast({ title: "Servicio registrado" })
     }
 
@@ -72,8 +86,8 @@ export default function FumigationPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight mb-1">CONTROL DE FUMIGACIÓN</h2>
-          <p className="text-muted-foreground text-sm">Gestión de certificados y rutas de control de plagas.</p>
+          <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase">Control de Fumigación</h2>
+          <p className="text-muted-foreground text-sm">Gestione sus certificados y rutas de control de plagas de forma aislada.</p>
         </div>
         <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) setEditingService(null); }}>
           <DialogTrigger asChild>
@@ -85,16 +99,16 @@ export default function FumigationPage() {
             <form onSubmit={handleSaveService}>
               <DialogHeader>
                 <DialogTitle>{editingService ? "Editar Orden" : "Nueva Orden de Servicio"}</DialogTitle>
-                <DialogDescription>Complete los detalles del servicio de fumigación.</DialogDescription>
+                <DialogDescription>Los datos serán exclusivos para su organización.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="client">Nombre del Cliente</Label>
-                  <Input id="client" name="client" defaultValue={editingService?.clientName} required placeholder="Ej. Restaurante El Faro" />
+                  <Label htmlFor="client">Cliente</Label>
+                  <Input id="client" name="client" defaultValue={editingService?.clientName} required />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="type">Tipo de Control</Label>
-                  <Input id="type" name="type" defaultValue={editingService?.type} required placeholder="Ej. Control de Roedores" />
+                  <Input id="type" name="type" defaultValue={editingService?.type} required />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
@@ -109,63 +123,26 @@ export default function FumigationPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Programado">Programado</SelectItem>
-                        <SelectItem value="En Proceso">En Proceso</SelectItem>
                         <SelectItem value="Completado">Completado</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="areas">Áreas Tratadas</Label>
-                  <Input id="areas" name="areas" defaultValue={editingService?.areas} placeholder="Ej. Cocina, Salón" />
+                  <Label htmlFor="areas">Áreas</Label>
+                  <Input id="areas" name="areas" defaultValue={editingService?.areas} />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="chemicals">Químicos Utilizados</Label>
-                  <Input id="chemicals" name="chemicals" defaultValue={editingService?.chemicals} placeholder="Ej. Deltametrina" />
+                  <Label htmlFor="chemicals">Químicos</Label>
+                  <Input id="chemicals" name="chemicals" defaultValue={editingService?.chemicals} />
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit">{editingService ? "Actualizar" : "Registrar"}</Button>
+                <Button type="submit" className="w-full">Registrar Servicio</Button>
               </DialogFooter>
             </form>
           </DialogContent>
         </Dialog>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="shadow-sm border-none bg-white">
-          <CardHeader className="py-4">
-            <CardTitle className="text-xs font-bold uppercase text-muted-foreground flex items-center">
-              <Droplets className="h-3 w-3 mr-1 text-blue-500" />
-              Certificados Mes
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="py-2">
-            <div className="text-2xl font-bold">{records?.filter(r => r.status === "Completado").length || 0}</div>
-          </CardContent>
-        </Card>
-        <Card className="shadow-sm border-none bg-white">
-          <CardHeader className="py-4">
-            <CardTitle className="text-xs font-bold uppercase text-muted-foreground flex items-center">
-              <ShieldCheck className="h-3 w-3 mr-1 text-status-success" />
-              Programados
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="py-2">
-            <div className="text-2xl font-bold">{records?.filter(r => r.status === "Programado").length || 0}</div>
-          </CardContent>
-        </Card>
-        <Card className="shadow-sm border-none bg-white">
-          <CardHeader className="py-4">
-            <CardTitle className="text-xs font-bold uppercase text-muted-foreground flex items-center">
-              <Thermometer className="h-3 w-3 mr-1 text-accent" />
-              En Proceso
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="py-2">
-            <div className="text-2xl font-bold">{records?.filter(r => r.status === "En Proceso").length || 0}</div>
-          </CardContent>
-        </Card>
       </div>
 
       <Card className="shadow-sm border-none">
@@ -173,7 +150,7 @@ export default function FumigationPage() {
           <div className="relative w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
-              placeholder="Buscar servicio..." 
+              placeholder="Buscar mis servicios..." 
               className="pl-9 h-8" 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -205,31 +182,29 @@ export default function FumigationPage() {
                     <TableCell className="font-bold">{record.clientName}</TableCell>
                     <TableCell>
                       <div className="font-medium">{record.type}</div>
-                      <div className="text-[10px] text-muted-foreground italic">{record.chemicals}</div>
+                      <div className="text-[10px] text-muted-foreground">{record.chemicals}</div>
                     </TableCell>
                     <TableCell>{record.date}</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={cn(
-                        "text-[10px] uppercase font-bold",
-                        record.status === "Completado" && "border-status-success text-status-success bg-status-success/5",
-                        record.status === "En Proceso" && "border-status-warning text-status-warning bg-status-warning/5",
-                        record.status === "Programado" && "text-muted-foreground",
-                      )}>
+                      <Badge variant="outline" className="text-[10px] font-bold">
                         {record.status}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(record)}>
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive" onClick={() => handleDelete(record.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(record)}><Edit2 className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive" onClick={() => handleDelete(record.id)}><Trash2 className="h-4 w-4" /></Button>
                       </div>
                     </TableCell>
                   </TableRow>
                 ))}
+                {records?.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-20 text-muted-foreground">
+                      Sin órdenes de fumigación en su empresa.
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           )}

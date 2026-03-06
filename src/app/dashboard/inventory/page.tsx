@@ -8,8 +8,8 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Flame, Plus, Search, Loader2, Trash2, Edit2 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase"
-import { collection, doc } from "firebase/firestore"
+import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, useUser } from "@/firebase"
+import { collection, doc, query, where } from "firebase/firestore"
 import {
   Dialog,
   DialogContent,
@@ -26,17 +26,31 @@ import { toast } from "@/hooks/use-toast"
 
 export default function InventoryPage() {
   const db = useFirestore()
+  const { user } = useUser()
   const [isAdding, setIsAdding] = useState(false)
   const [editingItem, setEditingItem] = useState<any | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
 
-  const extinguishersRef = useMemoFirebase(() => collection(db, "all_extinguishers"), [db])
+  // Obtener perfil para companyId
+  const userProfileQuery = useMemoFirebase(() => 
+    user?.email ? query(collection(db, "company_users"), where("email", "==", user.email)) : null,
+  [db, user?.email])
+  const { data: profiles } = useCollection(userProfileQuery)
+  const companyId = profiles?.[0]?.companyId
+
+  // Filtrar inventario por empresa
+  const extinguishersRef = useMemoFirebase(() => 
+    companyId ? query(collection(db, "all_extinguishers"), where("companyId", "==", companyId)) : null,
+  [db, companyId])
   const { data: inventory, isLoading } = useCollection(extinguishersRef)
 
   const handleSaveEquipment = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    if (!companyId) return
+
     const formData = new FormData(e.currentTarget)
     const equipmentData = {
+      companyId: companyId,
       serialNumber: formData.get("serial") as string,
       type: formData.get("type") as string,
       size: formData.get("size") as string,
@@ -51,7 +65,7 @@ export default function InventoryPage() {
       toast({ title: "Equipo actualizado" })
     } else {
       const newEquip = { ...equipmentData, id: crypto.randomUUID() }
-      addDocumentNonBlocking(extinguishersRef, newEquip)
+      addDocumentNonBlocking(collection(db, "all_extinguishers"), newEquip)
       toast({ title: "Equipo registrado" })
     }
 
@@ -79,8 +93,8 @@ export default function InventoryPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight mb-1">INVENTARIO DE EXTINTORES</h2>
-          <p className="text-muted-foreground text-sm">Seguimiento detallado de equipos contra incendio.</p>
+          <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase">Inventario de Equipos</h2>
+          <p className="text-muted-foreground text-sm">Control exclusivo de extintores y activos de su organización.</p>
         </div>
         <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) setEditingItem(null); }}>
           <DialogTrigger asChild>
@@ -92,7 +106,7 @@ export default function InventoryPage() {
             <form onSubmit={handleSaveEquipment}>
               <DialogHeader>
                 <DialogTitle>{editingItem ? "Editar Equipo" : "Registrar Nuevo Equipo"}</DialogTitle>
-                <DialogDescription>Ingrese los detalles técnicos del extintor.</DialogDescription>
+                <DialogDescription>Los detalles técnicos serán almacenados en el silo de datos de su empresa.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
@@ -135,7 +149,7 @@ export default function InventoryPage() {
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="location">Ubicación</Label>
-                    <Input id="location" name="location" defaultValue={editingItem?.location} required placeholder="Ej. Pasillo A" />
+                    <Input id="location" name="location" defaultValue={editingItem?.location} required placeholder="Pasillo principal" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -150,7 +164,7 @@ export default function InventoryPage() {
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit">{editingItem ? "Actualizar" : "Registrar"}</Button>
+                <Button type="submit" className="w-full">{editingItem ? "Actualizar" : "Registrar Equipo"}</Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -185,11 +199,11 @@ export default function InventoryPage() {
       </div>
 
       <Card className="shadow-sm border-none">
-        <CardHeader className="pb-3 border-b flex flex-row items-center justify-between">
+        <CardHeader className="pb-3 border-b">
           <div className="relative w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
-              placeholder="Buscar..." 
+              placeholder="Buscar en mi inventario..." 
               className="pl-9 h-8" 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -245,6 +259,13 @@ export default function InventoryPage() {
                     </TableCell>
                   </TableRow>
                 ))}
+                {inventory?.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-20 text-muted-foreground">
+                      No hay equipos registrados para su empresa.
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           )}
