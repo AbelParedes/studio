@@ -22,222 +22,44 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Client",
       "type": "object",
-      "description": "Represents a client company or individual for whom services are performed.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Client entity."
-        },
-        "clientType": {
-          "type": "string",
-          "enum": ["Empresa", "Persona"],
-          "description": "Indicates if the client is a company or a natural person."
-        },
-        "name": {
-          "type": "string",
-          "description": "The common or business name of the client."
-        },
-        "legalName": {
-          "type": "string",
-          "description": "The official legal name of the client (Razón Social)."
-        },
-        "taxId": {
-          "type": "string",
-          "description": "The identification number of the client (RUC or DNI)."
-        },
-        "industry": {
-          "type": "string",
-          "description": "The business sector or industry (Giro del negocio)."
-        },
-        "phone": {
-          "type": "string",
-          "description": "The primary contact phone number for the client."
-        },
-        "email": {
-          "type": "string",
-          "description": "The primary contact email address for the client.",
-          "format": "email"
-        },
-        "billingAddressLine1": {
-          "type": "string",
-          "description": "The first line of the client's primary billing address."
-        },
-        "billingCity": {
-          "type": "string",
-          "description": "The city of the client's primary billing address."
-        },
-        "billingState": {
-          "type": "string",
-          "description": "The state or province of the client's primary billing address."
-        },
-        "billingZipCode": {
-          "type": "string",
-          "description": "The postal code of the client's primary billing address."
-        },
-        "billingCountry": {
-          "type": "string",
-          "description": "The country of the client's primary billing address."
-        },
-        "notes": {
-          "type": "string",
-          "description": "General notes or comments about the client."
-        }
-      },
-      "required": [
-        "id",
-        "clientType",
-        "name",
-        "taxId",
-        "email",
-        "billingAddressLine1"
-      ]
-    },
-    "ContactPerson": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "ContactPerson",
-      "type": "object",
-      "description": "Represents an individual contact person associated with a client.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the ContactPerson entity."
-        },
-        "clientId": {
-          "type": "string",
-          "description": "Reference to Client. (Relationship: Client 1:N ContactPerson)"
-        },
-        "firstName": {
-          "type": "string",
-          "description": "The first name of the contact person."
-        },
-        "lastName": {
-          "type": "string",
-          "description": "The last name of the contact person."
-        },
-        "position": {
-          "type": "string",
-          "description": "The job title or role of the contact person."
-        },
-        "email": {
-          "type": "string",
-          "description": "The email address of the contact person.",
-          "format": "email"
-        },
-        "phone": {
-          "type": "string",
-          "description": "The phone number of the contact person."
-        },
-        "isPrimary": {
-          "type": "boolean",
-          "description": "Indicates if this is the primary contact for the client."
-        }
-      },
-      "required": [
-        "id",
-        "clientId",
-        "firstName",
-        "lastName",
-        "email",
-        "phone"
-      ]
-    },
-    "ServiceLocation": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "ServiceLocation",
-      "type": "object",
-      "description": "Represents a physical location where services are performed for a client.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the ServiceLocation entity."
-        },
-        "clientId": {
-          "type": "string",
-          "description": "Reference to Client. (Relationship: Client 1:N ServiceLocation)"
-        },
-        "name": {
-          "type": "string",
-          "description": "A descriptive name for the service location (e.g., 'Main Office', 'Warehouse A')."
-        },
-        "addressLine1": {
-          "type": "string",
-          "description": "The first line of the service location's address."
-        },
-        "city": {
-          "type": "string",
-          "description": "The city of the service location."
-        },
-        "state": {
-          "type": "string",
-          "description": "The state or province of the service location."
-        },
-        "zipCode": {
-          "type": "string",
-          "description": "The postal code of the service location."
-        },
-        "country": {
-          "type": "string",
-          "description": "The country of the service location."
-        },
-        "notes": {
-          "type": "string",
-          "description": "General notes or comments about the service location."
-        }
-      },
-      "required": [
-        "id",
-        "clientId",
-        "name",
-        "addressLine1",
-        "city",
-        "state"
-      ]
-    },
-    "ServiceType": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "ServiceType",
-      "type": "object",
-      "description": "Defines the different types of services offered (e.g., Extinguisher Inspection, Fumigation, Refill).",
+      "description": "Expediente detallado de cliente para Servifumiga Pro.",
       "properties": {
         "id": { "type": "string" },
+        "clientType": { "type": "string", "enum": ["Empresa", "Persona"] },
         "name": { "type": "string" },
-        "description": { "type": "string" },
-        "estimatedDurationHours": { "type": "number" }
-      },
-      "required": ["id", "name", "description"]
-    },
-    "Technician": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Technician",
-      "type": "object",
-      "description": "Represents a technician responsible for performing services.",
-      "properties": {
-        "id": { "type": "string" },
-        "firstName": { "type": "string" },
-        "lastName": { "type": "string" },
+        "legalName": { "type": "string" },
+        "taxId": { "type": "string", "description": "RUC para empresas, DNI para personas." },
+        "industry": { "type": "string" },
         "phone": { "type": "string" },
         "email": { "type": "string", "format": "email" },
-        "specialties": { "type": "array", "items": { "type": "string" } },
-        "isActive": { "type": "boolean" }
+        "address": { "type": "string" },
+        "contactPerson": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "position": { "type": "string" },
+            "phone": { "type": "string" }
+          }
+        },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "firstName", "lastName", "email", "isActive"]
+      "required": ["id", "clientType", "name", "taxId", "email", "address"]
     },
-    "ServiceAppointment": {
+    "Extinguisher": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "ServiceAppointment",
+      "title": "Extinguisher",
       "type": "object",
-      "description": "Represents a scheduled and completed service appointment.",
       "properties": {
         "id": { "type": "string" },
-        "clientId": { "type": "string" },
-        "serviceLocationId": { "type": "string" },
-        "serviceTypeId": { "type": "string" },
-        "assignedTechnicianId": { "type": "string" },
-        "scheduledDateTime": { "type": "string", "format": "date-time" },
+        "serialNumber": { "type": "string" },
+        "type": { "type": "string" },
+        "size": { "type": "string" },
+        "location": { "type": "string" },
         "status": { "type": "string" },
-        "notes": { "type": "string" }
-      },
-      "required": ["id", "clientId", "serviceLocationId", "serviceTypeId", "assignedTechnicianId", "scheduledDateTime", "status"]
+        "lastService": { "type": "string" },
+        "nextDue": { "type": "string" }
+      }
     }
   },
   "auth": {
@@ -259,6 +81,14 @@
           "entityName": "Client",
           "schema": { "$ref": "#/backend/entities/Client" },
           "description": "Root collection for client companies/individuals."
+        }
+      },
+      {
+        "path": "/all_extinguishers/{id}",
+        "definition": {
+          "entityName": "Extinguisher",
+          "schema": { "$ref": "#/backend/entities/Extinguisher" },
+          "description": "Inventario global de equipos."
         }
       }
     ]
