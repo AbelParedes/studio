@@ -19,12 +19,19 @@ export default function DashboardLayout({
   const db = useFirestore()
   const router = useRouter()
 
-  // Intentamos obtener el perfil detallado del usuario desde Firestore
+  // 1. Obtener el perfil del usuario desde Firestore usando su UID
   const userProfileRef = useMemoFirebase(() => 
     user ? doc(db, "company_users", user.uid) : null, 
   [db, user])
   
-  const { data: profile } = useDoc(userProfileRef)
+  const { data: profile, isLoading: isLoadingProfile } = useDoc(userProfileRef)
+
+  // 2. Obtener la definición del rol usando el roleId del perfil
+  const roleRef = useMemoFirebase(() => 
+    profile?.roleId ? doc(db, "system_roles", profile.roleId) : null,
+  [db, profile?.roleId])
+
+  const { data: roleData } = useDoc(roleRef)
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -41,8 +48,11 @@ export default function DashboardLayout({
     )
   }
 
-  // Prioridad de nombre: Perfil Firestore > Display Name Auth > Email > "Usuario"
+  // Prioridad de nombre: Perfil Firestore > Display Name Auth > Prefijo de Email > "Usuario"
   const displayName = profile?.name || user.displayName || user.email?.split('@')[0] || "Usuario"
+  
+  // Prioridad de Rol: Título del Rol en Firestore > Cargo manual en perfil > Fallback
+  const displayRole = roleData?.title || profile?.role || "Personal Autorizado"
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
@@ -77,7 +87,7 @@ export default function DashboardLayout({
                   {displayName}
                 </p>
                 <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-tighter">
-                  {profile?.role || "Personal Autorizado"}
+                  {displayRole}
                 </p>
               </div>
               <div className="h-9 w-9 bg-primary rounded-full flex items-center justify-center text-white shadow-md uppercase font-bold text-xs border-2 border-accent/20">
