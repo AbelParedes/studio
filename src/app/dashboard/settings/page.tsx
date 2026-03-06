@@ -21,7 +21,8 @@ import {
   Moon,
   Sun,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  Info
 } from "lucide-react"
 import { useUser, useFirestore, useDoc, useMemoFirebase, useAuth, useCollection } from "@/firebase"
 import { doc, setDoc, collection, query, where, limit } from "firebase/firestore"
@@ -119,7 +120,7 @@ export default function SettingsPage() {
     try {
       let targetCompanyId = profile?.companyId
 
-      // Si no hay empresa vinculada, creamos una nueva y vinculamos al usuario
+      // Si no hay empresa vinculada, creamos una nueva y vinculamos al usuario actual como admin
       if (!targetCompanyId) {
         targetCompanyId = crypto.randomUUID()
         const profileId = profile?.id || crypto.randomUUID()
@@ -127,7 +128,7 @@ export default function SettingsPage() {
         await setDoc(doc(db, "company_users", profileId), {
           id: profileId,
           email: user?.email,
-          name: formData.name || user?.email?.split('@')[0] || "Admin",
+          name: formData.name || user?.email?.split('@')[0] || "Administrador",
           companyId: targetCompanyId,
           roleId: "admin",
           status: "Active",
@@ -179,9 +180,9 @@ export default function SettingsPage() {
       {!profile?.companyId && (
         <Alert className="bg-amber-50 border-amber-200">
           <AlertCircle className="h-4 w-4 text-amber-600" />
-          <AlertTitle className="text-amber-800 font-bold text-xs uppercase">Organización no inicializada</AlertTitle>
+          <AlertTitle className="text-amber-800 font-bold text-xs uppercase tracking-tight">Organización no inicializada</AlertTitle>
           <AlertDescription className="text-amber-700 text-[11px] leading-tight">
-            Complete los datos en la pestaña <strong>"Personalización Marca"</strong> para crear y vincular su empresa automáticamente.
+            Parece que aún no tienes una empresa vinculada. Complete los datos en la pestaña <strong>"Personalización Marca"</strong> para crear y vincular su empresa automáticamente.
           </AlertDescription>
         </Alert>
       )}
@@ -244,22 +245,34 @@ export default function SettingsPage() {
                   <div className="flex flex-col sm:flex-row items-center gap-6 p-4 border rounded-lg bg-muted/20 border-dashed">
                     <div className="relative h-24 w-24 rounded border bg-white flex items-center justify-center overflow-hidden shadow-inner">
                       {companyData.logoUrl ? (
-                        <Image src={companyData.logoUrl} alt="Logo" fill className="object-contain p-2" />
+                        <div className="relative h-full w-full">
+                          <Image 
+                            src={companyData.logoUrl} 
+                            alt="Vista previa del Logo" 
+                            fill 
+                            className="object-contain p-2"
+                            unoptimized
+                          />
+                        </div>
                       ) : (
                         <Building2 className="h-10 w-10 text-muted-foreground" />
                       )}
                     </div>
                     <div className="flex-1 space-y-2 w-full">
-                      <Label className="text-xs font-bold uppercase">URL del Logotipo (PNG/SVG)</Label>
+                      <Label className="text-xs font-bold uppercase flex items-center gap-2">
+                        URL del Logotipo (PNG/SVG) <Info className="h-3 w-3 text-muted-foreground" />
+                      </Label>
                       <div className="flex gap-2">
                         <Input 
                           placeholder="https://ejemplo.com/logo.png" 
                           value={companyData.logoUrl} 
                           onChange={(e) => setCompanyData({...companyData, logoUrl: e.target.value})} 
                         />
-                        <Button variant="outline" size="icon"><Globe className="h-4 w-4" /></Button>
+                        <Button variant="outline" size="icon" title="Verificar URL"><Globe className="h-4 w-4" /></Button>
                       </div>
-                      <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">Utilice una imagen con fondo transparente para mejores resultados.</p>
+                      <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">
+                        Pega aquí la dirección web de tu logo. Asegúrate que termine en .png, .jpg o .svg.
+                      </p>
                     </div>
                   </div>
 
@@ -272,14 +285,14 @@ export default function SettingsPage() {
                       </h4>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label className="text-[10px] font-bold uppercase">Primario (Side/Buttons)</Label>
+                          <Label className="text-[10px] font-bold uppercase">Primario</Label>
                           <div className="flex items-center gap-2">
                             <Input type="color" value={companyData.primaryColor} className="w-12 h-10 p-1 border-none cursor-pointer" onChange={(e) => setCompanyData({...companyData, primaryColor: e.target.value})} />
                             <Input value={companyData.primaryColor} className="font-mono text-xs uppercase" onChange={(e) => setCompanyData({...companyData, primaryColor: e.target.value})} />
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <Label className="text-[10px] font-bold uppercase">Acento (Badges/Status)</Label>
+                          <Label className="text-[10px] font-bold uppercase">Acento</Label>
                           <div className="flex items-center gap-2">
                             <Input type="color" value={companyData.accentColor} className="w-12 h-10 p-1 border-none cursor-pointer" onChange={(e) => setCompanyData({...companyData, accentColor: e.target.value})} />
                             <Input value={companyData.accentColor} className="font-mono text-xs uppercase" onChange={(e) => setCompanyData({...companyData, accentColor: e.target.value})} />
@@ -313,21 +326,21 @@ export default function SettingsPage() {
                       <Input value={companyData.name} onChange={(e) => setCompanyData({...companyData, name: e.target.value})} placeholder="Ej. Servifumiga SAC" />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-bold uppercase">RUC / Registro Tributario</Label>
+                      <Label className="text-[10px] font-bold uppercase">RUC / DNI Corporativo</Label>
                       <Input value={companyData.taxId} onChange={(e) => setCompanyData({...companyData, taxId: e.target.value})} placeholder="Ej. 20123456789" />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-bold uppercase">Central Telefónica</Label>
+                      <Label className="text-[10px] font-bold uppercase">Teléfono de Contacto</Label>
                       <Input value={companyData.phone} onChange={(e) => setCompanyData({...companyData, phone: e.target.value})} placeholder="+51 987 654 321" />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-bold uppercase">Dirección Principal</Label>
+                      <Label className="text-[10px] font-bold uppercase">Dirección Fiscal</Label>
                       <Input value={companyData.address} onChange={(e) => setCompanyData({...companyData, address: e.target.value})} placeholder="Lima, Perú" />
                     </div>
                   </div>
                 </CardContent>
                 <CardFooter className="bg-muted/30 border-t flex justify-end p-4">
-                  <Button className="bg-primary text-white font-bold uppercase text-[11px] h-9" onClick={handleUpdateCompany} disabled={isSaving}>
+                  <Button className="bg-primary text-white font-bold uppercase text-[11px] h-9 shadow-md" onClick={handleUpdateCompany} disabled={isSaving}>
                     {isSaving ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />} 
                     Guardar y Vincular Empresa
                   </Button>
