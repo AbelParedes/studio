@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -7,8 +8,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ShieldCheck, Loader2, AlertCircle } from "lucide-react"
-import { useAuth, useUser, initiateEmailSignIn } from "@/firebase"
+import { useAuth, useUser } from "@/firebase"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { signInWithEmailAndPassword } from "firebase/auth"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -31,14 +33,16 @@ export default function LoginPage() {
     setIsSubmitting(true)
     setError(null)
     
-    // En este prototipo, permitimos el acceso. 
-    // En un entorno real, Firebase Auth manejaría los errores de credenciales.
-    initiateEmailSignIn(auth, email, password)
-    
-    // Simulamos un breve retraso para feedback visual
-    setTimeout(() => {
-      setIsSubmitting(false)
-    }, 2000)
+    // Utilizamos el SDK directamente para manejar el error de forma local en el formulario
+    signInWithEmailAndPassword(auth, email, password)
+      .catch((err: any) => {
+        setIsSubmitting(false)
+        if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+          setError("Las credenciales son incorrectas. Asegúrate de que el usuario haya sido creado en la consola de Firebase y que el proveedor de Correo/Contraseña esté habilitado.")
+        } else {
+          setError("Error al iniciar sesión: " + err.message)
+        }
+      })
   }
 
   if (isUserLoading) {
@@ -64,7 +68,7 @@ export default function LoginPage() {
             {error && (
               <Alert variant="destructive" className="py-2">
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription className="text-[11px]">{error}</AlertDescription>
+                <AlertDescription className="text-[11px] leading-tight">{error}</AlertDescription>
               </Alert>
             )}
             <div className="space-y-2">
@@ -82,7 +86,7 @@ export default function LoginPage() {
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <Label htmlFor="password" name="password" className="text-xs font-bold uppercase">Contraseña</Label>
-                <Button variant="link" className="text-[10px] p-0 h-auto font-bold uppercase text-muted-foreground">¿Olvidó su clave?</Button>
+                <Button type="button" variant="link" className="text-[10px] p-0 h-auto font-bold uppercase text-muted-foreground">¿Olvidó su clave?</Button>
               </div>
               <Input 
                 id="password" 
@@ -102,7 +106,13 @@ export default function LoginPage() {
           <p className="text-[10px] text-center text-muted-foreground font-bold uppercase tracking-tighter">
             Acceso restringido para personal autorizado.
           </p>
-          <p className="text-[9px] text-center text-muted-foreground/60 mt-1 uppercase">
+          <div className="mt-4 p-3 bg-white/50 border rounded-md text-[9px] text-muted-foreground uppercase text-center space-y-1">
+            <p className="font-bold">Nota de Prototipo:</p>
+            <p>1. Ve a la Consola de Firebase > Authentication.</p>
+            <p>2. Habilita el método "Email/Password".</p>
+            <p>3. Crea manualmente un usuario para probar el acceso.</p>
+          </div>
+          <p className="text-[9px] text-center text-muted-foreground/60 mt-4 uppercase">
             © 2024 Servifumiga Pro Perú v2.5
           </p>
         </CardFooter>
