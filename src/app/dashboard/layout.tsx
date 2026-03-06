@@ -58,6 +58,9 @@ export default function DashboardLayout({
       if (company.accentColor) {
         document.documentElement.style.setProperty('--accent', hexToHsl(company.accentColor))
       }
+    } else {
+      // Valores por defecto si no hay empresa cargada
+      document.documentElement.classList.remove('dark')
     }
   }, [company])
 
@@ -71,20 +74,20 @@ export default function DashboardLayout({
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-background gap-4">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        <p className="text-sm font-bold text-primary uppercase tracking-widest">Cargando organización...</p>
+        <p className="text-sm font-bold text-primary uppercase tracking-widest">Iniciando sesión segura...</p>
       </div>
     )
   }
 
   const displayName = profile?.name || user?.email?.split('@')[0] || "Usuario"
-  const displayRole = roleData?.title || "Personal Autorizado"
+  const displayRole = roleData?.title || "Administrador"
   const companyLogo = company?.logoUrl || null
 
   return (
     <div className="flex h-screen bg-background dark:bg-slate-950 overflow-hidden text-foreground">
       {/* Sidebar Desktop */}
       <aside className="w-64 bg-sidebar shrink-0 hidden lg:block border-r border-sidebar-border shadow-xl">
-        <DashboardNav companyName={company?.name} logoUrl={companyLogo} />
+        <DashboardNav companyName={company?.name || "SERVIFUMIGA"} logoUrl={companyLogo} />
       </aside>
 
       {/* Main Content Area */}
@@ -98,7 +101,7 @@ export default function DashboardLayout({
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="p-0 w-64 bg-sidebar border-none">
-                <DashboardNav onNavItemClick={() => setIsMobileMenuOpen(false)} companyName={company?.name} logoUrl={companyLogo} />
+                <DashboardNav onNavItemClick={() => setIsMobileMenuOpen(false)} companyName={company?.name || "SERVIFUMIGA"} logoUrl={companyLogo} />
               </SheetContent>
             </Sheet>
 
@@ -111,7 +114,7 @@ export default function DashboardLayout({
                 <Building2 className="h-5 w-5 text-primary" />
               )}
               <span className="text-xs font-bold uppercase hidden sm:block truncate max-w-[200px]">
-                {company?.name || "CARGANDO EMPRESA..."}
+                {company?.name || "Panel de Control"}
               </span>
             </div>
           </div>
@@ -150,7 +153,6 @@ export default function DashboardLayout({
 
 /**
  * Convierte un color HEX a una cadena HSL compatible con las variables de Tailwind (H S L).
- * Esto permite que 'hsl(var(--primary))' funcione correctamente.
  */
 function hexToHsl(hex: string): string {
   let r = 0, g = 0, b = 0;

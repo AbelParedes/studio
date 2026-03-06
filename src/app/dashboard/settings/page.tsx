@@ -19,7 +19,9 @@ import {
   Globe,
   Palette,
   Moon,
-  Sun
+  Sun,
+  AlertCircle,
+  CheckCircle2
 } from "lucide-react"
 import { useUser, useFirestore, useDoc, useMemoFirebase, useAuth, useCollection } from "@/firebase"
 import { doc, setDoc, collection, query, where, limit } from "firebase/firestore"
@@ -28,6 +30,7 @@ import { signOut } from "firebase/auth"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 type SettingsTab = "profile" | "company" | "notifications" | "security"
 
@@ -72,7 +75,13 @@ export default function SettingsPage() {
         name: profile.name || "", 
         email: profile.email || user?.email || "" 
       })
+    } else if (user) {
+      setFormData({
+        name: user.displayName || "",
+        email: user.email || ""
+      })
     }
+    
     if (company) {
       setCompanyData({
         name: company.name || "",
@@ -88,12 +97,17 @@ export default function SettingsPage() {
   }, [profile, company, user])
 
   const handleUpdateProfile = async () => {
-    if (!profile) return
     setIsSaving(true)
     try {
-      await setDoc(doc(db, "company_users", profile.id), { ...formData }, { merge: true })
+      const profileId = profile?.id || crypto.randomUUID()
+      await setDoc(doc(db, "company_users", profileId), { 
+        ...formData, 
+        id: profileId,
+        email: user?.email,
+        updatedAt: new Date().toISOString()
+      }, { merge: true })
       toast({ title: "Perfil actualizado", description: "Tus datos personales se han guardado." })
-    } catch {
+    } catch (error) {
       toast({ variant: "destructive", title: "Error", description: "No se pudo actualizar el perfil." })
     } finally {
       setIsSaving(false)
@@ -101,17 +115,39 @@ export default function SettingsPage() {
   }
 
   const handleUpdateCompany = async () => {
-    if (!profile?.companyId) {
-      toast({ variant: "destructive", title: "Error", description: "No tienes una empresa vinculada." })
-      return
-    }
     setIsSaving(true)
     try {
-      // Guardar en Firestore (Afectará a todos los usuarios de la empresa)
-      await setDoc(doc(db, "companies", profile.companyId), { ...companyData }, { merge: true })
-      toast({ title: "Marca actualizada", description: "Los cambios se aplicarán de inmediato en todo el dashboard." })
-    } catch {
-      toast({ variant: "destructive", title: "Error", description: "No se pudo guardar la configuración de marca." })
+      let targetCompanyId = profile?.companyId
+
+      // Si no hay empresa vinculada, creamos una nueva y vinculamos al usuario
+      if (!targetCompanyId) {
+        targetCompanyId = crypto.randomUUID()
+        const profileId = profile?.id || crypto.randomUUID()
+        
+        await setDoc(doc(db, "company_users", profileId), {
+          id: profileId,
+          email: user?.email,
+          name: formData.name || user?.email?.split('@')[0] || "Admin",
+          companyId: targetCompanyId,
+          roleId: "admin",
+          status: "Active",
+          createdAt: new Date().toISOString()
+        }, { merge: true })
+      }
+
+      await setDoc(doc(db, "companies", targetCompanyId), { 
+        ...companyData,
+        id: targetCompanyId,
+        updatedAt: new Date().toISOString()
+      }, { merge: true })
+
+      toast({ 
+        title: "Organización Actualizada", 
+        description: "La marca y los datos corporativos se han sincronizado con éxito." 
+      })
+    } catch (error) {
+      console.error(error)
+      toast({ variant: "destructive", title: "Error de Guardado", description: "No se pudo actualizar la información de la empresa." })
     } finally {
       setIsSaving(false)
     }
@@ -122,7 +158,7 @@ export default function SettingsPage() {
     router.push("/")
   }
 
-  if (loadingProfile || loadingCompany) {
+  if (loadingProfile || (profile && loadingCompany)) {
     return (
       <div className="h-full flex flex-col items-center justify-center p-20 gap-2">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -139,6 +175,16 @@ export default function SettingsPage() {
           <p className="text-muted-foreground text-sm">Configure la identidad visual y operativa de su organización.</p>
         </div>
       </div>
+
+      {!profile?.companyId && (
+        <Alert className="bg-amber-50 border-amber-200">
+          <AlertCircle className="h-4 w-4 text-amber-600" />
+          <AlertTitle className="text-amber-800 font-bold text-xs uppercase">Organización no inicializada</AlertTitle>
+          <AlertDescription className="text-amber-700 text-[11px] leading-tight">
+            Complete los datos en la pestaña <strong>"Personalización Marca"</strong> para crear y vincular su empresa automáticamente.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-1">
@@ -195,7 +241,6 @@ export default function SettingsPage() {
                   <CardDescription>Configure como su empresa es percibida por clientes y empleados.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {/* Logo Upload Simulation */}
                   <div className="flex flex-col sm:flex-row items-center gap-6 p-4 border rounded-lg bg-muted/20 border-dashed">
                     <div className="relative h-24 w-24 rounded border bg-white flex items-center justify-center overflow-hidden shadow-inner">
                       {companyData.logoUrl ? (
@@ -221,7 +266,6 @@ export default function SettingsPage() {
                   <Separator />
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                    {/* Colors Section */}
                     <div className="space-y-4">
                       <h4 className="text-[10px] font-bold uppercase text-primary tracking-widest flex items-center">
                         <Palette className="h-3 w-3 mr-2" /> Colores Institucionales
@@ -244,7 +288,6 @@ export default function SettingsPage() {
                       </div>
                     </div>
 
-                    {/* Theme Mode Section */}
                     <div className="space-y-4">
                       <h4 className="text-[10px] font-bold uppercase text-primary tracking-widest flex items-center">
                         <Moon className="h-3 w-3 mr-2" /> Modo de Interfaz
@@ -259,36 +302,34 @@ export default function SettingsPage() {
                           onCheckedChange={(checked) => setCompanyData({...companyData, themeMode: checked ? 'dark' : 'light'})} 
                         />
                       </div>
-                      <p className="text-[10px] text-muted-foreground italic leading-tight">El modo oscuro es recomendable para técnicos que realizan inspecciones en exteriores con alta luz o turnos nocturnos.</p>
                     </div>
                   </div>
 
                   <Separator />
 
-                  {/* Company Info Grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label className="text-[10px] font-bold uppercase">Nombre Comercial</Label>
-                      <Input value={companyData.name} onChange={(e) => setCompanyData({...companyData, name: e.target.value})} />
+                      <Input value={companyData.name} onChange={(e) => setCompanyData({...companyData, name: e.target.value})} placeholder="Ej. Servifumiga SAC" />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[10px] font-bold uppercase">RUC / Registro Tributario</Label>
-                      <Input value={companyData.taxId} onChange={(e) => setCompanyData({...companyData, taxId: e.target.value})} />
+                      <Input value={companyData.taxId} onChange={(e) => setCompanyData({...companyData, taxId: e.target.value})} placeholder="Ej. 20123456789" />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[10px] font-bold uppercase">Central Telefónica</Label>
-                      <Input value={companyData.phone} onChange={(e) => setCompanyData({...companyData, phone: e.target.value})} />
+                      <Input value={companyData.phone} onChange={(e) => setCompanyData({...companyData, phone: e.target.value})} placeholder="+51 987 654 321" />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[10px] font-bold uppercase">Dirección Principal</Label>
-                      <Input value={companyData.address} onChange={(e) => setCompanyData({...companyData, address: e.target.value})} />
+                      <Input value={companyData.address} onChange={(e) => setCompanyData({...companyData, address: e.target.value})} placeholder="Lima, Perú" />
                     </div>
                   </div>
                 </CardContent>
                 <CardFooter className="bg-muted/30 border-t flex justify-end p-4">
                   <Button className="bg-primary text-white font-bold uppercase text-[11px] h-9" onClick={handleUpdateCompany} disabled={isSaving}>
-                    {isSaving ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />} 
-                    Guardar Personalización de Marca
+                    {isSaving ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />} 
+                    Guardar y Vincular Empresa
                   </Button>
                 </CardFooter>
               </Card>
