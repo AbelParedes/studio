@@ -108,7 +108,7 @@ export default function LoginPage() {
           </p>
           <div className="mt-4 p-3 bg-white/50 border rounded-md text-[9px] text-muted-foreground uppercase text-center space-y-1">
             <p className="font-bold">Nota de Prototipo:</p>
-            <p>1. Ve a la Consola de Firebase > Authentication.</p>
+            <p>1. Ve a la Consola de Firebase &gt; Authentication.</p>
             <p>2. Habilita el método "Email/Password".</p>
             <p>3. Crea manualmente un usuario para probar el acceso.</p>
           </div>
