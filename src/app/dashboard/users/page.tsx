@@ -6,9 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { UserPlus, Search, Shield, Mail, Trash2, Edit2, Loader2, Key, AlertCircle, Info } from "lucide-react"
+import { UserPlus, Search, Shield, Mail, Trash2, Edit2, Loader2, Key, AlertCircle, Info, Sparkles } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, deleteDocumentNonBlocking, addDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase"
 import { collection, doc } from "firebase/firestore"
+import { initializeApp, getApp, getApps } from "firebase/app"
+import { getAuth, createUserWithEmailAndPassword, signOut } from "firebase/auth"
+import { firebaseConfig } from "@/firebase/config"
 import {
   Dialog,
   DialogContent,
@@ -29,6 +32,7 @@ export default function UsersPage() {
   const db = useFirestore()
   const [searchTerm, setSearchTerm] = useState("")
   const [isAdding, setIsAdding] = useState(false)
+  const [isProcessingAuth, setIsProcessingAuth] = useState(false)
   const [editingUser, setEditingUser] = useState<any | null>(null)
   
   const usersRef = useMemoFirebase(() => collection(db, "company_users"), [db])
@@ -42,42 +46,77 @@ export default function UsersPage() {
     u.email?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  const handleSaveUser = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSaveUser = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
     const roleId = formData.get("roleId") as string
+    const email = formData.get("email") as string
+    const password = formData.get("password") as string
 
     if (!roleId || roleId === "none") {
       toast({ variant: "destructive", title: "Error", description: "Debe seleccionar un rol válido." })
       return
     }
 
+    setIsProcessingAuth(true)
+
     const userData = {
       name: formData.get("name") as string,
-      email: formData.get("email") as string,
-      password: formData.get("password") as string,
+      email: email,
+      password: password, // Almacenado como referencia provisional
       roleId: roleId,
       status: formData.get("status") as string || "Activo",
       updatedAt: new Date().toISOString()
     }
 
-    if (editingUser) {
-      updateDocumentNonBlocking(doc(db, "company_users", editingUser.id), userData)
-      toast({ 
-        title: "Perfil actualizado", 
-        description: "Los datos del colaborador se han guardado en la base de datos." 
-      })
-    } else {
-      const newUser = { ...userData, createdAt: new Date().toISOString() }
-      addDocumentNonBlocking(usersRef, newUser)
-      toast({ 
-        title: "Perfil registrado con éxito", 
-        description: "El perfil técnico ha sido creado. Recuerda habilitar sus credenciales en la consola de Auth." 
-      })
-    }
+    try {
+      if (editingUser) {
+        // Actualizar solo en Firestore
+        updateDocumentNonBlocking(doc(db, "company_users", editingUser.id), userData)
+        toast({ 
+          title: "Perfil actualizado", 
+          description: "Los datos del colaborador se han guardado correctamente." 
+        })
+      } else {
+        // 1. Guardar Perfil en Firestore
+        const newUser = { ...userData, createdAt: new Date().toISOString() }
+        addDocumentNonBlocking(usersRef, newUser)
 
-    setIsAdding(false)
-    setEditingUser(null)
+        // 2. Creación AUTOMÁTICA en Firebase Auth (Instancia Secundaria)
+        // Esto permite crear el usuario sin cerrar la sesión del admin actual
+        const secondaryAppName = `AdminHelper_${Date.now()}`
+        const secondaryApp = initializeApp(firebaseConfig, secondaryAppName)
+        const secondaryAuth = getAuth(secondaryApp)
+
+        await createUserWithEmailAndPassword(secondaryAuth, email, password)
+        await signOut(secondaryAuth) // Limpiar la sesión secundaria de inmediato
+        
+        toast({ 
+          title: "¡Éxito Total!", 
+          description: `El usuario ${email} ha sido creado en Base de Datos y Autenticación automáticamente.` 
+        })
+      }
+
+      setIsAdding(false)
+      setEditingUser(null)
+    } catch (error: any) {
+      console.error("Error en creación de usuario:", error)
+      let errorMsg = "Ocurrió un error al procesar la solicitud."
+      
+      if (error.code === 'auth/email-already-in-use') {
+        errorMsg = "Este correo electrónico ya está registrado en el sistema."
+      } else if (error.code === 'auth/weak-password') {
+        errorMsg = "La contraseña debe tener al menos 6 caracteres."
+      }
+
+      toast({ 
+        variant: "destructive", 
+        title: "Error de Registro", 
+        description: errorMsg 
+      })
+    } finally {
+      setIsProcessingAuth(false)
+    }
   }
 
   const handleDeleteUser = (id: string) => {
@@ -113,14 +152,14 @@ export default function UsersPage() {
             <form onSubmit={handleSaveUser}>
               <DialogHeader>
                 <DialogTitle>{editingUser ? "Editar Colaborador" : "Nuevo Registro de Perfil"}</DialogTitle>
-                <DialogDescription>Defina la identidad y permisos del colaborador en la base de datos.</DialogDescription>
+                <DialogDescription>Defina la identidad y permisos del colaborador.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 
                 <div className="bg-blue-50 border border-blue-100 p-3 rounded-md flex items-start gap-2">
-                  <Info className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
+                  <Sparkles className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
                   <p className="text-[10px] text-blue-700 leading-tight">
-                    <strong>Nota de Sistema:</strong> Al guardar, se creará el perfil en Firestore (roles y permisos). Para habilitar el acceso al sistema, asegúrese de crear el usuario con el mismo correo en <strong>Firebase Console &gt; Authentication</strong>.
+                    <strong>Sincronización Inteligente:</strong> Al guardar, el sistema creará automáticamente la cuenta en la base de datos y habilitará sus credenciales de acceso (Login) al mismo tiempo.
                   </p>
                 </div>
 
@@ -144,9 +183,9 @@ export default function UsersPage() {
                   <Input id="email" name="email" type="email" defaultValue={editingUser?.email} required placeholder="juan@servifumiga.com" className="h-9" />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="password" name="password" className="text-xs uppercase font-bold">Contraseña Provisional</Label>
+                  <Label htmlFor="password" name="password" className="text-xs uppercase font-bold">Contraseña de Acceso</Label>
                   <div className="relative">
-                    <Input id="password" name="password" type="password" defaultValue={editingUser?.password} required placeholder="••••••••" className="h-9" />
+                    <Input id="password" name="password" type="password" defaultValue={editingUser?.password} required placeholder="Mínimo 6 caracteres" className="h-9" />
                     <Key className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   </div>
                 </div>
@@ -181,8 +220,16 @@ export default function UsersPage() {
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit" disabled={!roles || roles.length === 0} className="w-full bg-primary text-white font-bold uppercase text-[11px]">
-                  {editingUser ? "Actualizar Datos" : "Confirmar Alta de Perfil"}
+                <Button 
+                  type="submit" 
+                  disabled={!roles || roles.length === 0 || isProcessingAuth} 
+                  className="w-full bg-primary text-white font-bold uppercase text-[11px]"
+                >
+                  {isProcessingAuth ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Procesando Sincronización...</>
+                  ) : (
+                    editingUser ? "Actualizar Datos" : "Confirmar Alta y Sincronizar"
+                  )}
                 </Button>
               </DialogFooter>
             </form>
