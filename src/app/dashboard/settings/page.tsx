@@ -12,14 +12,10 @@ import {
   User, 
   Bell, 
   Lock, 
-  Database, 
   Loader2, 
-  Save, 
   LogOut, 
   ShieldCheck, 
   Building2,
-  Mail,
-  Smartphone,
   Globe,
   Palette,
   Moon,
@@ -55,6 +51,7 @@ export default function SettingsPage() {
     themeMode: "light" as "light" | "dark"
   })
 
+  // Obtener perfil del usuario actual
   const userProfileQuery = useMemoFirebase(() => 
     user?.email ? query(collection(db, "company_users"), where("email", "==", user.email), limit(1)) : null,
   [db, user?.email])
@@ -62,14 +59,19 @@ export default function SettingsPage() {
   const { data: profiles, isLoading: loadingProfile } = useCollection(userProfileQuery)
   const profile = profiles?.[0] || null
 
+  // Obtener datos de la empresa vinculada
   const companyRef = useMemoFirebase(() => 
     profile?.companyId ? doc(db, "companies", profile.companyId) : null,
   [db, profile?.companyId])
   const { data: company, isLoading: loadingCompany } = useDoc(companyRef)
 
+  // Cargar datos en el formulario cuando estén listos
   useEffect(() => {
     if (profile) {
-      setFormData({ name: profile.name || "", email: profile.email || user?.email || "" })
+      setFormData({ 
+        name: profile.name || "", 
+        email: profile.email || user?.email || "" 
+      })
     }
     if (company) {
       setCompanyData({
@@ -90,22 +92,26 @@ export default function SettingsPage() {
     setIsSaving(true)
     try {
       await setDoc(doc(db, "company_users", profile.id), { ...formData }, { merge: true })
-      toast({ title: "Perfil actualizado" })
+      toast({ title: "Perfil actualizado", description: "Tus datos personales se han guardado." })
     } catch {
-      toast({ variant: "destructive", title: "Error al actualizar" })
+      toast({ variant: "destructive", title: "Error", description: "No se pudo actualizar el perfil." })
     } finally {
       setIsSaving(false)
     }
   }
 
   const handleUpdateCompany = async () => {
-    if (!profile?.companyId) return
+    if (!profile?.companyId) {
+      toast({ variant: "destructive", title: "Error", description: "No tienes una empresa vinculada." })
+      return
+    }
     setIsSaving(true)
     try {
+      // Guardar en Firestore (Afectará a todos los usuarios de la empresa)
       await setDoc(doc(db, "companies", profile.companyId), { ...companyData }, { merge: true })
-      toast({ title: "Configuración de empresa guardada", description: "Los cambios se aplicarán al recargar." })
+      toast({ title: "Marca actualizada", description: "Los cambios se aplicarán de inmediato en todo el dashboard." })
     } catch {
-      toast({ variant: "destructive", title: "Error al guardar configuración" })
+      toast({ variant: "destructive", title: "Error", description: "No se pudo guardar la configuración de marca." })
     } finally {
       setIsSaving(false)
     }
@@ -120,7 +126,7 @@ export default function SettingsPage() {
     return (
       <div className="h-full flex flex-col items-center justify-center p-20 gap-2">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-xs font-bold uppercase text-muted-foreground">Cargando ajustes...</p>
+        <p className="text-xs font-bold uppercase text-muted-foreground">Sincronizando ajustes corporativos...</p>
       </div>
     )
   }
@@ -130,15 +136,15 @@ export default function SettingsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight mb-1">AJUSTES SAAS</h2>
-          <p className="text-muted-foreground text-sm">Personalice la marca y experiencia de su organización.</p>
+          <p className="text-muted-foreground text-sm">Configure la identidad visual y operativa de su organización.</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-1">
-          <nav className="flex flex-col space-y-1 bg-white dark:bg-slate-900 p-2 rounded-lg border shadow-sm">
+          <nav className="flex flex-col space-y-1 bg-white dark:bg-slate-900 p-2 rounded-lg border shadow-sm sticky top-6">
             <Button variant="ghost" className={cn("justify-start font-bold uppercase text-[11px]", activeTab === "profile" && "bg-primary/5 text-primary border-l-4 border-primary rounded-none")} onClick={() => setActiveTab("profile")}>
-              <User className="mr-3 h-4 w-4" /> Perfil Personal
+              <User className="mr-3 h-4 w-4" /> Perfil de Usuario
             </Button>
             <Button variant="ghost" className={cn("justify-start font-bold uppercase text-[11px]", activeTab === "company" && "bg-primary/5 text-primary border-l-4 border-primary rounded-none")} onClick={() => setActiveTab("company")}>
               <Palette className="mr-3 h-4 w-4" /> Personalización Marca
@@ -160,8 +166,8 @@ export default function SettingsPage() {
           {activeTab === "profile" && (
             <Card className="shadow-sm border-none">
               <CardHeader>
-                <CardTitle className="text-sm font-bold uppercase tracking-wider">Información del Administrador</CardTitle>
-                <CardDescription>Datos básicos del perfil de usuario.</CardDescription>
+                <CardTitle className="text-sm font-bold uppercase tracking-wider">Información de Usuario</CardTitle>
+                <CardDescription>Datos básicos del administrador en sesión.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -185,10 +191,11 @@ export default function SettingsPage() {
             <div className="space-y-6">
               <Card className="shadow-sm border-none">
                 <CardHeader>
-                  <CardTitle className="text-sm font-bold uppercase tracking-wider">Identidad Visual y SaaS</CardTitle>
-                  <CardDescription>Configure como sus clientes y técnicos ven la plataforma.</CardDescription>
+                  <CardTitle className="text-sm font-bold uppercase tracking-wider">Identidad Corporativa</CardTitle>
+                  <CardDescription>Configure como su empresa es percibida por clientes y empleados.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                  {/* Logo Upload Simulation */}
                   <div className="flex flex-col sm:flex-row items-center gap-6 p-4 border rounded-lg bg-muted/20 border-dashed">
                     <div className="relative h-24 w-24 rounded border bg-white flex items-center justify-center overflow-hidden shadow-inner">
                       {companyData.logoUrl ? (
@@ -197,67 +204,71 @@ export default function SettingsPage() {
                         <Building2 className="h-10 w-10 text-muted-foreground" />
                       )}
                     </div>
-                    <div className="flex-1 space-y-2">
-                      <Label className="text-xs font-bold uppercase">URL Logotipo (PNG/SVG preferible)</Label>
+                    <div className="flex-1 space-y-2 w-full">
+                      <Label className="text-xs font-bold uppercase">URL del Logotipo (PNG/SVG)</Label>
                       <div className="flex gap-2">
                         <Input 
-                          placeholder="https://su-dominio.com/logo.png" 
+                          placeholder="https://ejemplo.com/logo.png" 
                           value={companyData.logoUrl} 
                           onChange={(e) => setCompanyData({...companyData, logoUrl: e.target.value})} 
                         />
                         <Button variant="outline" size="icon"><Globe className="h-4 w-4" /></Button>
                       </div>
-                      <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">Este logo aparecerá en el menú lateral y reportes.</p>
+                      <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">Utilice una imagen con fondo transparente para mejores resultados.</p>
                     </div>
                   </div>
 
                   <Separator />
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                    {/* Colors Section */}
                     <div className="space-y-4">
                       <h4 className="text-[10px] font-bold uppercase text-primary tracking-widest flex items-center">
-                        <Palette className="h-3 w-3 mr-2" /> Colores Corporativos
+                        <Palette className="h-3 w-3 mr-2" /> Colores Institucionales
                       </h4>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label className="text-[10px] font-bold uppercase">Color Primario</Label>
+                          <Label className="text-[10px] font-bold uppercase">Primario (Side/Buttons)</Label>
                           <div className="flex items-center gap-2">
-                            <Input type="color" value={companyData.primaryColor} className="w-12 h-10 p-1" onChange={(e) => setCompanyData({...companyData, primaryColor: e.target.value})} />
-                            <Input value={companyData.primaryColor} className="font-mono text-xs" onChange={(e) => setCompanyData({...companyData, primaryColor: e.target.value})} />
+                            <Input type="color" value={companyData.primaryColor} className="w-12 h-10 p-1 border-none cursor-pointer" onChange={(e) => setCompanyData({...companyData, primaryColor: e.target.value})} />
+                            <Input value={companyData.primaryColor} className="font-mono text-xs uppercase" onChange={(e) => setCompanyData({...companyData, primaryColor: e.target.value})} />
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <Label className="text-[10px] font-bold uppercase">Color Acento</Label>
+                          <Label className="text-[10px] font-bold uppercase">Acento (Badges/Status)</Label>
                           <div className="flex items-center gap-2">
-                            <Input type="color" value={companyData.accentColor} className="w-12 h-10 p-1" onChange={(e) => setCompanyData({...companyData, accentColor: e.target.value})} />
-                            <Input value={companyData.accentColor} className="font-mono text-xs" onChange={(e) => setCompanyData({...companyData, accentColor: e.target.value})} />
+                            <Input type="color" value={companyData.accentColor} className="w-12 h-10 p-1 border-none cursor-pointer" onChange={(e) => setCompanyData({...companyData, accentColor: e.target.value})} />
+                            <Input value={companyData.accentColor} className="font-mono text-xs uppercase" onChange={(e) => setCompanyData({...companyData, accentColor: e.target.value})} />
                           </div>
                         </div>
                       </div>
                     </div>
 
+                    {/* Theme Mode Section */}
                     <div className="space-y-4">
                       <h4 className="text-[10px] font-bold uppercase text-primary tracking-widest flex items-center">
-                        <Moon className="h-3 w-3 mr-2" /> Preferencia de Tema
+                        <Moon className="h-3 w-3 mr-2" /> Modo de Interfaz
                       </h4>
-                      <div className="flex items-center justify-between p-3 border rounded bg-white dark:bg-slate-900 shadow-sm">
+                      <div className="flex items-center justify-between p-4 border rounded bg-white dark:bg-slate-900 shadow-sm transition-colors">
                         <div className="flex items-center gap-3">
-                          {companyData.themeMode === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-                          <span className="text-xs font-bold uppercase">{companyData.themeMode === 'dark' ? 'Modo Oscuro' : 'Modo Claro'}</span>
+                          {companyData.themeMode === 'dark' ? <Moon className="h-4 w-4 text-blue-400" /> : <Sun className="h-4 w-4 text-orange-400" />}
+                          <span className="text-xs font-bold uppercase">Modo {companyData.themeMode === 'dark' ? 'Oscuro' : 'Claro'}</span>
                         </div>
                         <Switch 
                           checked={companyData.themeMode === 'dark'} 
                           onCheckedChange={(checked) => setCompanyData({...companyData, themeMode: checked ? 'dark' : 'light'})} 
                         />
                       </div>
+                      <p className="text-[10px] text-muted-foreground italic leading-tight">El modo oscuro es recomendable para técnicos que realizan inspecciones en exteriores con alta luz o turnos nocturnos.</p>
                     </div>
                   </div>
 
                   <Separator />
 
+                  {/* Company Info Grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-bold uppercase">Nombre Comercial / Empresa</Label>
+                      <Label className="text-[10px] font-bold uppercase">Nombre Comercial</Label>
                       <Input value={companyData.name} onChange={(e) => setCompanyData({...companyData, name: e.target.value})} />
                     </div>
                     <div className="space-y-2">
@@ -269,14 +280,15 @@ export default function SettingsPage() {
                       <Input value={companyData.phone} onChange={(e) => setCompanyData({...companyData, phone: e.target.value})} />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-bold uppercase">Dirección Fiscal / Sede Central</Label>
+                      <Label className="text-[10px] font-bold uppercase">Dirección Principal</Label>
                       <Input value={companyData.address} onChange={(e) => setCompanyData({...companyData, address: e.target.value})} />
                     </div>
                   </div>
                 </CardContent>
-                <CardFooter className="bg-muted/30 border-t mt-4 flex justify-end p-4">
-                  <Button className="bg-primary text-white font-bold uppercase text-[11px]" onClick={handleUpdateCompany} disabled={isSaving}>
-                    {isSaving && <Loader2 className="mr-2 h-3 w-3 animate-spin" />} Guardar Configuración SaaS
+                <CardFooter className="bg-muted/30 border-t flex justify-end p-4">
+                  <Button className="bg-primary text-white font-bold uppercase text-[11px] h-9" onClick={handleUpdateCompany} disabled={isSaving}>
+                    {isSaving ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />} 
+                    Guardar Personalización de Marca
                   </Button>
                 </CardFooter>
               </Card>
@@ -287,20 +299,20 @@ export default function SettingsPage() {
             <Card className="shadow-sm border-none">
               <CardHeader>
                 <CardTitle className="text-sm font-bold uppercase">Alertas y Notificaciones</CardTitle>
-                <CardDescription>Configure canales de comunicación para el personal.</CardDescription>
+                <CardDescription>Gestione los canales de comunicación de su equipo.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between p-4 border rounded bg-white dark:bg-slate-900">
-                  <div className="space-y-0.5">
-                    <Label className="text-xs font-bold uppercase">Alertas de Vencimiento de Equipos</Label>
-                    <p className="text-[10px] text-muted-foreground italic uppercase">Notificar 30 días antes de caducidad vía dashboard.</p>
+                  <div className="space-y-1">
+                    <Label className="text-xs font-bold uppercase">Vencimientos de Equipos</Label>
+                    <p className="text-[10px] text-muted-foreground uppercase">Aviso 30 días antes de la caducidad.</p>
                   </div>
                   <Switch checked />
                 </div>
                 <div className="flex items-center justify-between p-4 border rounded bg-white dark:bg-slate-900">
-                  <div className="space-y-0.5">
-                    <Label className="text-xs font-bold uppercase">Notificaciones de Nuevas Citas</Label>
-                    <p className="text-[10px] text-muted-foreground italic uppercase">Avisar a técnicos cuando se asigne una ruta.</p>
+                  <div className="space-y-1">
+                    <Label className="text-xs font-bold uppercase">Confirmación de Citas</Label>
+                    <p className="text-[10px] text-muted-foreground uppercase">Avisar a clientes sobre la ruta del técnico.</p>
                   </div>
                   <Switch checked />
                 </div>
@@ -311,15 +323,15 @@ export default function SettingsPage() {
           {activeTab === "security" && (
             <Card className="shadow-sm border-none">
               <CardHeader>
-                <CardTitle className="text-sm font-bold uppercase">Seguridad de la Organización</CardTitle>
-                <CardDescription>Protocolos de acceso y auditoría.</CardDescription>
+                <CardTitle className="text-sm font-bold uppercase">Seguridad SaaS</CardTitle>
+                <CardDescription>Protocolos de acceso a la organización.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="p-4 bg-status-success/5 border border-status-success/20 rounded flex items-center gap-3">
+                <div className="p-4 bg-status-success/5 border border-status-success/20 rounded-lg flex items-center gap-3">
                   <ShieldCheck className="h-6 w-6 text-status-success" />
                   <div>
-                    <span className="text-xs font-bold text-status-success uppercase block">Certificación de Seguridad Activa</span>
-                    <span className="text-[10px] opacity-70">Todos los accesos están protegidos por SSL y encriptación Firebase.</span>
+                    <span className="text-xs font-bold text-status-success uppercase block">Conexión Segura Firebase SSL</span>
+                    <span className="text-[10px] opacity-70">Los datos de su empresa están aislados y encriptados en tiempo real.</span>
                   </div>
                 </div>
               </CardContent>

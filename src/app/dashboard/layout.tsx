@@ -5,7 +5,6 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { DashboardNav } from "@/components/dashboard-nav"
 import { Search, Bell, Loader2, Menu, Building2, Palette } from "lucide-react"
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection } from "@/firebase"
 import { doc, collection, query, where, limit } from "firebase/firestore"
@@ -22,7 +21,7 @@ export default function DashboardLayout({
   const router = useRouter()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
-  // Perfil del usuario
+  // Perfil del usuario para obtener companyId
   const userProfileQuery = useMemoFirebase(() => 
     user?.email ? query(collection(db, "company_users"), where("email", "==", user.email), limit(1)) : null,
   [db, user?.email])
@@ -30,34 +29,34 @@ export default function DashboardLayout({
   const { data: profiles, isLoading: isLoadingProfile } = useCollection(userProfileQuery)
   const profile = profiles?.[0] || null
 
-  // Datos de la Empresa
+  // Datos de la Empresa vinculada al perfil
   const companyRef = useMemoFirebase(() => 
     profile?.companyId ? doc(db, "companies", profile.companyId) : null,
   [db, profile?.companyId])
   const { data: company, isLoading: loadingCompany } = useDoc(companyRef)
 
-  // Datos del Rol
+  // Datos del Rol para el badge del usuario
   const roleRef = useMemoFirebase(() => 
     profile?.roleId ? doc(db, "system_roles", profile.roleId) : null,
   [db, profile?.roleId])
   const { data: roleData } = useDoc(roleRef)
 
-  // Efecto para aplicar modo oscuro y colores corporativos
+  // Aplicar Tema y Colores dinámicamente
   useEffect(() => {
     if (company) {
-      // Modo Oscuro
+      // Aplicar Clase Dark Mode al documento
       if (company.themeMode === 'dark') {
         document.documentElement.classList.add('dark')
       } else {
         document.documentElement.classList.remove('dark')
       }
 
-      // Colores corporativos
+      // Inyectar variables de color HSL
       if (company.primaryColor) {
-        document.documentElement.style.setProperty('--primary-override', company.primaryColor)
+        document.documentElement.style.setProperty('--primary', hexToHsl(company.primaryColor))
       }
       if (company.accentColor) {
-        document.documentElement.style.setProperty('--accent-override', company.accentColor)
+        document.documentElement.style.setProperty('--accent', hexToHsl(company.accentColor))
       }
     }
   }, [company])
@@ -83,20 +82,12 @@ export default function DashboardLayout({
 
   return (
     <div className="flex h-screen bg-background dark:bg-slate-950 overflow-hidden text-foreground">
-      {/* Dynamic Theme Styles */}
-      <style jsx global>{`
-        :root {
-          ${company?.primaryColor ? `--primary: ${hexToHsl(company.primaryColor)};` : ''}
-          ${company?.accentColor ? `--accent: ${hexToHsl(company.accentColor)};` : ''}
-        }
-      `}</style>
-
       {/* Sidebar Desktop */}
       <aside className="w-64 bg-sidebar shrink-0 hidden lg:block border-r border-sidebar-border shadow-xl">
         <DashboardNav companyName={company?.name} logoUrl={companyLogo} />
       </aside>
 
-      {/* Main Content */}
+      {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         <header className="h-16 bg-white dark:bg-slate-900 border-b border-border flex items-center justify-between px-4 sm:px-6 shrink-0 z-10 shadow-sm">
           <div className="flex items-center gap-4 flex-1">
@@ -157,17 +148,21 @@ export default function DashboardLayout({
   )
 }
 
-// Helper para convertir HEX a HSL dinámicamente para las variables CSS
+/**
+ * Convierte un color HEX a una cadena HSL compatible con las variables de Tailwind (H S L).
+ * Esto permite que 'hsl(var(--primary))' funcione correctamente.
+ */
 function hexToHsl(hex: string): string {
   let r = 0, g = 0, b = 0;
-  if (hex.length === 4) {
-    r = parseInt(hex[1] + hex[1], 16);
-    g = parseInt(hex[2] + hex[2], 16);
-    b = parseInt(hex[3] + hex[3], 16);
-  } else if (hex.length === 7) {
-    r = parseInt(hex.substring(1, 3), 16);
-    g = parseInt(hex.substring(3, 5), 16);
-    b = parseInt(hex.substring(5, 7), 16);
+  hex = hex.replace('#', '');
+  if (hex.length === 3) {
+    r = parseInt(hex[0] + hex[0], 16);
+    g = parseInt(hex[1] + hex[1], 16);
+    b = parseInt(hex[2] + hex[2], 16);
+  } else if (hex.length === 6) {
+    r = parseInt(hex.substring(0, 2), 16);
+    g = parseInt(hex.substring(2, 4), 16);
+    b = parseInt(hex.substring(4, 6), 16);
   }
   r /= 255; g /= 255; b /= 255;
   const max = Math.max(r, g, b), min = Math.min(r, g, b);
