@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { DashboardNav } from "@/components/dashboard-nav"
-import { Search, Bell, Loader2, Menu, Building2 } from "lucide-react"
+import { Search, Bell, Loader2, Menu, Building2, Palette } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection } from "@/firebase"
@@ -34,7 +34,7 @@ export default function DashboardLayout({
   const companyRef = useMemoFirebase(() => 
     profile?.companyId ? doc(db, "companies", profile.companyId) : null,
   [db, profile?.companyId])
-  const { data: company } = useDoc(companyRef)
+  const { data: company, isLoading: loadingCompany } = useDoc(companyRef)
 
   // Datos del Rol
   const roleRef = useMemoFirebase(() => 
@@ -42,13 +42,33 @@ export default function DashboardLayout({
   [db, profile?.roleId])
   const { data: roleData } = useDoc(roleRef)
 
+  // Efecto para aplicar modo oscuro y colores corporativos
+  useEffect(() => {
+    if (company) {
+      // Modo Oscuro
+      if (company.themeMode === 'dark') {
+        document.documentElement.classList.add('dark')
+      } else {
+        document.documentElement.classList.remove('dark')
+      }
+
+      // Colores corporativos
+      if (company.primaryColor) {
+        document.documentElement.style.setProperty('--primary-override', company.primaryColor)
+      }
+      if (company.accentColor) {
+        document.documentElement.style.setProperty('--accent-override', company.accentColor)
+      }
+    }
+  }, [company])
+
   useEffect(() => {
     if (!isUserLoading && !user) {
       router.push("/login")
     }
   }, [user, isUserLoading, router])
 
-  if (isUserLoading || isLoadingProfile) {
+  if (isUserLoading || isLoadingProfile || (profile && loadingCompany)) {
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-background gap-4">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -62,7 +82,15 @@ export default function DashboardLayout({
   const companyLogo = company?.logoUrl || null
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
+    <div className="flex h-screen bg-background dark:bg-slate-950 overflow-hidden text-foreground">
+      {/* Dynamic Theme Styles */}
+      <style jsx global>{`
+        :root {
+          ${company?.primaryColor ? `--primary: ${hexToHsl(company.primaryColor)};` : ''}
+          ${company?.accentColor ? `--accent: ${hexToHsl(company.accentColor)};` : ''}
+        }
+      `}</style>
+
       {/* Sidebar Desktop */}
       <aside className="w-64 bg-sidebar shrink-0 hidden lg:block border-r border-sidebar-border shadow-xl">
         <DashboardNav companyName={company?.name} logoUrl={companyLogo} />
@@ -70,7 +98,7 @@ export default function DashboardLayout({
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 bg-white border-b border-border flex items-center justify-between px-4 sm:px-6 shrink-0 z-10 shadow-sm">
+        <header className="h-16 bg-white dark:bg-slate-900 border-b border-border flex items-center justify-between px-4 sm:px-6 shrink-0 z-10 shadow-sm">
           <div className="flex items-center gap-4 flex-1">
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
@@ -85,14 +113,14 @@ export default function DashboardLayout({
 
             <div className="flex items-center gap-2">
               {companyLogo ? (
-                <div className="relative h-8 w-8 rounded overflow-hidden border">
-                  <Image src={companyLogo} alt="Logo" fill className="object-contain" />
+                <div className="relative h-8 w-8 rounded overflow-hidden border bg-white">
+                  <Image src={companyLogo} alt="Logo" fill className="object-contain p-1" />
                 </div>
               ) : (
                 <Building2 className="h-5 w-5 text-primary" />
               )}
-              <span className="text-xs font-bold uppercase hidden sm:block truncate max-w-[150px]">
-                {company?.name || "Cargando empresa..."}
+              <span className="text-xs font-bold uppercase hidden sm:block truncate max-w-[200px]">
+                {company?.name || "CARGANDO EMPRESA..."}
               </span>
             </div>
           </div>
@@ -100,7 +128,7 @@ export default function DashboardLayout({
           <div className="flex items-center space-x-2 sm:space-x-4">
             <Button variant="ghost" size="icon" className="relative h-9 w-9 hidden sm:flex">
               <Bell className="h-5 w-5 text-muted-foreground" />
-              <span className="absolute top-2.5 right-2.5 h-2 w-2 bg-accent rounded-full border-2 border-white"></span>
+              <span className="absolute top-2.5 right-2.5 h-2 w-2 bg-accent rounded-full border-2 border-white dark:border-slate-900"></span>
             </Button>
             <div className="h-8 w-px bg-border mx-1 hidden sm:block"></div>
             <div className="flex items-center space-x-2 sm:space-x-3 pl-1">
@@ -119,7 +147,7 @@ export default function DashboardLayout({
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 bg-[#f8fafc]">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 bg-[#f8fafc] dark:bg-slate-950/50">
           <div className="max-w-[1600px] mx-auto">
             {children}
           </div>
@@ -127,4 +155,32 @@ export default function DashboardLayout({
       </div>
     </div>
   )
+}
+
+// Helper para convertir HEX a HSL dinámicamente para las variables CSS
+function hexToHsl(hex: string): string {
+  let r = 0, g = 0, b = 0;
+  if (hex.length === 4) {
+    r = parseInt(hex[1] + hex[1], 16);
+    g = parseInt(hex[2] + hex[2], 16);
+    b = parseInt(hex[3] + hex[3], 16);
+  } else if (hex.length === 7) {
+    r = parseInt(hex.substring(1, 3), 16);
+    g = parseInt(hex.substring(3, 5), 16);
+    b = parseInt(hex.substring(5, 7), 16);
+  }
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0, s = 0, l = (max + min) / 2;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+  return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
 }

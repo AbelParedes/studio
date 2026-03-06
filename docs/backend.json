@@ -14,7 +14,9 @@
         "address": { "type": "string" },
         "phone": { "type": "string" },
         "email": { "type": "string", "format": "email" },
-        "primaryColor": { "type": "string" },
+        "primaryColor": { "type": "string", "description": "Color principal en formato HEX (ej. #1a2b3c)" },
+        "accentColor": { "type": "string", "description": "Color de acento en formato HEX (ej. #d9534f)" },
+        "themeMode": { "type": "string", "enum": ["light", "dark"] },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "name", "taxId"]
