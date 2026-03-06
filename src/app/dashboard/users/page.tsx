@@ -6,10 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { UserPlus, Search, Shield, Mail, Trash2, Edit2, Loader2, Key, AlertCircle, Info, Sparkles } from "lucide-react"
+import { UserPlus, Search, Shield, Mail, Trash2, Edit2, Loader2, Key, AlertCircle, Sparkles } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, deleteDocumentNonBlocking, addDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase"
 import { collection, doc } from "firebase/firestore"
-import { initializeApp, getApp, getApps } from "firebase/app"
+import { initializeApp, deleteApp, getApps } from "firebase/app"
 import { getAuth, createUserWithEmailAndPassword, signOut } from "firebase/auth"
 import { firebaseConfig } from "@/firebase/config"
 import {
@@ -52,6 +52,7 @@ export default function UsersPage() {
     const roleId = formData.get("roleId") as string
     const email = formData.get("email") as string
     const password = formData.get("password") as string
+    const name = formData.get("name") as string
 
     if (!roleId || roleId === "none") {
       toast({ variant: "destructive", title: "Error", description: "Debe seleccionar un rol válido." })
@@ -61,9 +62,8 @@ export default function UsersPage() {
     setIsProcessingAuth(true)
 
     const userData = {
-      name: formData.get("name") as string,
+      name: name,
       email: email,
-      password: password, // Almacenado como referencia provisional
       roleId: roleId,
       status: formData.get("status") as string || "Activo",
       updatedAt: new Date().toISOString()
@@ -71,49 +71,41 @@ export default function UsersPage() {
 
     try {
       if (editingUser) {
-        // Actualizar solo en Firestore
         updateDocumentNonBlocking(doc(db, "company_users", editingUser.id), userData)
-        toast({ 
-          title: "Perfil actualizado", 
-          description: "Los datos del colaborador se han guardado correctamente." 
-        })
+        toast({ title: "Perfil actualizado", description: "Los datos del colaborador se han guardado." })
       } else {
-        // 1. Guardar Perfil en Firestore
+        // 1. Guardar en Firestore primero
         const newUser = { ...userData, createdAt: new Date().toISOString() }
         addDocumentNonBlocking(usersRef, newUser)
 
-        // 2. Creación AUTOMÁTICA en Firebase Auth (Instancia Secundaria)
-        // Esto permite crear el usuario sin cerrar la sesión del admin actual
-        const secondaryAppName = `AdminHelper_${Date.now()}`
+        // 2. Crear en Firebase Auth automáticamente usando una instancia secundaria
+        const secondaryAppName = `AuthCreator_${Date.now()}`
         const secondaryApp = initializeApp(firebaseConfig, secondaryAppName)
         const secondaryAuth = getAuth(secondaryApp)
 
-        await createUserWithEmailAndPassword(secondaryAuth, email, password)
-        await signOut(secondaryAuth) // Limpiar la sesión secundaria de inmediato
-        
-        toast({ 
-          title: "¡Éxito Total!", 
-          description: `El usuario ${email} ha sido creado en Base de Datos y Autenticación automáticamente.` 
-        })
+        try {
+          await createUserWithEmailAndPassword(secondaryAuth, email, password)
+          await signOut(secondaryAuth)
+          await deleteApp(secondaryApp)
+          
+          toast({ 
+            title: "¡Usuario Creado!", 
+            description: `El acceso para ${email} se ha habilitado automáticamente.` 
+          })
+        } catch (authErr: any) {
+          console.error("Error Auth:", authErr)
+          toast({ 
+            variant: "destructive", 
+            title: "Aviso de Autenticación", 
+            description: "El perfil se guardó, pero debe habilitar el acceso manual en Firebase Console si el correo ya existe." 
+          })
+        }
       }
 
       setIsAdding(false)
       setEditingUser(null)
     } catch (error: any) {
-      console.error("Error en creación de usuario:", error)
-      let errorMsg = "Ocurrió un error al procesar la solicitud."
-      
-      if (error.code === 'auth/email-already-in-use') {
-        errorMsg = "Este correo electrónico ya está registrado en el sistema."
-      } else if (error.code === 'auth/weak-password') {
-        errorMsg = "La contraseña debe tener al menos 6 caracteres."
-      }
-
-      toast({ 
-        variant: "destructive", 
-        title: "Error de Registro", 
-        description: errorMsg 
-      })
+      toast({ variant: "destructive", title: "Error", description: "No se pudo procesar el registro." })
     } finally {
       setIsProcessingAuth(false)
     }
@@ -131,7 +123,7 @@ export default function UsersPage() {
 
   const getRoleTitle = (roleId: string) => {
     const role = roles?.find(r => r.id === roleId)
-    return role?.title || "Rol no encontrado"
+    return role?.title || "Sin Rol"
   }
 
   return (
@@ -139,7 +131,7 @@ export default function UsersPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight mb-1 font-headline">COLABORADORES PERÚ</h2>
-          <p className="text-muted-foreground text-sm">Administre el personal y asigne roles dinámicos del sistema.</p>
+          <p className="text-muted-foreground text-sm">Gestión de personal con sincronización automática de accesos.</p>
         </div>
         
         <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) setEditingUser(null); }}>
@@ -151,56 +143,45 @@ export default function UsersPage() {
           <DialogContent className="max-w-md">
             <form onSubmit={handleSaveUser}>
               <DialogHeader>
-                <DialogTitle>{editingUser ? "Editar Colaborador" : "Nuevo Registro de Perfil"}</DialogTitle>
-                <DialogDescription>Defina la identidad y permisos del colaborador.</DialogDescription>
+                <DialogTitle>{editingUser ? "Editar Colaborador" : "Nuevo Registro"}</DialogTitle>
+                <DialogDescription>Los datos se sincronizarán con el sistema de acceso automáticamente.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 
                 <div className="bg-blue-50 border border-blue-100 p-3 rounded-md flex items-start gap-2">
                   <Sparkles className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
                   <p className="text-[10px] text-blue-700 leading-tight">
-                    <strong>Sincronización Inteligente:</strong> Al guardar, el sistema creará automáticamente la cuenta en la base de datos y habilitará sus credenciales de acceso (Login) al mismo tiempo.
+                    <strong>Sincronización Pro:</strong> Al guardar, el sistema crea la cuenta en la base de datos y en el sistema de Login al mismo tiempo.
                   </p>
                 </div>
 
-                {roles?.length === 0 && !loadingRoles && (
-                  <div className="bg-status-error/5 border border-status-error/20 p-3 rounded-md flex items-start gap-2 mb-2">
-                    <AlertCircle className="h-4 w-4 text-status-error shrink-0 mt-0.5" />
-                    <div className="text-[11px] text-status-error">
-                      <p className="font-bold uppercase">No hay roles configurados</p>
-                      <p>Para crear un usuario, primero debe definir al menos un rol.</p>
-                      <Link href="/dashboard/roles" className="underline font-bold mt-1 block">Ir a Roles y Permisos</Link>
-                    </div>
-                  </div>
-                )}
-                
                 <div className="grid gap-2">
                   <Label htmlFor="name" className="text-xs uppercase font-bold">Nombre Completo</Label>
-                  <Input id="name" name="name" defaultValue={editingUser?.name} required placeholder="Ej. Juan Pérez" className="h-9" />
+                  <Input id="name" name="name" defaultValue={editingUser?.name} required placeholder="Ej. Abel Tomas Paredes Vasquez" />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="email" className="text-xs uppercase font-bold">Correo Electrónico</Label>
-                  <Input id="email" name="email" type="email" defaultValue={editingUser?.email} required placeholder="juan@servifumiga.com" className="h-9" />
+                  <Input id="email" name="email" type="email" defaultValue={editingUser?.email} required placeholder="ejemplo@servifumiga.com" />
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="password" name="password" className="text-xs uppercase font-bold">Contraseña de Acceso</Label>
-                  <div className="relative">
-                    <Input id="password" name="password" type="password" defaultValue={editingUser?.password} required placeholder="Mínimo 6 caracteres" className="h-9" />
-                    <Key className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                {!editingUser && (
+                  <div className="grid gap-2">
+                    <Label htmlFor="password" name="password" className="text-xs uppercase font-bold">Contraseña Inicial</Label>
+                    <div className="relative">
+                      <Input id="password" name="password" type="password" required placeholder="Mínimo 6 caracteres" />
+                      <Key className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                    </div>
                   </div>
-                </div>
+                )}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="roleId" className="text-xs uppercase font-bold">Rol Asignado</Label>
+                    <Label htmlFor="roleId" className="text-xs uppercase font-bold">Rol</Label>
                     <Select name="roleId" defaultValue={editingUser?.roleId} required>
-                      <SelectTrigger className="h-9">
+                      <SelectTrigger>
                         <SelectValue placeholder="Seleccione" />
                       </SelectTrigger>
                       <SelectContent>
                         {roles?.map(role => (
-                          <SelectItem key={role.id} value={role.id}>
-                            {role.title}
-                          </SelectItem>
+                          <SelectItem key={role.id} value={role.id}>{role.title}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -208,7 +189,7 @@ export default function UsersPage() {
                   <div className="grid gap-2">
                     <Label htmlFor="status" className="text-xs uppercase font-bold">Estado</Label>
                     <Select name="status" defaultValue={editingUser?.status || "Activo"}>
-                      <SelectTrigger className="h-9">
+                      <SelectTrigger>
                         <SelectValue placeholder="Estado" />
                       </SelectTrigger>
                       <SelectContent>
@@ -222,13 +203,13 @@ export default function UsersPage() {
               <DialogFooter>
                 <Button 
                   type="submit" 
-                  disabled={!roles || roles.length === 0 || isProcessingAuth} 
+                  disabled={isProcessingAuth} 
                   className="w-full bg-primary text-white font-bold uppercase text-[11px]"
                 >
                   {isProcessingAuth ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Procesando Sincronización...</>
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sincronizando...</>
                   ) : (
-                    editingUser ? "Actualizar Datos" : "Confirmar Alta y Sincronizar"
+                    editingUser ? "Guardar Cambios" : "Crear y Habilitar Acceso"
                   )}
                 </Button>
               </DialogFooter>
@@ -242,7 +223,7 @@ export default function UsersPage() {
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
-              placeholder="Buscar colaborador..." 
+              placeholder="Buscar por nombre o email..." 
               className="pl-9 h-9 text-xs" 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -250,7 +231,7 @@ export default function UsersPage() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          {loadingUsers || loadingRoles ? (
+          {loadingUsers ? (
             <div className="flex items-center justify-center p-20">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
@@ -258,55 +239,43 @@ export default function UsersPage() {
             <Table className="dense-table">
               <TableHeader className="bg-primary">
                 <TableRow>
-                  <TableHead className="text-white">Nombre</TableHead>
-                  <TableHead className="text-white">Contacto / Login</TableHead>
-                  <TableHead className="text-white">Rol Asignado</TableHead>
+                  <TableHead className="text-white">Colaborador</TableHead>
+                  <TableHead className="text-white">Email / Login</TableHead>
+                  <TableHead className="text-white">Cargo</TableHead>
                   <TableHead className="text-white">Estado</TableHead>
                   <TableHead className="text-white w-[100px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredUsers?.map((u) => (
-                  <TableRow key={u.id} className="hover:bg-muted/30 transition-colors">
-                    <TableCell className="font-bold text-primary">{u.name}</TableCell>
+                  <TableRow key={u.id}>
+                    <TableCell className="font-bold text-primary uppercase">{u.name}</TableCell>
+                    <TableCell className="text-[11px]">{u.email}</TableCell>
                     <TableCell>
-                      <div className="flex flex-col">
-                        <span className="text-[11px] font-medium">{u.email}</span>
-                        <span className="text-[9px] text-muted-foreground font-mono uppercase tracking-tighter">Login Habilitado: Sí</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-[9px] uppercase font-bold bg-blue-50 text-blue-600 border-blue-200">
+                      <Badge variant="outline" className="text-[9px] uppercase font-bold border-blue-200 text-blue-600">
                         {getRoleTitle(u.roleId)}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className={cn(
                         "text-[9px] uppercase font-bold",
-                        u.status === "Activo" ? "border-status-success text-status-success bg-status-success/5" : "text-muted-foreground"
+                        u.status === "Activo" ? "border-status-success text-status-success" : "text-muted-foreground"
                       )}>
                         {u.status || "Activo"}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => openEdit(u)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(u)}>
                           <Edit2 className="h-3.5 w-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteUser(u.id)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive" onClick={() => handleDeleteUser(u.id)}>
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     </TableCell>
                   </TableRow>
                 ))}
-                {(!filteredUsers || filteredUsers.length === 0) && (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-20 text-muted-foreground uppercase text-[10px] font-bold tracking-widest opacity-50">
-                      No hay colaboradores registrados
-                    </TableCell>
-                  </TableRow>
-                )}
               </TableBody>
             </Table>
           )}

@@ -19,7 +19,7 @@ export default function DashboardLayout({
   const db = useFirestore()
   const router = useRouter()
 
-  // 1. Buscar el perfil del usuario en Firestore usando su correo electrónico
+  // Buscar el perfil del usuario por su correo electrónico para obtener su nombre real y cargo
   const userProfileQuery = useMemoFirebase(() => 
     user?.email ? query(collection(db, "company_users"), where("email", "==", user.email), limit(1)) : null,
   [db, user?.email])
@@ -27,7 +27,7 @@ export default function DashboardLayout({
   const { data: profiles, isLoading: isLoadingProfile } = useCollection(userProfileQuery)
   const profile = profiles?.[0] || null
 
-  // 2. Obtener la definición del rol usando el roleId del perfil encontrado
+  // Obtener la definición del rol usando el roleId del perfil
   const roleRef = useMemoFirebase(() => 
     profile?.roleId ? doc(db, "system_roles", profile.roleId) : null,
   [db, profile?.roleId])
@@ -49,11 +49,11 @@ export default function DashboardLayout({
     )
   }
 
-  // Prioridad de nombre: Perfil Firestore (Nombre completo) > Display Name Auth > Prefijo de Email > "Usuario"
-  const displayName = profile?.name || user.displayName || user.email?.split('@')[0] || "Usuario"
+  // Nombre a mostrar: Perfil Firestore > Email > "Usuario"
+  const displayName = profile?.name || user.email?.split('@')[0] || "Usuario"
   
-  // Prioridad de Rol: Título del Rol en Firestore > Cargo manual en perfil > Fallback
-  const displayRole = roleData?.title || profile?.role || "Personal Autorizado"
+  // Rol a mostrar: Título del Rol en Firestore > Fallback
+  const displayRole = roleData?.title || "Personal Autorizado"
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
@@ -84,7 +84,7 @@ export default function DashboardLayout({
             <div className="h-8 w-px bg-border mx-2"></div>
             <div className="flex items-center space-x-3 pl-2">
               <div className="text-right hidden sm:block">
-                <p className="text-xs font-bold text-primary uppercase leading-tight max-w-[150px] truncate">
+                <p className="text-xs font-bold text-primary uppercase leading-tight max-w-[200px] truncate">
                   {displayName}
                 </p>
                 <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-tighter">
