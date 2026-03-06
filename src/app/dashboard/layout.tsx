@@ -1,11 +1,12 @@
 "use client"
 
 import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { DashboardNav } from "@/components/dashboard-nav"
 import { Search, User, Bell, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { useUser, useAuth, initiateAnonymousSignIn } from "@/firebase"
+import { useUser } from "@/firebase"
 
 export default function DashboardLayout({
   children,
@@ -13,19 +14,19 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const { user, isUserLoading } = useUser()
-  const auth = useAuth()
+  const router = useRouter()
 
   useEffect(() => {
     if (!isUserLoading && !user) {
-      initiateAnonymousSignIn(auth)
+      router.push("/login")
     }
-  }, [user, isUserLoading, auth])
+  }, [user, isUserLoading, router])
 
   if (isUserLoading || !user) {
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-background gap-4">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        <p className="text-sm font-bold text-primary uppercase tracking-widest">Iniciando Servifumiga Pro Perú...</p>
+        <p className="text-sm font-bold text-primary uppercase tracking-widest">Validando credenciales...</p>
       </div>
     )
   }
@@ -59,11 +60,11 @@ export default function DashboardLayout({
             <div className="h-8 w-px bg-border mx-2"></div>
             <div className="flex items-center space-x-3 pl-2">
               <div className="text-right hidden sm:block">
-                <p className="text-xs font-bold text-primary uppercase leading-tight">Admin Perú</p>
-                <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-tighter">Coordinador Operativo</p>
+                <p className="text-xs font-bold text-primary uppercase leading-tight">{user.displayName || user.email?.split('@')[0] || "Usuario"}</p>
+                <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-tighter">Personal Autorizado</p>
               </div>
-              <div className="h-9 w-9 bg-primary rounded-full flex items-center justify-center text-white shadow-md">
-                <User className="h-5 w-5" />
+              <div className="h-9 w-9 bg-primary rounded-full flex items-center justify-center text-white shadow-md uppercase font-bold text-xs">
+                {user.email?.[0] || <User className="h-5 w-5" />}
               </div>
             </div>
           </div>

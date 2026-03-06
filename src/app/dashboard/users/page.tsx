@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState } from "react"
@@ -6,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { UserPlus, Search, Shield, Mail, Trash2, Edit2, Loader2, UserCog, ShieldCheck, ShieldAlert, AlertCircle } from "lucide-react"
+import { UserPlus, Search, Shield, Mail, Trash2, Edit2, Loader2, Key, AlertCircle } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, deleteDocumentNonBlocking, addDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase"
 import { collection, doc } from "firebase/firestore"
 import {
@@ -55,6 +54,7 @@ export default function UsersPage() {
     const userData = {
       name: formData.get("name") as string,
       email: formData.get("email") as string,
+      password: formData.get("password") as string, // Para prototipo, guardamos la clave
       roleId: roleId,
       status: formData.get("status") as string || "Activo",
       updatedAt: new Date().toISOString()
@@ -106,7 +106,7 @@ export default function UsersPage() {
             <form onSubmit={handleSaveUser}>
               <DialogHeader>
                 <DialogTitle>{editingUser ? "Editar Colaborador" : "Nuevo Registro"}</DialogTitle>
-                <DialogDescription>Asigne uno de los roles creados en el módulo de Roles.</DialogDescription>
+                <DialogDescription>Defina las credenciales de acceso para el colaborador.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 {roles?.length === 0 && !loadingRoles && (
@@ -127,6 +127,13 @@ export default function UsersPage() {
                 <div className="grid gap-2">
                   <Label htmlFor="email">Correo Electrónico</Label>
                   <Input id="email" name="email" type="email" defaultValue={editingUser?.email} required placeholder="juan@servifumiga.com" />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="password">Contraseña Provisional</Label>
+                  <div className="relative">
+                    <Input id="password" name="password" type="password" defaultValue={editingUser?.password} required placeholder="••••••••" />
+                    <Key className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  </div>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="roleId">Rol Asignado</Label>
@@ -160,8 +167,8 @@ export default function UsersPage() {
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit" disabled={!roles || roles.length === 0}>
-                  {editingUser ? "Actualizar" : "Confirmar Alta"}
+                <Button type="submit" disabled={!roles || roles.length === 0} className="w-full">
+                  {editingUser ? "Actualizar Datos" : "Confirmar Alta y Credenciales"}
                 </Button>
               </DialogFooter>
             </form>
@@ -191,7 +198,7 @@ export default function UsersPage() {
               <TableHeader className="bg-primary">
                 <TableRow>
                   <TableHead className="text-white">Nombre</TableHead>
-                  <TableHead className="text-white">Contacto</TableHead>
+                  <TableHead className="text-white">Contacto / Login</TableHead>
                   <TableHead className="text-white">Rol Asignado</TableHead>
                   <TableHead className="text-white">Estado</TableHead>
                   <TableHead className="text-white w-[100px]"></TableHead>
@@ -201,7 +208,12 @@ export default function UsersPage() {
                 {filteredUsers?.map((u) => (
                   <TableRow key={u.id}>
                     <TableCell className="font-bold">{u.name}</TableCell>
-                    <TableCell>{u.email}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="text-[11px] font-medium">{u.email}</span>
+                        <span className="text-[9px] text-muted-foreground font-mono">PWD: {u.password ? "••••••••" : "No asignada"}</span>
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <Badge variant="outline" className="text-[9px] uppercase font-bold bg-blue-50 text-blue-600 border-blue-200">
                         {getRoleTitle(u.roleId)}
