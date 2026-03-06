@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState } from "react"
@@ -5,8 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Search, MapPin, Phone, Mail, Trash2, Edit2, Loader2, Building2, User, FileText, Briefcase, Users, MessageSquare, UserPlus } from "lucide-react"
-import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase"
+import { Plus, Search, MapPin, Phone, Mail, Trash2, Edit2, Loader2, Building2, User, FileText, MessageSquare, UserPlus, Users } from "lucide-react"
+import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase"
 import { collection, doc } from "firebase/firestore"
 import {
   Dialog,
@@ -29,9 +30,9 @@ export default function ClientsPage() {
   const db = useFirestore()
   const [searchTerm, setSearchTerm] = useState("")
   const [isAdding, setIsAdding] = useState(false)
+  const [editingClient, setEditingClient] = useState<any | null>(null)
   const [clientType, setClientType] = useState<"Empresa" | "Persona">("Empresa")
   
-  // Data Fetching
   const clientsRef = useMemoFirebase(() => collection(db, "clients"), [db])
   const { data: clients, isLoading } = useCollection(clientsRef)
 
@@ -41,11 +42,11 @@ export default function ClientsPage() {
     c.email?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  const handleAddClient = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSaveClient = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
     
-    const newClient = {
+    const clientData = {
       clientType: clientType,
       taxId: formData.get("taxId") as string,
       name: formData.get("name") as string,
@@ -60,19 +61,30 @@ export default function ClientsPage() {
         phone: formData.get("contactPhone") as string,
       },
       notes: formData.get("notes") as string,
-      id: crypto.randomUUID(),
-      createdAt: new Date().toISOString()
     }
 
-    addDocumentNonBlocking(clientsRef, newClient)
+    if (editingClient) {
+      updateDocumentNonBlocking(doc(db, "clients", editingClient.id), clientData)
+      toast({ title: "Cliente actualizado", description: `El cliente ${clientData.name} se ha guardado correctamente.` })
+    } else {
+      const newClient = { ...clientData, id: crypto.randomUUID(), createdAt: new Date().toISOString() }
+      addDocumentNonBlocking(clientsRef, newClient)
+      toast({ title: "Cliente registrado", description: `El cliente ${clientData.name} se ha añadido exitosamente.` })
+    }
+
     setIsAdding(false)
-    toast({ title: "Cliente registrado", description: `El cliente ${newClient.name} se ha añadido exitosamente.` })
+    setEditingClient(null)
   }
 
   const handleDeleteClient = (id: string) => {
-    const docRef = doc(db, "clients", id)
-    deleteDocumentNonBlocking(docRef)
+    deleteDocumentNonBlocking(doc(db, "clients", id))
     toast({ variant: "destructive", title: "Cliente eliminado" })
+  }
+
+  const openEdit = (client: any) => {
+    setEditingClient(client)
+    setClientType(client.clientType)
+    setIsAdding(true)
   }
 
   return (
@@ -83,16 +95,16 @@ export default function ClientsPage() {
           <p className="text-muted-foreground text-sm">Base de datos centralizada para servicios técnicos y comerciales.</p>
         </div>
         
-        <Dialog open={isAdding} onOpenChange={setIsAdding}>
+        <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) setEditingClient(null); }}>
           <DialogTrigger asChild>
             <Button className="bg-primary text-white h-9">
               <Plus className="mr-2 h-4 w-4" /> Nuevo Cliente
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-            <form onSubmit={handleAddClient}>
+            <form onSubmit={handleSaveClient}>
               <DialogHeader>
-                <DialogTitle>Registrar Nuevo Expediente</DialogTitle>
+                <DialogTitle>{editingClient ? "Editar Cliente" : "Registrar Nuevo Expediente"}</DialogTitle>
                 <DialogDescription>Complete los datos del cliente para la gestión de servicios e inspecciones.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-6 py-4">
@@ -111,40 +123,40 @@ export default function ClientsPage() {
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="taxId">{clientType === "Empresa" ? "RUC" : "DNI"}</Label>
-                    <Input id="taxId" name="taxId" required placeholder={clientType === "Empresa" ? "Ej. 20123456789" : "Ej. 12345678"} />
+                    <Input id="taxId" name="taxId" defaultValue={editingClient?.taxId} required placeholder={clientType === "Empresa" ? "Ej. 20123456789" : "Ej. 12345678"} />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="name">Nombre Comercial / Nombre Completo</Label>
-                    <Input id="name" name="name" required placeholder="Ej. Restaurante El Faro" />
+                    <Input id="name" name="name" defaultValue={editingClient?.name} required placeholder="Ej. Restaurante El Faro" />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="legalName">Razón Social (Opcional)</Label>
-                    <Input id="legalName" name="legalName" placeholder="Ej. El Faro S.A.C." />
+                    <Input id="legalName" name="legalName" defaultValue={editingClient?.legalName} placeholder="Ej. El Faro S.A.C." />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="industry">Giro del Negocio</Label>
-                    <Input id="industry" name="industry" placeholder="Ej. Alimentación, Almacén" />
+                    <Input id="industry" name="industry" defaultValue={editingClient?.industry} placeholder="Ej. Alimentación, Almacén" />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="phone">Teléfono Principal</Label>
-                    <Input id="phone" name="phone" required placeholder="+51 987..." />
+                    <Input id="phone" name="phone" defaultValue={editingClient?.phone} required placeholder="+51 987..." />
                   </div>
                 </div>
 
                 <div className="grid gap-2">
                   <Label htmlFor="email">Correo Electrónico Principal</Label>
-                  <Input id="email" name="email" type="email" required placeholder="correo@cliente.com" />
+                  <Input id="email" name="email" defaultValue={editingClient?.email} type="email" required placeholder="correo@cliente.com" />
                 </div>
 
                 <div className="grid gap-2">
                   <Label htmlFor="address">Dirección Completa</Label>
-                  <Input id="address" name="address" required placeholder="Av. Los Pinos 123, Of. 402, Lima" />
+                  <Input id="address" name="address" defaultValue={editingClient?.address} required placeholder="Av. Los Pinos 123, Of. 402, Lima" />
                 </div>
 
                 <Separator />
@@ -155,15 +167,15 @@ export default function ClientsPage() {
                 <div className="grid grid-cols-3 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="contactName">Nombre de Contacto</Label>
-                    <Input id="contactName" name="contactName" placeholder="Ej. Juan Pérez" />
+                    <Input id="contactName" name="contactName" defaultValue={editingClient?.contactPerson?.name} placeholder="Ej. Juan Pérez" />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="contactPosition">Cargo</Label>
-                    <Input id="contactPosition" name="contactPosition" placeholder="Ej. Administrador" />
+                    <Input id="contactPosition" name="contactPosition" defaultValue={editingClient?.contactPerson?.position} placeholder="Ej. Administrador" />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="contactPhone">Celular Contacto</Label>
-                    <Input id="contactPhone" name="contactPhone" placeholder="Ej. 999 888 777" />
+                    <Input id="contactPhone" name="contactPhone" defaultValue={editingClient?.contactPerson?.phone} placeholder="Ej. 999 888 777" />
                   </div>
                 </div>
 
@@ -172,11 +184,11 @@ export default function ClientsPage() {
                   <Label htmlFor="notes" className="flex items-center gap-2">
                     <MessageSquare className="h-3 w-3" /> Notas Técnicas / Observaciones
                   </Label>
-                  <Textarea id="notes" name="notes" placeholder="Detalles sobre acceso, horarios de fumigación, cantidad de extintores estimados..." className="min-h-[100px]" />
+                  <Textarea id="notes" name="notes" defaultValue={editingClient?.notes} placeholder="Detalles sobre acceso..." className="min-h-[100px]" />
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit" className="w-full">Crear Expediente de Cliente</Button>
+                <Button type="submit" className="w-full">{editingClient ? "Actualizar Cliente" : "Crear Expediente de Cliente"}</Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -249,13 +261,10 @@ export default function ClientsPage() {
                     <TableCell>
                       <div className="flex flex-col gap-0.5">
                         <div className="flex items-center text-[11px] font-bold text-[#444]">
-                          <UserCircle2 className="h-3 w-3 mr-1 text-primary" /> {client.contactPerson?.name || "No asignado"}
+                          <User className="h-3 w-3 mr-1 text-primary" /> {client.contactPerson?.name || "No asignado"}
                         </div>
                         <div className="flex items-center text-[10px] text-muted-foreground">
                           <Phone className="h-2.5 w-2.5 mr-1" /> {client.phone}
-                        </div>
-                        <div className="flex items-center text-[10px] text-muted-foreground">
-                          <Mail className="h-2.5 w-2.5 mr-1" /> {client.email}
                         </div>
                       </div>
                     </TableCell>
@@ -267,7 +276,7 @@ export default function ClientsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => openEdit(client)}>
                           <Edit2 className="h-3.5 w-3.5" />
                         </Button>
                         <Button 
@@ -298,26 +307,5 @@ export default function ClientsPage() {
         </CardContent>
       </Card>
     </div>
-  )
-}
-
-function UserCircle2(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M18 20a6 6 0 0 0-12 0" />
-      <circle cx="12" cy="10" r="4" />
-      <circle cx="12" cy="12" r="10" />
-    </svg>
   )
 }

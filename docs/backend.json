@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "UserProfile": {
@@ -60,37 +61,41 @@
         "lastService": { "type": "string" },
         "nextDue": { "type": "string" }
       }
+    },
+    "FumigationService": {
+      "title": "FumigationService",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "clientId": { "type": "string" },
+        "clientName": { "type": "string" },
+        "type": { "type": "string" },
+        "areas": { "type": "string" },
+        "chemicals": { "type": "string" },
+        "date": { "type": "string" },
+        "status": { "type": "string", "enum": ["Programado", "En Proceso", "Completado"] }
+      }
     }
   },
   "auth": {
     "providers": ["password", "anonymous"]
   },
   "firestore": {
-    "structure": [
-      {
-        "path": "/company_users/{userId}",
-        "definition": {
-          "entityName": "UserProfile",
-          "schema": { "$ref": "#/backend/entities/UserProfile" },
-          "description": "User profiles for Servifumiga Pro employees."
-        }
-      },
-      {
-        "path": "/clients/{clientId}",
-        "definition": {
-          "entityName": "Client",
-          "schema": { "$ref": "#/backend/entities/Client" },
-          "description": "Root collection for client companies/individuals."
-        }
-      },
-      {
-        "path": "/all_extinguishers/{id}",
-        "definition": {
-          "entityName": "Extinguisher",
-          "schema": { "$ref": "#/backend/entities/Extinguisher" },
-          "description": "Inventario global de equipos."
-        }
-      }
-    ]
+    "company_users": {
+      "schema": { "$ref": "#/backend/entities/UserProfile" },
+      "description": "Perfiles de usuarios del sistema."
+    },
+    "clients": {
+      "schema": { "$ref": "#/backend/entities/Client" },
+      "description": "Colección de clientes."
+    },
+    "all_extinguishers": {
+      "schema": { "$ref": "#/backend/entities/Extinguisher" },
+      "description": "Inventario global de extintores."
+    },
+    "fumigation_services": {
+      "schema": { "$ref": "#/backend/entities/FumigationService" },
+      "description": "Registros de servicios de fumigación."
+    }
   }
 }

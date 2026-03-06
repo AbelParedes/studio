@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState } from "react"
@@ -5,9 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Flame, Plus, Download, Filter, Tag, Search, Loader2, Trash2 } from "lucide-react"
+import { Flame, Plus, Search, Loader2, Trash2, Edit2 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase"
+import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase"
 import { collection, doc } from "firebase/firestore"
 import {
   Dialog,
@@ -26,36 +27,46 @@ import { toast } from "@/hooks/use-toast"
 export default function InventoryPage() {
   const db = useFirestore()
   const [isAdding, setIsAdding] = useState(false)
+  const [editingItem, setEditingItem] = useState<any | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
 
-  // Fetch all extinguishers across all clients using collectionGroup (or just a flat collection for MVP speed if preferred)
-  // For this MVP, let's assume a global extinguishers collection or fetch nested if client is selected.
-  // Using a simplified root collection 'extinguishers' for better speed in this prototype.
   const extinguishersRef = useMemoFirebase(() => collection(db, "all_extinguishers"), [db])
   const { data: inventory, isLoading } = useCollection(extinguishersRef)
 
-  const handleAddEquipment = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSaveEquipment = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
-    const newEquip = {
+    const equipmentData = {
       serialNumber: formData.get("serial") as string,
       type: formData.get("type") as string,
       size: formData.get("size") as string,
       location: formData.get("location") as string,
-      status: "Operativo",
-      lastService: new Date().toISOString().split('T')[0],
-      nextDue: new Date(Date.now() + 31536000000).toISOString().split('T')[0], // +1 year
-      id: crypto.randomUUID()
+      status: formData.get("status") as string || "Operativo",
+      lastService: formData.get("lastService") as string || new Date().toISOString().split('T')[0],
+      nextDue: formData.get("nextDue") as string || new Date(Date.now() + 31536000000).toISOString().split('T')[0],
     }
 
-    addDocumentNonBlocking(extinguishersRef, newEquip)
+    if (editingItem) {
+      updateDocumentNonBlocking(doc(db, "all_extinguishers", editingItem.id), equipmentData)
+      toast({ title: "Equipo actualizado" })
+    } else {
+      const newEquip = { ...equipmentData, id: crypto.randomUUID() }
+      addDocumentNonBlocking(extinguishersRef, newEquip)
+      toast({ title: "Equipo registrado" })
+    }
+
     setIsAdding(false)
-    toast({ title: "Equipo registrado", description: "El extintor se ha añadido al inventario." })
+    setEditingItem(null)
   }
 
   const handleDelete = (id: string) => {
     deleteDocumentNonBlocking(doc(db, "all_extinguishers", id))
     toast({ variant: "destructive", title: "Equipo removido" })
+  }
+
+  const openEdit = (item: any) => {
+    setEditingItem(item)
+    setIsAdding(true)
   }
 
   const stats = {
@@ -71,29 +82,29 @@ export default function InventoryPage() {
           <h2 className="text-2xl font-bold tracking-tight mb-1">INVENTARIO DE EXTINTORES</h2>
           <p className="text-muted-foreground text-sm">Seguimiento detallado de equipos contra incendio.</p>
         </div>
-        <div className="flex gap-2">
-          <Dialog open={isAdding} onOpenChange={setIsAdding}>
-            <DialogTrigger asChild>
-              <Button className="bg-primary text-white h-9">
-                <Plus className="mr-2 h-4 w-4" /> Registrar Equipo
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <form onSubmit={handleAddEquipment}>
-                <DialogHeader>
-                  <DialogTitle>Registrar Nuevo Equipo</DialogTitle>
-                  <DialogDescription>Ingrese los detalles técnicos del extintor.</DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="serial">Número de Serie</Label>
-                    <Input id="serial" name="serial" required placeholder="SN-XXXXXX" />
-                  </div>
+        <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) setEditingItem(null); }}>
+          <DialogTrigger asChild>
+            <Button className="bg-primary text-white h-9">
+              <Plus className="mr-2 h-4 w-4" /> Registrar Equipo
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <form onSubmit={handleSaveEquipment}>
+              <DialogHeader>
+                <DialogTitle>{editingItem ? "Editar Equipo" : "Registrar Nuevo Equipo"}</DialogTitle>
+                <DialogDescription>Ingrese los detalles técnicos del extintor.</DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="serial">Número de Serie</Label>
+                  <Input id="serial" name="serial" defaultValue={editingItem?.serialNumber} required placeholder="SN-XXXXXX" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="type">Tipo de Agente</Label>
-                    <Select name="type" required defaultValue="PQS ABC">
+                    <Select name="type" required defaultValue={editingItem?.type || "PQS ABC"}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Seleccione tipo" />
+                        <SelectValue placeholder="Tipo" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="PQS ABC">PQS ABC</SelectItem>
@@ -104,21 +115,46 @@ export default function InventoryPage() {
                     </Select>
                   </div>
                   <div className="grid gap-2">
+                    <Label htmlFor="status">Estado</Label>
+                    <Select name="status" required defaultValue={editingItem?.status || "Operativo"}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Estado" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Operativo">Operativo</SelectItem>
+                        <SelectItem value="Mantenimiento">Mantenimiento</SelectItem>
+                        <SelectItem value="Vencido">Vencido</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
                     <Label htmlFor="size">Capacidad</Label>
-                    <Input id="size" name="size" required placeholder="Ej. 10 lbs, 6 lts" />
+                    <Input id="size" name="size" defaultValue={editingItem?.size} required placeholder="Ej. 10 lbs" />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="location">Ubicación</Label>
-                    <Input id="location" name="location" required placeholder="Ej. Pasillo principal" />
+                    <Input id="location" name="location" defaultValue={editingItem?.location} required placeholder="Ej. Pasillo A" />
                   </div>
                 </div>
-                <DialogFooter>
-                  <Button type="submit">Registrar</Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="lastService">Último Servicio</Label>
+                    <Input id="lastService" name="lastService" type="date" defaultValue={editingItem?.lastService} required />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="nextDue">Próximo Vto.</Label>
+                    <Input id="nextDue" name="nextDue" type="date" defaultValue={editingItem?.nextDue} required />
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="submit">{editingItem ? "Actualizar" : "Registrar"}</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -132,7 +168,7 @@ export default function InventoryPage() {
         </Card>
         <Card className="bg-status-warning/5 border-status-warning/20">
           <CardHeader className="py-3">
-            <CardTitle className="text-xs text-status-warning uppercase font-bold">En Mantenimiento</CardTitle>
+            <CardTitle className="text-xs text-status-warning uppercase font-bold">Mantenimiento</CardTitle>
           </CardHeader>
           <CardContent className="py-2">
             <div className="text-2xl font-bold text-status-warning">{stats.mantenimiento}</div>
@@ -153,14 +189,11 @@ export default function InventoryPage() {
           <div className="relative w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
-              placeholder="Buscar por serie o ubicación..." 
+              placeholder="Buscar..." 
               className="pl-9 h-8" 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-          </div>
-          <div className="text-xs text-muted-foreground uppercase font-bold">
-            Total Equipos: {inventory?.length || 0}
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -172,12 +205,12 @@ export default function InventoryPage() {
             <Table className="dense-table">
               <TableHeader className="bg-primary">
                 <TableRow>
-                  <TableHead className="text-white">ID / Serie</TableHead>
-                  <TableHead className="text-white">Tipo / Capacidad</TableHead>
+                  <TableHead className="text-white">Serie</TableHead>
+                  <TableHead className="text-white">Tipo</TableHead>
                   <TableHead className="text-white">Ubicación</TableHead>
-                  <TableHead className="text-white">Próximo Vto.</TableHead>
+                  <TableHead className="text-white">Vto.</TableHead>
                   <TableHead className="text-white">Estado</TableHead>
-                  <TableHead className="text-white w-[50px]"></TableHead>
+                  <TableHead className="text-white w-[100px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -187,17 +220,12 @@ export default function InventoryPage() {
                 ).map((item) => (
                   <TableRow key={item.id}>
                     <TableCell className="font-bold">{item.serialNumber}</TableCell>
-                    <TableCell>
-                      <div className="font-medium">{item.type}</div>
-                      <div className="text-[10px] text-muted-foreground">{item.size}</div>
-                    </TableCell>
+                    <TableCell>{item.type} ({item.size})</TableCell>
                     <TableCell>{item.location}</TableCell>
-                    <TableCell className={cn(item.status === "Vencido" && "text-status-error font-bold")}>
-                      {item.nextDue}
-                    </TableCell>
+                    <TableCell>{item.nextDue}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className={cn(
-                        "text-[10px] px-2 py-0 uppercase font-bold",
+                        "text-[10px] uppercase font-bold",
                         item.status === "Operativo" && "border-status-success text-status-success bg-status-success/5",
                         item.status === "Vencido" && "border-status-error text-status-error bg-status-error/5",
                         item.status === "Mantenimiento" && "border-status-warning text-status-warning bg-status-warning/5",
@@ -206,9 +234,14 @@ export default function InventoryPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive" onClick={() => handleDelete(item.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)}>
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive" onClick={() => handleDelete(item.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
