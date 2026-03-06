@@ -120,7 +120,7 @@ export default function UsersPage() {
                 <div className="bg-blue-50 border border-blue-100 p-3 rounded-md flex items-start gap-2">
                   <Info className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
                   <p className="text-[10px] text-blue-700 leading-tight">
-                    <strong>Nota de Sistema:</strong> Al guardar, se creará el perfil en Firestore (roles y permisos). Para habilitar el acceso al sistema, asegúrese de crear el usuario con el mismo correo en <strong>Firebase Console > Authentication</strong>.
+                    <strong>Nota de Sistema:</strong> Al guardar, se creará el perfil en Firestore (roles y permisos). Para habilitar el acceso al sistema, asegúrese de crear el usuario con el mismo correo en <strong>Firebase Console &gt; Authentication</strong>.
                   </p>
                 </div>
 
