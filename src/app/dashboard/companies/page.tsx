@@ -6,9 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Search, Building2, Globe, Palette, Trash2, Edit2, Loader2, CheckCircle2 } from "lucide-react"
-import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase"
-import { collection, doc } from "firebase/firestore"
+import { Plus, Search, Building2, Globe, Palette, Trash2, Edit2, Loader2, LogIn } from "lucide-react"
+import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, useUser } from "@/firebase"
+import { collection, doc, query, where, getDocs, updateDoc } from "firebase/firestore"
 import {
   Dialog,
   DialogContent,
@@ -26,9 +26,11 @@ import Image from "next/image"
 
 export default function CompaniesPage() {
   const db = useFirestore()
+  const { user } = useUser()
   const [searchTerm, setSearchTerm] = useState("")
   const [isAdding, setIsAdding] = useState(false)
   const [editingCompany, setEditingCompany] = useState<any | null>(null)
+  const [isSwitching, setIsSwitching] = useState<string | null>(null)
 
   const companiesRef = useMemoFirebase(() => collection(db, "companies"), [db])
   const { data: companies, isLoading } = useCollection(companiesRef)
@@ -57,16 +59,38 @@ export default function CompaniesPage() {
 
     if (editingCompany) {
       updateDocumentNonBlocking(doc(db, "companies", editingCompany.id), companyData)
-      toast({ title: "Empresa actualizada", description: `La organización ${companyData.name} se ha guardado correctamente.` })
+      toast({ title: "Empresa actualizada" })
     } else {
       const newId = crypto.randomUUID()
       const newCompany = { ...companyData, id: newId, createdAt: new Date().toISOString() }
       addDocumentNonBlocking(companiesRef, newCompany)
-      toast({ title: "Empresa creada", description: `Se ha registrado ${companyData.name} en el sistema.` })
+      toast({ title: "Empresa creada" })
     }
 
     setIsAdding(false)
     setEditingCompany(null)
+  }
+
+  // Función para "Entrar" a una empresa como administrador
+  const handleSwitchCompany = async (companyId: string) => {
+    if (!user?.email) return
+    setIsSwitching(companyId)
+    
+    try {
+      const userProfileQuery = query(collection(db, "company_users"), where("email", "==", user.email))
+      const snapshot = await getDocs(userProfileQuery)
+      
+      if (!snapshot.empty) {
+        const profileDoc = snapshot.docs[0]
+        await updateDoc(doc(db, "company_users", profileDoc.id), { companyId })
+        toast({ title: "Cambiando de organización", description: "El dashboard se actualizará con la nueva identidad." })
+        window.location.reload() // Recargar para aplicar temas y filtros
+      }
+    } catch (error) {
+      toast({ variant: "destructive", title: "Error al cambiar empresa" })
+    } finally {
+      setIsSwitching(null)
+    }
   }
 
   const handleDelete = (id: string) => {
@@ -84,7 +108,7 @@ export default function CompaniesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight mb-1">GESTIÓN DE EMPRESAS</h2>
-          <p className="text-muted-foreground text-sm">Administre las organizaciones y marcas registradas en la plataforma.</p>
+          <p className="text-muted-foreground text-sm">Administre las organizaciones registradas y acceda a sus paneles exclusivos.</p>
         </div>
         
         <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) setEditingCompany(null); }}>
@@ -156,7 +180,7 @@ export default function CompaniesPage() {
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit" className="w-full uppercase font-bold text-xs">{editingCompany ? "Actualizar Organización" : "Crear Empresa"}</Button>
+                <Button type="submit" className="w-full uppercase font-bold text-xs">{editingCompany ? "Actualizar" : "Crear Empresa"}</Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -188,7 +212,7 @@ export default function CompaniesPage() {
                   <TableHead className="text-white">Identificación</TableHead>
                   <TableHead className="text-white">Contacto</TableHead>
                   <TableHead className="text-white">Personalización</TableHead>
-                  <TableHead className="text-white w-[100px]"></TableHead>
+                  <TableHead className="text-white w-[150px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -207,12 +231,12 @@ export default function CompaniesPage() {
                         </div>
                         <div className="flex flex-col">
                           <span className="font-bold text-primary uppercase">{comp.name}</span>
-                          <span className="text-[10px] text-muted-foreground truncate max-w-[150px]">{comp.id}</span>
+                          <span className="text-[10px] text-muted-foreground truncate max-w-[120px]">{comp.id}</span>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center text-[11px] font-mono bg-muted/50 px-2 py-1 rounded w-fit">
+                      <div className="text-[11px] font-mono bg-muted/50 px-2 py-1 rounded w-fit">
                         {comp.taxId}
                       </div>
                     </TableCell>
@@ -227,12 +251,22 @@ export default function CompaniesPage() {
                         <div className="h-4 w-4 rounded shadow-sm border" style={{ backgroundColor: comp.primaryColor }}></div>
                         <div className="h-4 w-4 rounded shadow-sm border" style={{ backgroundColor: comp.accentColor }}></div>
                         <Badge variant="outline" className="text-[8px] uppercase font-bold">
-                          {comp.themeMode === 'dark' ? 'Dark' : 'Light'}
+                          {comp.themeMode}
                         </Badge>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-1">
+                      <div className="flex items-center gap-1">
+                        <Button 
+                          variant="secondary" 
+                          size="sm" 
+                          className="h-8 text-[10px] font-bold uppercase bg-primary/10 text-primary hover:bg-primary/20"
+                          onClick={() => handleSwitchCompany(comp.id)}
+                          disabled={isSwitching === comp.id}
+                        >
+                          {isSwitching === comp.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <LogIn className="mr-1.5 h-3 w-3" />}
+                          Gestionar
+                        </Button>
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(comp)}>
                           <Edit2 className="h-3.5 w-3.5" />
                         </Button>
