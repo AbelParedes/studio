@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -22,8 +23,8 @@ import {
   Mail,
   Smartphone
 } from "lucide-react"
-import { useUser, useFirestore, useDoc, useMemoFirebase, updateDocumentNonBlocking, useAuth } from "@/firebase"
-import { doc, setDoc } from "firebase/firestore"
+import { useUser, useFirestore, useDoc, useMemoFirebase, updateDocumentNonBlocking, useAuth, useCollection } from "@/firebase"
+import { doc, setDoc, collection, query, where, limit } from "firebase/firestore"
 import { toast } from "@/hooks/use-toast"
 import { signOut } from "firebase/auth"
 import { useRouter } from "next/navigation"
@@ -44,12 +45,13 @@ export default function SettingsPage() {
     role: "Coordinador de Operaciones"
   })
 
-  // Perfil del usuario en Firestore
-  const userProfileRef = useMemoFirebase(() => 
-    user ? doc(db, "company_users", user.uid) : null, 
-  [db, user])
+  // Perfil del usuario en Firestore por email
+  const userProfileQuery = useMemoFirebase(() => 
+    user?.email ? query(collection(db, "company_users"), where("email", "==", user.email), limit(1)) : null,
+  [db, user?.email])
   
-  const { data: profile, isLoading } = useDoc(userProfileRef)
+  const { data: profiles, isLoading } = useCollection(userProfileQuery)
+  const profile = profiles?.[0] || null
 
   // Sincronizar estado local con datos de Firestore
   useEffect(() => {
@@ -57,7 +59,7 @@ export default function SettingsPage() {
       setFormData({
         name: profile.name || "",
         email: profile.email || user?.email || "",
-        role: profile.role || "Coordinador de Operaciones"
+        role: profile.role || "Personal Autorizado"
       })
     } else if (user && !isLoading) {
       setFormData(prev => ({
@@ -69,8 +71,12 @@ export default function SettingsPage() {
   }, [profile, user, isLoading])
 
   const handleUpdateProfile = () => {
-    if (!userProfileRef) return
-    setDoc(userProfileRef, {
+    if (!profile) {
+      toast({ variant: "destructive", title: "Error", description: "No se encontró el documento de perfil para actualizar." })
+      return
+    }
+    const profileRef = doc(db, "company_users", profile.id)
+    setDoc(profileRef, {
       ...formData,
       updatedAt: new Date().toISOString()
     }, { merge: true })
@@ -83,8 +89,9 @@ export default function SettingsPage() {
   }
 
   const handleTogglePreference = (key: string, value: boolean) => {
-    if (!userProfileRef) return
-    updateDocumentNonBlocking(userProfileRef, {
+    if (!profile) return
+    const profileRef = doc(db, "company_users", profile.id)
+    updateDocumentNonBlocking(profileRef, {
       [`preferences.${key}`]: value
     })
     toast({ title: "Preferencias actualizadas" })
@@ -182,6 +189,8 @@ export default function SettingsPage() {
                         value={formData.email} 
                         onChange={(e) => setFormData({...formData, email: e.target.value})}
                         placeholder="email@ejemplo.com"
+                        disabled
+                        className="bg-muted"
                       />
                     </div>
                   </div>

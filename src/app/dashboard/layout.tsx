@@ -7,8 +7,8 @@ import { DashboardNav } from "@/components/dashboard-nav"
 import { Search, User, Bell, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase"
-import { doc } from "firebase/firestore"
+import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection } from "@/firebase"
+import { doc, collection, query, where, limit } from "firebase/firestore"
 
 export default function DashboardLayout({
   children,
@@ -19,14 +19,15 @@ export default function DashboardLayout({
   const db = useFirestore()
   const router = useRouter()
 
-  // 1. Obtener el perfil del usuario desde Firestore usando su UID
-  const userProfileRef = useMemoFirebase(() => 
-    user ? doc(db, "company_users", user.uid) : null, 
-  [db, user])
+  // 1. Buscar el perfil del usuario en Firestore usando su correo electrónico
+  const userProfileQuery = useMemoFirebase(() => 
+    user?.email ? query(collection(db, "company_users"), where("email", "==", user.email), limit(1)) : null,
+  [db, user?.email])
   
-  const { data: profile, isLoading: isLoadingProfile } = useDoc(userProfileRef)
+  const { data: profiles, isLoading: isLoadingProfile } = useCollection(userProfileQuery)
+  const profile = profiles?.[0] || null
 
-  // 2. Obtener la definición del rol usando el roleId del perfil
+  // 2. Obtener la definición del rol usando el roleId del perfil encontrado
   const roleRef = useMemoFirebase(() => 
     profile?.roleId ? doc(db, "system_roles", profile.roleId) : null,
   [db, profile?.roleId])
@@ -48,7 +49,7 @@ export default function DashboardLayout({
     )
   }
 
-  // Prioridad de nombre: Perfil Firestore > Display Name Auth > Prefijo de Email > "Usuario"
+  // Prioridad de nombre: Perfil Firestore (Nombre completo) > Display Name Auth > Prefijo de Email > "Usuario"
   const displayName = profile?.name || user.displayName || user.email?.split('@')[0] || "Usuario"
   
   // Prioridad de Rol: Título del Rol en Firestore > Cargo manual en perfil > Fallback
@@ -83,7 +84,7 @@ export default function DashboardLayout({
             <div className="h-8 w-px bg-border mx-2"></div>
             <div className="flex items-center space-x-3 pl-2">
               <div className="text-right hidden sm:block">
-                <p className="text-xs font-bold text-primary uppercase leading-tight">
+                <p className="text-xs font-bold text-primary uppercase leading-tight max-w-[150px] truncate">
                   {displayName}
                 </p>
                 <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-tighter">
