@@ -15,11 +15,13 @@ import {
   Settings,
   LogOut,
   UserCheck,
-  ShieldCheck
+  ShieldCheck,
+  Building2
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/firebase"
 import { signOut } from "firebase/auth"
+import Image from "next/image"
 
 const navItems = [
   { name: "Resumen", href: "/dashboard", icon: LayoutDashboard },
@@ -36,9 +38,11 @@ const navItems = [
 
 interface DashboardNavProps {
   onNavItemClick?: () => void
+  companyName?: string
+  logoUrl?: string | null
 }
 
-export function DashboardNav({ onNavItemClick }: DashboardNavProps) {
+export function DashboardNav({ onNavItemClick, companyName, logoUrl }: DashboardNavProps) {
   const pathname = usePathname()
   const auth = useAuth()
   const router = useRouter()
@@ -50,8 +54,24 @@ export function DashboardNav({ onNavItemClick }: DashboardNavProps) {
 
   return (
     <div className="flex flex-col h-full text-sidebar-foreground">
-      <div className="p-6">
-        <h1 className="text-xl font-bold tracking-wider text-white">SERVIFUMIGA <span className="text-accent">PRO</span></h1>
+      <div className="p-6 flex items-center gap-3">
+        {logoUrl ? (
+          <div className="relative h-10 w-10 bg-white rounded border overflow-hidden">
+            <Image src={logoUrl} alt="Logo" fill className="object-contain p-1" />
+          </div>
+        ) : (
+          <div className="h-10 w-10 bg-white/10 rounded flex items-center justify-center">
+            <Building2 className="h-6 w-6 text-white" />
+          </div>
+        )}
+        <div className="flex flex-col">
+          <h1 className="text-sm font-bold tracking-wider text-white uppercase truncate max-w-[140px]">
+            {companyName || "PRO" }
+          </h1>
+          <span className="text-[9px] font-bold uppercase text-accent tracking-tighter opacity-80">
+            {logoUrl ? "ORGANIZACIÓN" : "SISTEMA PRO"}
+          </span>
+        </div>
       </div>
       
       <nav className="flex-1 space-y-1 px-4 overflow-y-auto">
@@ -63,14 +83,14 @@ export function DashboardNav({ onNavItemClick }: DashboardNavProps) {
               href={item.href}
               onClick={onNavItemClick}
               className={cn(
-                "group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                "group flex items-center px-3 py-2 text-[12px] font-bold uppercase transition-colors rounded-md",
                 isActive 
                   ? "bg-sidebar-accent text-white" 
                   : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-white"
               )}
             >
               <item.icon className={cn(
-                "mr-3 h-5 w-5",
+                "mr-3 h-4 w-4",
                 isActive ? "text-white" : "text-sidebar-foreground/70 group-hover:text-white"
               )} />
               {item.name}
@@ -83,16 +103,16 @@ export function DashboardNav({ onNavItemClick }: DashboardNavProps) {
         <Link
           href="/dashboard/settings"
           onClick={onNavItemClick}
-          className="group flex items-center px-3 py-2 text-sm font-medium rounded-md text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-white transition-colors"
+          className="group flex items-center px-3 py-2 text-[12px] font-bold uppercase text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-white transition-colors"
         >
-          <Settings className="mr-3 h-5 w-5" />
+          <Settings className="mr-3 h-4 w-4" />
           Ajustes
         </Link>
         <button
           onClick={handleSignOut}
-          className="w-full group flex items-center px-3 py-2 text-sm font-medium rounded-md text-sidebar-foreground/70 hover:bg-destructive hover:text-white transition-colors"
+          className="w-full group flex items-center px-3 py-2 text-[12px] font-bold uppercase text-sidebar-foreground/70 hover:bg-destructive hover:text-white transition-colors"
         >
-          <LogOut className="mr-3 h-5 w-5" />
+          <LogOut className="mr-3 h-4 w-4" />
           Cerrar Sesión
         </button>
       </div>

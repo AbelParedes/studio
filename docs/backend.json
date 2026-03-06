@@ -1,111 +1,88 @@
 
 {
   "entities": {
+    "Company": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Company",
+      "type": "object",
+      "description": "Representa una organización o empresa cliente de la plataforma SaaS.",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "taxId": { "type": "string", "description": "RUC o DNI corporativo." },
+        "logoUrl": { "type": "string" },
+        "address": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "primaryColor": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "taxId"]
+    },
     "UserProfile": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "UserProfile",
       "type": "object",
-      "description": "Represents a user profile within the system, including their role and permissions.",
+      "description": "Perfil de usuario vinculado a una empresa específica.",
       "properties": {
         "id": { "type": "string" },
+        "companyId": { "type": "string" },
         "name": { "type": "string" },
         "email": { "type": "string", "format": "email" },
-        "roleId": { "type": "string", "description": "ID del rol asignado desde la colección de roles." },
+        "roleId": { "type": "string" },
         "status": { "type": "string", "enum": ["Active", "Inactive"] },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "name", "email", "roleId"]
-    },
-    "RoleDefinition": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "RoleDefinition",
-      "type": "object",
-      "description": "Define un rol del sistema con sus respectivos permisos.",
-      "properties": {
-        "id": { "type": "string" },
-        "title": { "type": "string" },
-        "description": { "type": "string" },
-        "permissions": {
-          "type": "object",
-          "properties": {
-            "manage_users": { "type": "boolean" },
-            "manage_inventory": { "type": "boolean" },
-            "view_reports": { "type": "boolean" },
-            "manage_clients": { "type": "boolean" },
-            "field_operations": { "type": "boolean" }
-          }
-        },
-        "color": { "type": "string" }
-      },
-      "required": ["id", "title", "permissions"]
+      "required": ["id", "companyId", "name", "email", "roleId"]
     },
     "Client": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Client",
       "type": "object",
-      "description": "Expediente detallado de cliente para Servifumiga Pro.",
       "properties": {
         "id": { "type": "string" },
+        "companyId": { "type": "string" },
         "clientType": { "type": "string", "enum": ["Empresa", "Persona"] },
         "name": { "type": "string" },
-        "legalName": { "type": "string" },
-        "taxId": { "type": "string", "description": "RUC para empresas, DNI para personas." },
-        "industry": { "type": "string" },
-        "phone": { "type": "string" },
-        "email": { "type": "string", "format": "email" },
-        "address": { "type": "string" },
-        "contactPerson": {
-          "type": "object",
-          "properties": {
-            "name": { "type": "string" },
-            "position": { "type": "string" },
-            "phone": { "type": "string" }
-          }
-        },
-        "notes": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "taxId": { "type": "string" },
+        "email": { "type": "string" },
+        "address": { "type": "string" }
       },
-      "required": ["id", "clientType", "name", "taxId", "email", "address"]
+      "required": ["id", "companyId", "clientType", "name", "taxId"]
     },
     "ServiceAppointment": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "ServiceAppointment",
       "type": "object",
-      "description": "Cita de servicio técnico programada.",
       "properties": {
         "id": { "type": "string" },
+        "companyId": { "type": "string" },
         "clientId": { "type": "string" },
-        "clientName": { "type": "string" },
-        "serviceType": { "type": "string", "enum": ["Extintores", "Fumigación", "Inspección"] },
-        "technicianId": { "type": "string" },
-        "technicianName": { "type": "string" },
-        "date": { "type": "string", "format": "date" },
-        "time": { "type": "string" },
-        "status": { "type": "string", "enum": ["Pendiente", "Confirmado", "Completado", "Cancelado"] },
-        "notes": { "type": "string" }
+        "date": { "type": "string" },
+        "status": { "type": "string" }
       },
-      "required": ["id", "clientId", "clientName", "serviceType", "date", "time", "status"]
+      "required": ["id", "companyId", "clientId", "date", "status"]
     }
   },
   "auth": {
     "providers": ["password", "anonymous"]
   },
   "firestore": {
+    "companies": {
+      "schema": { "$ref": "#/backend/entities/Company" },
+      "description": "Registro central de empresas."
+    },
     "company_users": {
       "schema": { "$ref": "#/backend/entities/UserProfile" },
-      "description": "Perfiles de usuarios del sistema."
-    },
-    "system_roles": {
-      "schema": { "$ref": "#/backend/entities/RoleDefinition" },
-      "description": "Definiciones de roles y permisos del sistema."
+      "description": "Usuarios de la plataforma."
     },
     "clients": {
       "schema": { "$ref": "#/backend/entities/Client" },
-      "description": "Colección de clientes."
+      "description": "Clientes por empresa."
     },
     "appointments": {
       "schema": { "$ref": "#/backend/entities/ServiceAppointment" },
-      "description": "Programación global de servicios técnicos."
+      "description": "Citas por empresa."
     }
   }
 }

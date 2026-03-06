@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { 
-  Settings, 
   User, 
   Bell, 
   Lock, 
@@ -18,10 +17,10 @@ import {
   Save, 
   LogOut, 
   ShieldCheck, 
-  Download, 
-  Trash2,
+  Building2,
   Mail,
-  Smartphone
+  Smartphone,
+  Globe
 } from "lucide-react"
 import { useUser, useFirestore, useDoc, useMemoFirebase, updateDocumentNonBlocking, useAuth, useCollection } from "@/firebase"
 import { doc, setDoc, collection, query, where, limit } from "firebase/firestore"
@@ -29,8 +28,9 @@ import { toast } from "@/hooks/use-toast"
 import { signOut } from "firebase/auth"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
+import Image from "next/image"
 
-type SettingsTab = "profile" | "notifications" | "security" | "data"
+type SettingsTab = "profile" | "company" | "notifications" | "security" | "data"
 
 export default function SettingsPage() {
   const { user } = useUser()
@@ -39,62 +39,67 @@ export default function SettingsPage() {
   const router = useRouter()
   
   const [activeTab, setActiveTab] = useState<SettingsTab>("profile")
-  const [formData, setFormData] = useState({
+  const [isSaving, setIsSaving] = useState(false)
+  const [formData, setFormData] = useState({ name: "", email: "" })
+  const [companyData, setCompanyData] = useState({
     name: "",
-    email: "",
-    role: "Coordinador de Operaciones"
+    taxId: "",
+    address: "",
+    logoUrl: "",
+    phone: ""
   })
 
-  // Perfil del usuario en Firestore por email
   const userProfileQuery = useMemoFirebase(() => 
     user?.email ? query(collection(db, "company_users"), where("email", "==", user.email), limit(1)) : null,
   [db, user?.email])
   
-  const { data: profiles, isLoading } = useCollection(userProfileQuery)
+  const { data: profiles, isLoading: loadingProfile } = useCollection(userProfileQuery)
   const profile = profiles?.[0] || null
 
-  // Sincronizar estado local con datos de Firestore
+  const companyRef = useMemoFirebase(() => 
+    profile?.companyId ? doc(db, "companies", profile.companyId) : null,
+  [db, profile?.companyId])
+  const { data: company, isLoading: loadingCompany } = useDoc(companyRef)
+
   useEffect(() => {
     if (profile) {
-      setFormData({
-        name: profile.name || "",
-        email: profile.email || user?.email || "",
-        role: profile.role || "Personal Autorizado"
-      })
-    } else if (user && !isLoading) {
-      setFormData(prev => ({
-        ...prev,
-        name: user.displayName || "",
-        email: user.email || ""
-      }))
+      setFormData({ name: profile.name || "", email: profile.email || user?.email || "" })
     }
-  }, [profile, user, isLoading])
+    if (company) {
+      setCompanyData({
+        name: company.name || "",
+        taxId: company.taxId || "",
+        address: company.address || "",
+        logoUrl: company.logoUrl || "",
+        phone: company.phone || ""
+      })
+    }
+  }, [profile, company, user])
 
-  const handleUpdateProfile = () => {
-    if (!profile) {
-      toast({ variant: "destructive", title: "Error", description: "No se encontró el documento de perfil para actualizar." })
-      return
+  const handleUpdateProfile = async () => {
+    if (!profile) return
+    setIsSaving(true)
+    try {
+      await setDoc(doc(db, "company_users", profile.id), { ...formData }, { merge: true })
+      toast({ title: "Perfil actualizado" })
+    } catch {
+      toast({ variant: "destructive", title: "Error al actualizar" })
+    } finally {
+      setIsSaving(false)
     }
-    const profileRef = doc(db, "company_users", profile.id)
-    setDoc(profileRef, {
-      ...formData,
-      updatedAt: new Date().toISOString()
-    }, { merge: true })
-      .then(() => {
-        toast({ title: "Perfil actualizado", description: "Tus cambios se han guardado correctamente." })
-      })
-      .catch(() => {
-        toast({ variant: "destructive", title: "Error", description: "No se pudo actualizar el perfil." })
-      })
   }
 
-  const handleTogglePreference = (key: string, value: boolean) => {
-    if (!profile) return
-    const profileRef = doc(db, "company_users", profile.id)
-    updateDocumentNonBlocking(profileRef, {
-      [`preferences.${key}`]: value
-    })
-    toast({ title: "Preferencias actualizadas" })
+  const handleUpdateCompany = async () => {
+    if (!profile?.companyId) return
+    setIsSaving(true)
+    try {
+      await setDoc(doc(db, "companies", profile.companyId), { ...companyData }, { merge: true })
+      toast({ title: "Datos de empresa actualizados" })
+    } catch {
+      toast({ variant: "destructive", title: "Error al guardar datos de empresa" })
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const handleSignOut = async () => {
@@ -102,10 +107,11 @@ export default function SettingsPage() {
     router.push("/")
   }
 
-  if (isLoading) {
+  if (loadingProfile || loadingCompany) {
     return (
-      <div className="h-full flex items-center justify-center">
+      <div className="h-full flex flex-col items-center justify-center p-20 gap-2">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-xs font-bold uppercase text-muted-foreground">Cargando ajustes...</p>
       </div>
     )
   }
@@ -114,181 +120,125 @@ export default function SettingsPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight mb-1">AJUSTES DEL SISTEMA</h2>
-          <p className="text-muted-foreground text-sm">Configure sus preferencias de usuario y parámetros generales.</p>
+          <h2 className="text-2xl font-bold tracking-tight mb-1">AJUSTES Y PERSONALIZACIÓN</h2>
+          <p className="text-muted-foreground text-sm">Administre su perfil personal y los datos de su organización.</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Sidebar de Ajustes */}
-        <div className="lg:col-span-1 space-y-2">
-          <nav className="flex flex-col space-y-1">
-            <Button 
-              variant="ghost" 
-              className={cn("justify-start font-bold h-10", activeTab === "profile" && "bg-accent/10 text-accent")}
-              onClick={() => setActiveTab("profile")}
-            >
-              <User className="mr-3 h-4 w-4" /> Perfil de Usuario
+        <div className="lg:col-span-1">
+          <nav className="flex flex-col space-y-1 bg-white p-2 rounded-lg border">
+            <Button variant="ghost" className={cn("justify-start font-bold", activeTab === "profile" && "bg-primary/5 text-primary")} onClick={() => setActiveTab("profile")}>
+              <User className="mr-3 h-4 w-4" /> Perfil Personal
             </Button>
-            <Button 
-              variant="ghost" 
-              className={cn("justify-start font-bold h-10", activeTab === "notifications" && "bg-accent/10 text-accent")}
-              onClick={() => setActiveTab("notifications")}
-            >
+            <Button variant="ghost" className={cn("justify-start font-bold", activeTab === "company" && "bg-primary/5 text-primary")} onClick={() => setActiveTab("company")}>
+              <Building2 className="mr-3 h-4 w-4" /> Mi Empresa
+            </Button>
+            <Button variant="ghost" className={cn("justify-start font-bold", activeTab === "notifications" && "bg-primary/5 text-primary")} onClick={() => setActiveTab("notifications")}>
               <Bell className="mr-3 h-4 w-4" /> Notificaciones
             </Button>
-            <Button 
-              variant="ghost" 
-              className={cn("justify-start font-bold h-10", activeTab === "security" && "bg-accent/10 text-accent")}
-              onClick={() => setActiveTab("security")}
-            >
+            <Button variant="ghost" className={cn("justify-start font-bold", activeTab === "security" && "bg-primary/5 text-primary")} onClick={() => setActiveTab("security")}>
               <Lock className="mr-3 h-4 w-4" /> Seguridad
             </Button>
-            <Button 
-              variant="ghost" 
-              className={cn("justify-start font-bold h-10", activeTab === "data" && "bg-accent/10 text-accent")}
-              onClick={() => setActiveTab("data")}
-            >
-              <Database className="mr-3 h-4 w-4" /> Datos y Respaldo
-            </Button>
             <Separator className="my-2" />
-            <Button 
-              variant="ghost" 
-              className="justify-start text-destructive hover:bg-destructive/10 hover:text-destructive h-10 font-bold"
-              onClick={handleSignOut}
-            >
+            <Button variant="ghost" className="justify-start text-destructive hover:bg-destructive/5 font-bold" onClick={handleSignOut}>
               <LogOut className="mr-3 h-4 w-4" /> Cerrar Sesión
             </Button>
           </nav>
         </div>
 
-        {/* Contenido de Ajustes */}
         <div className="lg:col-span-3 space-y-6">
           {activeTab === "profile" && (
-            <>
-              <Card className="shadow-sm border-none">
-                <CardHeader>
-                  <CardTitle className="text-lg font-bold">Información Personal</CardTitle>
-                  <CardDescription>Actualice sus datos de contacto y cargo administrativo.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Nombre Completo</Label>
-                      <Input 
-                        id="name" 
-                        value={formData.name} 
-                        onChange={(e) => setFormData({...formData, name: e.target.value})}
-                        placeholder="Tu nombre"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email de Contacto</Label>
-                      <Input 
-                        id="email" 
-                        value={formData.email} 
-                        onChange={(e) => setFormData({...formData, email: e.target.value})}
-                        placeholder="email@ejemplo.com"
-                        disabled
-                        className="bg-muted"
-                      />
-                    </div>
+            <Card className="shadow-sm border-none">
+              <CardHeader>
+                <CardTitle className="text-lg font-bold">Información Personal</CardTitle>
+                <CardDescription>Datos del administrador de cuenta.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Nombre Completo</Label>
+                    <Input value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="role">Cargo / Rol</Label>
-                    <Input id="role" value={formData.role} disabled className="bg-muted" />
+                    <Label>Email</Label>
+                    <Input value={formData.email} disabled className="bg-muted" />
                   </div>
-                  <Button className="bg-primary text-white" onClick={handleUpdateProfile}>
-                    <Save className="mr-2 h-4 w-4" /> Guardar Cambios
-                  </Button>
-                </CardContent>
-              </Card>
+                </div>
+                <Button className="bg-primary text-white" onClick={handleUpdateProfile} disabled={isSaving}>
+                  {isSaving && <Loader2 className="mr-2 h-3 w-3 animate-spin" />} Guardar Cambios
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
-              <Card className="shadow-sm border-none">
-                <CardHeader>
-                  <CardTitle className="text-lg font-bold">Automatización AI</CardTitle>
-                  <CardDescription>Configure cómo interactúa el motor de IA con sus servicios.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Recordatorios Automáticos</Label>
-                      <p className="text-xs text-muted-foreground">Permitir que la IA sugiera fechas de servicio basadas en el historial.</p>
-                    </div>
-                    <Switch 
-                      checked={profile?.preferences?.autoReminders ?? true} 
-                      onCheckedChange={(val) => handleTogglePreference('autoReminders', val)}
-                    />
+          {activeTab === "company" && (
+            <Card className="shadow-sm border-none">
+              <CardHeader>
+                <CardTitle className="text-lg font-bold">Configuración de Empresa</CardTitle>
+                <CardDescription>Personalice la apariencia y datos legales de su organización.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex flex-col sm:flex-row items-center gap-6 p-4 border rounded-lg bg-muted/20">
+                  <div className="relative h-24 w-24 rounded border bg-white flex items-center justify-center overflow-hidden">
+                    {companyData.logoUrl ? (
+                      <Image src={companyData.logoUrl} alt="Logo" fill className="object-contain p-2" />
+                    ) : (
+                      <Building2 className="h-10 w-10 text-muted-foreground" />
+                    )}
                   </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Generación de Resúmenes</Label>
-                      <p className="text-xs text-muted-foreground">Analizar documentación técnica automáticamente para el dashboard.</p>
+                  <div className="flex-1 space-y-2">
+                    <Label>URL del Logo Corporativo</Label>
+                    <div className="flex gap-2">
+                      <Input 
+                        placeholder="https://..." 
+                        value={companyData.logoUrl} 
+                        onChange={(e) => setCompanyData({...companyData, logoUrl: e.target.value})} 
+                      />
+                      <Button variant="outline" size="icon"><Globe className="h-4 w-4" /></Button>
                     </div>
-                    <Switch 
-                      checked={profile?.preferences?.autoSummaries ?? true}
-                      onCheckedChange={(val) => handleTogglePreference('autoSummaries', val)}
-                    />
+                    <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">Recomendado: Fondo transparente (PNG) 200x200px.</p>
                   </div>
-                </CardContent>
-              </Card>
-            </>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Nombre Comercial</Label>
+                    <Input value={companyData.name} onChange={(e) => setCompanyData({...companyData, name: e.target.value})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>RUC / DNI Corporativo</Label>
+                    <Input value={companyData.taxId} onChange={(e) => setCompanyData({...companyData, taxId: e.target.value})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Teléfono</Label>
+                    <Input value={companyData.phone} onChange={(e) => setCompanyData({...companyData, phone: e.target.value})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Dirección Fiscal</Label>
+                    <Input value={companyData.address} onChange={(e) => setCompanyData({...companyData, address: e.target.value})} />
+                  </div>
+                </div>
+                <Button className="bg-primary text-white" onClick={handleUpdateCompany} disabled={isSaving}>
+                  {isSaving && <Loader2 className="mr-2 h-3 w-3 animate-spin" />} Actualizar Datos de Empresa
+                </Button>
+              </CardContent>
+            </Card>
           )}
 
           {activeTab === "notifications" && (
             <Card className="shadow-sm border-none">
               <CardHeader>
-                <CardTitle className="text-lg font-bold">Canales de Notificación</CardTitle>
-                <CardDescription>Elija cómo desea recibir las alertas críticas del sistema.</CardDescription>
+                <CardTitle className="text-lg font-bold">Notificaciones</CardTitle>
+                <CardDescription>Alertas del sistema.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 bg-primary/10 rounded-full flex items-center justify-center">
-                      <Mail className="h-5 w-5 text-primary" />
-                    </div>
-                    <div className="space-y-0.5">
-                      <Label>Alertas por Email</Label>
-                      <p className="text-xs text-muted-foreground">Reciba un resumen diario de servicios y facturación.</p>
-                    </div>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-2 border rounded">
+                  <div className="space-y-0.5">
+                    <Label>Alertas de Vencimiento</Label>
+                    <p className="text-xs text-muted-foreground italic">Notificar 30 días antes de caducidad.</p>
                   </div>
-                  <Switch 
-                    checked={profile?.preferences?.emailAlerts ?? true}
-                    onCheckedChange={(val) => handleTogglePreference('emailAlerts', val)}
-                  />
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 bg-accent/10 rounded-full flex items-center justify-center">
-                      <Smartphone className="h-5 w-5 text-accent" />
-                    </div>
-                    <div className="space-y-0.5">
-                      <Label>Notificaciones Push</Label>
-                      <p className="text-xs text-muted-foreground">Avisos instantáneos sobre cambios en la programación.</p>
-                    </div>
-                  </div>
-                  <Switch 
-                    checked={profile?.preferences?.pushAlerts ?? false}
-                    onCheckedChange={(val) => handleTogglePreference('pushAlerts', val)}
-                  />
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 bg-green-100 rounded-full flex items-center justify-center">
-                      <Bell className="h-5 w-5 text-green-600" />
-                    </div>
-                    <div className="space-y-0.5">
-                      <Label>Recordatorios de Vencimiento</Label>
-                      <p className="text-xs text-muted-foreground">Alertar 30 días antes de que un extintor caduque.</p>
-                    </div>
-                  </div>
-                  <Switch 
-                    checked={profile?.preferences?.dueAlerts ?? true}
-                    onCheckedChange={(val) => handleTogglePreference('dueAlerts', val)}
-                  />
+                  <Switch checked />
                 </div>
               </CardContent>
             </Card>
@@ -297,88 +247,15 @@ export default function SettingsPage() {
           {activeTab === "security" && (
             <Card className="shadow-sm border-none">
               <CardHeader>
-                <CardTitle className="text-lg font-bold">Seguridad de la Cuenta</CardTitle>
-                <CardDescription>Gestione el acceso y la protección de su perfil administrativo.</CardDescription>
+                <CardTitle className="text-lg font-bold">Seguridad</CardTitle>
+                <CardDescription>Protección de cuenta.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="p-4 bg-status-success/5 border border-status-success/20 rounded-lg flex items-start gap-3">
-                  <ShieldCheck className="h-5 w-5 text-status-success mt-0.5" />
-                  <div>
-                    <h4 className="text-sm font-bold text-status-success uppercase">Estado de Seguridad: ÓPTIMO</h4>
-                    <p className="text-xs text-muted-foreground">Su cuenta está protegida por políticas de acceso empresarial.</p>
-                  </div>
-                </div>
-                
-                <div className="space-y-4 pt-2">
-                  <div className="grid gap-2">
-                    <Label htmlFor="curr-pass">Contraseña Actual</Label>
-                    <Input id="curr-pass" type="password" placeholder="••••••••" />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="new-pass">Nueva Contraseña</Label>
-                    <Input id="new-pass" type="password" placeholder="Mínimo 8 caracteres" />
-                  </div>
-                  <Button variant="outline" className="w-full sm:w-auto">Actualizar Contraseña</Button>
-                </div>
-
-                <Separator />
-                
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Autenticación de Dos Pasos (2FA)</Label>
-                    <p className="text-xs text-muted-foreground">Añada una capa extra de seguridad a su inicio de sesión.</p>
-                  </div>
-                  <Switch 
-                    checked={profile?.preferences?.twoFactor ?? false}
-                    onCheckedChange={(val) => handleTogglePreference('twoFactor', val)}
-                  />
+              <CardContent className="space-y-4">
+                <div className="p-4 bg-status-success/5 border border-status-success/20 rounded flex items-center gap-3">
+                  <ShieldCheck className="h-5 w-5 text-status-success" />
+                  <span className="text-xs font-bold text-status-success uppercase">Estado de Seguridad Óptimo</span>
                 </div>
               </CardContent>
-            </Card>
-          )}
-
-          {activeTab === "data" && (
-            <Card className="shadow-sm border-none">
-              <CardHeader>
-                <CardTitle className="text-lg font-bold">Gestión de Datos</CardTitle>
-                <CardDescription>Exporte su información operativa o realice limpiezas de mantenimiento.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Button variant="outline" className="h-20 flex flex-col items-center justify-center gap-2 border-dashed">
-                    <Download className="h-5 w-5 text-primary" />
-                    <span className="text-xs font-bold uppercase">Exportar Inventario (CSV)</span>
-                  </Button>
-                  <Button variant="outline" className="h-20 flex flex-col items-center justify-center gap-2 border-dashed">
-                    <Database className="h-5 w-5 text-primary" />
-                    <span className="text-xs font-bold uppercase">Respaldo de Clientes (JSON)</span>
-                  </Button>
-                </div>
-
-                <Separator />
-
-                <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-4">
-                  <div className="flex items-center gap-3 mb-4">
-                    <Trash2 className="h-5 w-5 text-destructive" />
-                    <div>
-                      <h4 className="text-sm font-bold text-destructive uppercase">Zona de Peligro</h4>
-                      <p className="text-xs text-muted-foreground">Estas acciones son irreversibles y afectan la base de datos local.</p>
-                    </div>
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <Button variant="destructive" size="sm" className="font-bold text-[10px] uppercase">
-                      Limpiar Caché de Búsqueda
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 font-bold text-[10px] uppercase">
-                      Solicitar Borrado de Cuenta
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter className="bg-muted/50 py-4 flex items-center justify-between">
-                <p className="text-[10px] text-muted-foreground uppercase font-medium">Último respaldo automático: Hace 2 horas</p>
-                <Button variant="ghost" size="sm" className="text-[10px] font-bold uppercase h-7">Configurar Frecuencia</Button>
-              </CardFooter>
             </Card>
           )}
         </div>
