@@ -72,13 +72,13 @@ export default function QuotationsPage() {
   [db, companyId])
   const { data: clients } = useCollection(clientsRef)
 
-  // 3. Lógica de Numeración Correlativa Anual
+  // 3. Lógica de Numeración Correlativa Anual (COT-0001-2025)
   const suggestedQuotationNumber = useMemo(() => {
     const currentYear = new Date().getFullYear()
     if (!quotations) return `COT-0001-${currentYear}`
     const yearQuotations = quotations.filter(q => {
-      const qDate = q.date ? new Date(q.date) : new Date()
-      return qDate.getFullYear() === currentYear
+      const qNum = q.quotationNumber || ""
+      return qNum.endsWith(`-${currentYear}`)
     })
     const nextCount = yearQuotations.length + 1
     return `COT-${nextCount.toString().padStart(4, '0')}-${currentYear}`
@@ -183,7 +183,7 @@ export default function QuotationsPage() {
           {/* CABECERA: LOGO (CABECERA) IZQUIERDA, TEXTO DERECHA */}
           <div className="pt-10 px-10 pb-6 shrink-0 flex items-center justify-between border-b-2 border-primary/10">
             {/* Logo o Cabecera a la izquierda */}
-            <div className="relative h-20 w-48">
+            <div className="relative h-16 w-48">
               {(company?.headerUrl || company?.logoUrl) ? (
                 <Image 
                   src={company.headerUrl || company.logoUrl} 
@@ -201,12 +201,12 @@ export default function QuotationsPage() {
             
             {/* Razón Social y Número a la derecha */}
             <div className="text-right space-y-1 max-w-[55%]">
-              <h1 className="text-sm font-black text-primary uppercase tracking-tight truncate">
+              <h1 className="text-xs font-black text-primary uppercase tracking-tight truncate">
                 {company?.name || "EXTINTORES APEVA SAAS"}
               </h1>
               <div className="flex flex-col items-end">
-                <span className="text-[10px] font-bold text-slate-700 uppercase tracking-tight mb-1">RUC: {company?.taxId || "---"}</span>
-                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200 w-full text-right pb-0.5">COTIZACIÓN</span>
+                <span className="text-[9px] font-bold text-slate-700 uppercase tracking-tight mb-1">RUC: {company?.taxId || "---"}</span>
+                <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200 w-full text-right pb-0.5">COTIZACIÓN</span>
                 <div className="mt-1 bg-primary text-white px-4 py-1.5 rounded font-black text-xs shadow-sm">
                   N° {viewingQuotation.quotationNumber}
                 </div>
@@ -251,7 +251,7 @@ export default function QuotationsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {viewingQuotation.items?.map((item: any, idx: number) => (
+                    {(viewingQuotation.items || []).map((item: any, idx: number) => (
                       <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                         <td className="p-2.5 text-center font-bold border-r border-slate-100">{item.quantity || 0}</td>
                         <td className="p-2.5 font-medium uppercase text-slate-700">{item.description || "---"}</td>
@@ -260,7 +260,7 @@ export default function QuotationsPage() {
                       </tr>
                     ))}
                     {/* FILAS VACÍAS PARA RELLENAR */}
-                    {Array.from({ length: Math.max(0, 12 - (viewingQuotation.items?.length || 0)) }).map((_, i) => (
+                    {Array.from({ length: Math.max(0, 15 - (viewingQuotation.items?.length || 0)) }).map((_, i) => (
                       <tr key={`empty-${i}`} className="h-8 border-b border-slate-50">
                         <td className="border-r border-slate-50"></td>
                         <td></td>
@@ -293,7 +293,7 @@ export default function QuotationsPage() {
 
             <div className="space-y-4 pt-8">
               <h3 className="text-[9px] font-black text-primary uppercase border-b border-primary/20 w-fit pb-1">CONDICIONES COMERCIALES</h3>
-              <ul className="text-[9px] text-slate-600 space-y-1.5 uppercase font-bold leading-tight">
+              <ul className="text-[8px] text-slate-600 space-y-1.5 uppercase font-bold leading-tight">
                 <li className="flex items-center gap-2"><CheckCircle2 className="h-3 w-3 text-primary opacity-50" /> LOS EQUIPOS CUMPLEN CON LAS NORMAS TÉCNICAS PERUANAS (NTP).</li>
                 <li className="flex items-center gap-2"><CheckCircle2 className="h-3 w-3 text-primary opacity-50" /> GARANTÍA DE FÁBRICA POR 01 AÑO CONTRA DEFECTOS DE CARGA.</li>
                 <li className="flex items-center gap-2"><CheckCircle2 className="h-3 w-3 text-primary opacity-50" /> FORMA DE PAGO: CONTADO / TRANSFERENCIA BANCARIA.</li>
@@ -301,9 +301,9 @@ export default function QuotationsPage() {
             </div>
           </div>
 
-          {/* PIE DE PÁGINA: FONDO GOLD SOLICITADO */}
+          {/* PIE DE PÁGINA: FONDO GOLD */}
           <div 
-            className="mt-auto shrink-0 flex flex-col items-center justify-center relative overflow-hidden print:bg-[rgb(255,215,0)]"
+            className="mt-auto shrink-0 flex flex-col items-center justify-center relative overflow-hidden print-gold-bg"
             style={{ 
               backgroundColor: 'rgb(255, 215, 0)',
               WebkitPrintColorAdjust: 'exact',
@@ -311,11 +311,11 @@ export default function QuotationsPage() {
             }}
           >
             {company?.footerUrl ? (
-              <div className="relative w-full h-[100px] flex items-center justify-center">
+              <div className="relative w-full h-[80px] flex items-center justify-center">
                 <Image src={company.footerUrl} alt="Footer Membrete" fill className="object-contain" unoptimized />
               </div>
             ) : (
-              <div className="p-6 w-full flex flex-col items-center text-center gap-2">
+              <div className="p-4 w-full flex flex-col items-center text-center gap-1">
                 <div className="flex flex-wrap justify-center gap-x-8 gap-y-1 text-[8px] font-black text-slate-900 uppercase">
                   <p className="flex items-center gap-1.5"><MapPin className="h-3 w-3" /> {company?.address || "LIMA, PERÚ"}</p>
                   <p className="flex items-center gap-1.5"><Phone className="h-3 w-3" /> {company?.phone || "CENTRAL DE SERVICIOS"}</p>
@@ -323,7 +323,7 @@ export default function QuotationsPage() {
                 </div>
                 <div>
                   <p className="text-[8px] font-black text-slate-900 uppercase tracking-widest opacity-60">
-                    SISTEMA SAAS MASTER SYNC © {currentYear} | EXCLUSIVO EXTINTORES APEVA
+                    SISTEMA DE GESTIÓN © {currentYear} | {company?.name || "EXTINTORES APEVA"}
                   </p>
                 </div>
               </div>
@@ -347,6 +347,11 @@ export default function QuotationsPage() {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
               }
+              .print-gold-bg {
+                background-color: rgb(255, 215, 0) !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
               @page { size: A4; margin: 0; }
             }
           `}</style>
@@ -361,7 +366,7 @@ export default function QuotationsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase text-primary">Gestión de Ventas</h2>
-          <p className="text-muted-foreground text-sm italic font-medium">Genere cotizaciones oficiales con diseño corporativo Apeva.</p>
+          <p className="text-muted-foreground text-sm italic font-medium">Genere cotizaciones oficiales con diseño corporativo.</p>
         </div>
         
         <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) { setEditingQuotation(null); setItems([]); } }}>
