@@ -106,3 +106,36 @@
     background: #334155;
   }
 }
+
+/* Estilos específicos para impresión */
+@media print {
+  body {
+    background-color: white !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  aside, 
+  header, 
+  nav, 
+  button, 
+  .print\:hidden {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    background: white !important;
+  }
+
+  .flex-1 {
+    overflow: visible !important;
+  }
+
+  /* Asegurar que el pie de página mantenga su color de fondo al imprimir */
+  [style*="background-color"] {
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+}

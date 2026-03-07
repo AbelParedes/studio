@@ -19,7 +19,9 @@ import {
   Building2,
   FileText,
   Globe,
-  Gavel
+  Gavel,
+  Printer,
+  Download
 } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, useUser, useDoc } from "@/firebase"
 import { collection, doc, query, where } from "firebase/firestore"
@@ -160,19 +162,31 @@ export default function QuotationsPage() {
     setIsAdding(true)
   }
 
+  const handlePrint = () => {
+    window.print()
+  }
+
   if (viewingQuotation) {
     const client = clients?.find(c => c.id === viewingQuotation.clientId)
     const conditions = viewingQuotation.conditions || "• Validez de la oferta: 15 días.\n• Forma de pago: Contado / Transferencia.\n• Tiempo de ejecución: A coordinar.\n• Garantía de servicio: 12 meses."
 
     return (
       <div className="space-y-4 animate-in fade-in duration-300">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 print:hidden">
           <Button variant="ghost" onClick={() => setViewingQuotation(null)} className="font-bold uppercase text-[10px]">
             <ArrowLeft className="mr-2 h-3 w-3" /> Volver al Listado
           </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handlePrint} className="font-bold uppercase text-[10px]">
+              <Printer className="mr-2 h-3 w-3" /> Imprimir
+            </Button>
+            <Button size="sm" onClick={handlePrint} className="bg-primary text-white font-bold uppercase text-[10px]">
+              <Download className="mr-2 h-3 w-3" /> Descargar PDF
+            </Button>
+          </div>
         </div>
 
-        <div className="bg-white p-0 shadow-2xl mx-auto w-[210mm] min-h-[297mm] flex flex-col relative overflow-hidden text-[#1c1c1c] border">
+        <div className="bg-white p-0 shadow-2xl mx-auto w-[210mm] min-h-[297mm] flex flex-col relative overflow-hidden text-[#1c1c1c] border print:shadow-none print:border-none print:m-0 print:w-full">
           <div className="pt-12 px-12 pb-8 shrink-0 flex items-center justify-between border-b-[3px] border-[#d9534f]">
             <div className="relative h-20 w-64">
               {(company?.headerUrl || company?.logoUrl) ? (
