@@ -74,9 +74,9 @@ export default function QuotationsPage() {
   [db, companyId])
   const { data: clients } = useCollection(clientsRef)
 
-  // 3. Lógica de Numeración Correlativa Anual (COT-0001-2025)
+  // 3. Lógica de Numeración Correlativa Anual (COT-0001-202X)
+  const currentYear = new Date().getFullYear()
   const suggestedQuotationNumber = useMemo(() => {
-    const currentYear = new Date().getFullYear()
     if (!quotations || quotations.length === 0) return `COT-0001-${currentYear}`
     
     const yearQuotations = quotations.filter(q => {
@@ -93,7 +93,7 @@ export default function QuotationsPage() {
     
     const maxNum = Math.max(...numbers)
     return `COT-${(maxNum + 1).toString().padStart(4, '0')}-${currentYear}`
-  }, [quotations])
+  }, [quotations, currentYear])
 
   // 4. Handlers de Items
   const handleAddItem = () => {
@@ -183,7 +183,7 @@ export default function QuotationsPage() {
               <Printer className="mr-2 h-3 w-3" /> Imprimir
             </Button>
             <Button onClick={handlePrint} className="bg-[#d9534f] text-white font-bold uppercase text-[10px] h-8 shadow-md">
-              <Download className="mr-2 h-3 w-3" /> Guardar PDF
+              <Download className="mr-2 h-3 w-3" /> Descargar PDF
             </Button>
           </div>
         </div>
