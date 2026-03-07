@@ -54,18 +54,33 @@
       },
       "required": ["id", "companyId", "clientType", "name", "taxId"]
     },
-    "ServiceAppointment": {
+    "Quotation": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "ServiceAppointment",
+      "title": "Quotation",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
         "companyId": { "type": "string" },
         "clientId": { "type": "string" },
-        "date": { "type": "string" },
-        "status": { "type": "string" }
-      },
-      "required": ["id", "companyId", "clientId", "date", "status"]
+        "quotationNumber": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "description": { "type": "string" },
+              "quantity": { "type": "number" },
+              "unitPrice": { "type": "number" },
+              "total": { "type": "number" }
+            }
+          }
+        },
+        "subtotal": { "type": "number" },
+        "tax": { "type": "number" },
+        "total": { "type": "number" },
+        "status": { "type": "string", "enum": ["Borrador", "Enviado", "Aceptado", "Rechazado"] }
+      }
     }
   },
   "auth": {
@@ -84,9 +99,9 @@
       "schema": { "$ref": "#/backend/entities/Client" },
       "description": "Clientes por empresa."
     },
-    "appointments": {
-      "schema": { "$ref": "#/backend/entities/ServiceAppointment" },
-      "description": "Citas por empresa."
+    "quotations": {
+      "schema": { "$ref": "#/backend/entities/Quotation" },
+      "description": "Cotizaciones generadas por empresa."
     }
   }
 }

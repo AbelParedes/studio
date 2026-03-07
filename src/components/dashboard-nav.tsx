@@ -16,7 +16,8 @@ import {
   LogOut,
   UserCheck,
   ShieldCheck,
-  Building2
+  Building2,
+  FileText
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/firebase"
@@ -27,6 +28,7 @@ const navItems = [
   { name: "Resumen", href: "/dashboard", icon: LayoutDashboard },
   { name: "Empresas", href: "/dashboard/companies", icon: Building2, superAdminOnly: true },
   { name: "Clientes", href: "/dashboard/clients", icon: Users },
+  { name: "Cotizaciones", href: "/dashboard/quotations", icon: FileText },
   { name: "Usuarios", href: "/dashboard/users", icon: UserCheck },
   { name: "Roles y Permisos", href: "/dashboard/roles", icon: ShieldCheck, adminOnly: true },
   { name: "Inventario", href: "/dashboard/inventory", icon: Flame },
@@ -54,14 +56,9 @@ export function DashboardNav({ onNavItemClick, companyName, logoUrl, userRole }:
     router.push("/login")
   }
 
-  // Filter navigation items based on role
   const filteredItems = navItems.filter(item => {
-    // Only "Administrador" (Super Admin) sees the Companies module
     if (item.superAdminOnly && userRole !== "Administrador") return false
-    
-    // Admin only roles
     if (item.adminOnly && userRole !== "Administrador" && userRole !== "Coordinador de Servicios") return false
-
     return true
   })
 
