@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState } from "react"
@@ -21,7 +20,8 @@ import {
   ArrowLeft,
   MousePointer2,
   Flame,
-  CheckCircle2
+  CheckCircle2,
+  Download
 } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, useUser, useDoc } from "@/firebase"
 import { collection, doc, query, where } from "firebase/firestore"
@@ -109,11 +109,11 @@ export default function QuotationsPage() {
 
     if (editingQuotation) {
       updateDocumentNonBlocking(doc(db, "quotations", editingQuotation.id), quotationData)
-      toast({ title: "Cotización actualizada correctamente" })
+      toast({ title: "Cotización actualizada" })
     } else {
       const newId = crypto.randomUUID()
       addDocumentNonBlocking(collection(db, "quotations"), { ...quotationData, id: newId, createdAt: new Date().toISOString() })
-      toast({ title: "Cotización generada con éxito" })
+      toast({ title: "Cotización generada" })
     }
 
     setIsAdding(false)
@@ -147,16 +147,16 @@ export default function QuotationsPage() {
 
     return (
       <div className="space-y-6 animate-in fade-in duration-500">
-        <div className="flex items-center justify-between no-print">
+        <div className="flex items-center justify-between no-print mb-6">
           <Button variant="ghost" onClick={() => setViewingQuotation(null)} className="font-bold uppercase text-xs text-primary">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Regresar al Listado
+            <ArrowLeft className="mr-2 h-4 w-4" /> Volver al Listado
           </Button>
           <div className="flex gap-3">
             <Button variant="outline" onClick={handlePrint} className="font-bold uppercase text-xs">
-              <Printer className="mr-2 h-4 w-4" /> Imprimir Documento
+              <Printer className="mr-2 h-4 w-4" /> Imprimir
             </Button>
             <Button onClick={handlePrint} className="bg-primary text-white font-bold uppercase text-xs">
-              <FileText className="mr-2 h-4 w-4" /> Exportar a PDF
+              <Download className="mr-2 h-4 w-4" /> Exportar a PDF
             </Button>
           </div>
         </div>
@@ -201,22 +201,22 @@ export default function QuotationsPage() {
                    <MousePointer2 className="h-3 w-3 mr-1 text-red-600" />
                    INFORMACIÓN DEL CLIENTE:
                 </p>
-                <p className="font-black text-lg uppercase text-slate-800">{client?.name || "Desconocido"}</p>
+                <p className="font-black text-lg uppercase text-slate-800">{client?.name || "CLIENTE GENERAL"}</p>
                 <div className="h-px bg-slate-200 w-full my-2"></div>
                 <div className="grid grid-cols-2 gap-4 text-[11px]">
-                  <p className="font-bold text-slate-700">RUC / DNI: <span className="font-mono bg-white px-1 border rounded ml-2">{client?.taxId}</span></p>
+                  <p className="font-bold text-slate-700">RUC / DNI: <span className="font-mono bg-white px-1 border rounded ml-2">{client?.taxId || "---"}</span></p>
                   <p className="font-bold text-slate-700">CIUDAD: <span className="font-medium ml-2">LIMA, PERÚ</span></p>
                 </div>
                 <div className="flex items-start gap-1 text-[11px] text-slate-600 mt-2">
                   <MapPin className="h-3 w-3 mt-0.5 shrink-0 text-red-600" />
-                  <span className="font-medium">{client?.address}</span>
+                  <span className="font-medium">{client?.address || "DIRECCIÓN NO REGISTRADA"}</span>
                 </div>
               </div>
             </div>
 
             {/* TABLA DE SERVICIOS */}
             <div className="flex-1">
-              <Table className="border rounded-xl overflow-hidden border-slate-200 shadow-sm">
+              <Table className="border rounded-xl overflow-hidden border-slate-200 shadow-sm w-full">
                 <TableHeader className="bg-slate-800 hover:bg-slate-800">
                   <TableRow className="hover:bg-transparent border-none">
                     <TableHead className="text-white font-black uppercase text-[10px] tracking-wider py-5 pl-6">DESCRIPCIÓN DEL EQUIPO O SERVICIO</TableHead>
@@ -237,6 +237,12 @@ export default function QuotationsPage() {
                       <TableCell className="text-center font-black text-[11px] py-5">{item.quantity}</TableCell>
                       <TableCell className="text-right font-bold text-[11px] py-5">{(Number(item.unitPrice) || 0).toFixed(2)}</TableCell>
                       <TableCell className="text-right font-black text-[11px] py-5 text-red-600 pr-6">{(Number(item.total) || 0).toFixed(2)}</TableCell>
+                    </TableRow>
+                  ))}
+                  {/* Espacio para que la tabla siempre tenga una altura mínima y se vea bien en A4 */}
+                  {Array.from({ length: Math.max(0, 8 - viewingQuotation.items.length) }).map((_, i) => (
+                    <TableRow key={`empty-${i}`} className="border-b border-slate-50 border-none h-12">
+                      <TableCell colSpan={4}></TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -278,7 +284,7 @@ export default function QuotationsPage() {
             </div>
 
             {/* FIRMAS */}
-            <div className="mt-24 grid grid-cols-2 gap-20">
+            <div className="mt-20 grid grid-cols-2 gap-20">
               <div className="flex flex-col items-center">
                 <div className="w-56 h-px bg-slate-400 mb-2"></div>
                 <p className="text-[10px] font-black uppercase text-slate-400">ACEPTACIÓN DEL CLIENTE</p>
@@ -292,7 +298,7 @@ export default function QuotationsPage() {
           </div>
 
           {/* FOOTER AMARILLO OFICIAL APEVA */}
-          <div className="bg-[#ffdd00] py-10 px-10 no-print-bg mt-auto border-t-[6px] border-red-600">
+          <div className="bg-[#ffdd00] py-10 px-10 no-print-bg mt-auto border-t-[6px] border-red-600 footer-apeva">
             <div className="flex flex-col items-center gap-6">
               <div className="grid grid-cols-2 gap-x-20 gap-y-4 w-full max-w-2xl mx-auto">
                 <div className="flex items-center gap-3 text-[10px] font-black uppercase text-slate-900">
@@ -321,8 +327,8 @@ export default function QuotationsPage() {
               body * {
                 visibility: hidden;
               }
-              .no-print {
-                display: none;
+              header, aside, .no-print {
+                display: none !important;
               }
               .print-container, .print-container * {
                 visibility: visible;
@@ -331,11 +337,20 @@ export default function QuotationsPage() {
                 position: absolute;
                 left: 0;
                 top: 0;
-                width: 100%;
+                width: 210mm;
+                height: 297mm;
                 margin: 0;
                 padding: 0;
                 box-shadow: none;
                 border: none;
+                background-color: white !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+              }
+              .footer-apeva {
+                background-color: #ffdd00 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
               }
               @page {
                 size: A4;
