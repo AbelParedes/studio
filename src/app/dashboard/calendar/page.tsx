@@ -2,6 +2,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Calendar } from "@/components/ui/calendar"
 import { Badge } from "@/components/ui/badge"
@@ -9,12 +10,14 @@ import { Button } from "@/components/ui/button"
 import { 
   CalendarDays, 
   Clock, 
-  MapPin, 
   User, 
   Plus,
   Loader2,
   Trash2,
   Edit2,
+  PlayCircle,
+  CheckCircle2,
+  FileCheck
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, useUser } from "@/firebase"
@@ -38,38 +41,30 @@ import { es } from "date-fns/locale"
 export default function CalendarPage() {
   const db = useFirestore()
   const { user } = useUser()
+  const router = useRouter()
   const [date, setDate] = useState<Date | undefined>(new Date())
   const [isAdding, setIsAdding] = useState(false)
   const [editingApt, setEditingApt] = useState<any | null>(null)
 
-  // Obtener perfil para companyId
   const userProfileQuery = useMemoFirebase(() => 
     user?.email ? query(collection(db, "company_users"), where("email", "==", user.email)) : null,
   [db, user?.email])
   const { data: profiles } = useCollection(userProfileQuery)
   const companyId = profiles?.[0]?.companyId
 
-  // Filtrar citas por empresa
   const aptsRef = useMemoFirebase(() => 
     companyId ? query(collection(db, "appointments"), where("companyId", "==", companyId)) : null,
   [db, companyId])
   const { data: allAppointments, isLoading: loadingApts } = useCollection(aptsRef)
 
-  // Filtrar clientes por empresa
   const clientsRef = useMemoFirebase(() => 
     companyId ? query(collection(db, "clients"), where("companyId", "==", companyId)) : null,
   [db, companyId])
   const { data: clients } = useCollection(clientsRef)
 
-  // Filtrar técnicos por empresa
-  const techsRef = useMemoFirebase(() => 
-    companyId ? query(collection(db, "company_users"), where("companyId", "==", companyId)) : null,
-  [db, companyId])
-  const { data: technicians } = useCollection(techsRef)
+  const technicians = profiles?.filter(p => p.companyId === companyId)
 
   const selectedDateStr = date ? format(date, "yyyy-MM-dd") : ""
-  
-  // Daily appointments ordered by time
   const dailyAppointments = [...(allAppointments?.filter(apt => apt.date === selectedDateStr) || [])].sort((a, b) => a.time.localeCompare(b.time))
 
   const handleSaveAppointment = (e: React.FormEvent<HTMLFormElement>) => {
@@ -77,7 +72,6 @@ export default function CalendarPage() {
     if (!companyId) return
 
     const formData = new FormData(e.currentTarget)
-    
     const clientId = formData.get("clientId") as string
     const client = clients?.find(c => c.id === clientId)
     const techId = formData.get("technicianId") as string
@@ -119,12 +113,16 @@ export default function CalendarPage() {
     setIsAdding(true)
   }
 
+  const handleStartService = (aptId: string) => {
+    router.push(`/dashboard/execution/${aptId}`)
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase">Programación y Despacho</h2>
-          <p className="text-muted-foreground text-sm">Controle la agenda exclusiva de servicios de su empresa.</p>
+          <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase">Programación y Ejecución</h2>
+          <p className="text-muted-foreground text-sm">Monitoree y ejecute los servicios técnicos de campo.</p>
         </div>
         
         <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) setEditingApt(null); }}>
@@ -164,7 +162,7 @@ export default function CalendarPage() {
                       <SelectContent>
                         <SelectItem value="Extintores">Recarga Extintores</SelectItem>
                         <SelectItem value="Fumigación">Fumigación</SelectItem>
-                        <SelectItem value="Inspección">Inspección</SelectItem>
+                        <SelectItem value="Inspección">Inspección Técnica</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -176,7 +174,7 @@ export default function CalendarPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Pendiente">Pendiente</SelectItem>
-                        <SelectItem value="Confirmado">Confirmado</SelectItem>
+                        <SelectItem value="En Progreso">En Progreso</SelectItem>
                         <SelectItem value="Completado">Completado</SelectItem>
                       </SelectContent>
                     </Select>
@@ -219,7 +217,7 @@ export default function CalendarPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <Card className="lg:col-span-5 shadow-sm border-none bg-white">
           <CardHeader>
-            <CardTitle className="text-sm font-bold uppercase">Calendario Operativo</CardTitle>
+            <CardTitle className="text-sm font-bold uppercase">Calendario de Operaciones</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center">
             <div className="w-full border rounded-lg overflow-hidden bg-white shadow-inner p-1">
@@ -238,7 +236,7 @@ export default function CalendarPage() {
           <CardHeader>
             <CardTitle className="text-sm font-bold uppercase flex items-center">
               <CalendarDays className="mr-2 h-4 w-4 text-accent" />
-              Agenda del día: {date ? format(date, "d 'de' MMMM, yyyy", { locale: es }).toUpperCase() : "..."}
+              Ruta del día: {date ? format(date, "d 'de' MMMM, yyyy", { locale: es }).toUpperCase() : "..."}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -248,11 +246,14 @@ export default function CalendarPage() {
               </div>
             ) : dailyAppointments.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-muted-foreground text-center">
-                <p className="text-sm font-bold uppercase">No hay citas para esta fecha</p>
+                <p className="text-sm font-bold uppercase">No hay servicios programados</p>
               </div>
             ) : (
               dailyAppointments.map((apt) => (
-                <div key={apt.id} className="relative pl-4 border-l-4 border-l-primary bg-background/50 p-4 rounded-r-lg border border-border transition-all hover:bg-white hover:shadow-md">
+                <div key={apt.id} className={cn(
+                  "relative pl-4 border-l-4 bg-background/50 p-4 rounded-r-lg border border-border transition-all hover:bg-white hover:shadow-md",
+                  apt.status === "Completado" ? "border-l-status-success" : "border-l-primary"
+                )}>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
@@ -264,8 +265,27 @@ export default function CalendarPage() {
                         <span className="flex items-center"><User className="h-3 w-3 mr-1" /> {apt.technicianName}</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Badge variant="outline" className="text-[10px] font-bold">{apt.status}</Badge>
+                    <div className="flex items-center gap-2">
+                      {apt.status !== "Completado" && (
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="h-8 text-[10px] font-bold uppercase bg-accent text-white hover:bg-accent/90 border-none"
+                          onClick={() => handleStartService(apt.id)}
+                        >
+                          <PlayCircle className="mr-1 h-3.5 w-3.5" /> Atender
+                        </Button>
+                      )}
+                      {apt.status === "Completado" && (
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="h-8 text-[10px] font-bold uppercase text-status-success"
+                          onClick={() => router.push(`/dashboard/certificates?id=${apt.id}`)}
+                        >
+                          <FileCheck className="mr-1 h-3.5 w-3.5" /> Certificado
+                        </Button>
+                      )}
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(apt)}><Edit2 className="h-3.5 w-3.5" /></Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive" onClick={() => handleDelete(apt.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
                     </div>

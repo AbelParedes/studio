@@ -19,7 +19,8 @@ import {
   Building2,
   FileText,
   Package,
-  Zap
+  Zap,
+  FileCheck
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/firebase"
@@ -31,13 +32,13 @@ const navItems = [
   { name: "Empresas", href: "/dashboard/companies", icon: Building2, superAdminOnly: true },
   { name: "Clientes", href: "/dashboard/clients", icon: Users },
   { name: "Cotizaciones", href: "/dashboard/quotations", icon: FileText },
+  { name: "Calendario", href: "/dashboard/calendar", icon: Calendar },
+  { name: "Certificados", href: "/dashboard/certificates", icon: FileCheck },
+  { name: "Productos y Servicios", href: "/dashboard/inventory", icon: Package },
+  { name: "Recordatorios IA", href: "/dashboard/reminders", icon: Bell },
   { name: "Usuarios", href: "/dashboard/users", icon: UserCheck },
   { name: "Roles y Permisos", href: "/dashboard/roles", icon: ShieldCheck, adminOnly: true },
-  { name: "Productos y Servicios", href: "/dashboard/inventory", icon: Package },
   { name: "Planes", href: "/dashboard/plans", icon: Zap },
-  { name: "Calendario", href: "/dashboard/calendar", icon: Calendar },
-  { name: "Fumigación", href: "/dashboard/fumigation", icon: Bug },
-  { name: "Recordatorios IA", href: "/dashboard/reminders", icon: Bell },
   { name: "Historial", href: "/dashboard/history", icon: History },
   { name: "Reportes", href: "/dashboard/reports", icon: BarChart3 },
 ]
