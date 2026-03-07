@@ -46,7 +46,7 @@ export default function QuotationsPage() {
   const [isAdding, setIsAdding] = useState(false)
   const [viewingQuotation, setViewingQuotation] = useState<any | null>(null)
   const [editingQuotation, setEditingQuotation] = useState<any | null>(null)
-  const [items, setItems] = useState<{description: string, quantity: number, price: number}[]>([])
+  const [items, setItems] = useState<{description: string, quantity: number, unitPrice: number}[]>([])
 
   // Obtener perfil para companyId
   const userProfileQuery = useMemoFirebase(() => 
@@ -68,7 +68,7 @@ export default function QuotationsPage() {
   const { data: clients } = useCollection(clientsRef)
 
   const handleAddItem = () => {
-    setItems([...items, { description: "", quantity: 1, price: 0 }])
+    setItems([...items, { description: "", quantity: 1, unitPrice: 0 }])
   }
 
   const handleItemChange = (index: number, field: string, value: any) => {
@@ -82,7 +82,7 @@ export default function QuotationsPage() {
     if (!companyId) return
 
     const formData = new FormData(e.currentTarget)
-    const subtotal = items.reduce((acc, item) => acc + (item.quantity * item.price), 0)
+    const subtotal = items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0)
     const tax = subtotal * 0.18 // IGV 18%
     const total = subtotal + tax
 
@@ -91,7 +91,7 @@ export default function QuotationsPage() {
       clientId: formData.get("clientId") as string,
       quotationNumber: formData.get("number") as string || `COT-${Date.now().toString().slice(-6)}`,
       date: formData.get("date") as string || new Date().toISOString().split('T')[0],
-      items: items.map(i => ({ ...i, total: i.quantity * i.price })),
+      items: items.map(i => ({ ...i, total: i.quantity * i.unitPrice })),
       subtotal,
       tax,
       total,
@@ -187,8 +187,8 @@ export default function QuotationsPage() {
                   <TableRow key={idx}>
                     <TableCell className="font-bold uppercase">{item.description}</TableCell>
                     <TableCell className="text-center font-bold">{item.quantity}</TableCell>
-                    <TableCell className="text-right font-bold">{item.unitPrice.toFixed(2)}</TableCell>
-                    <TableCell className="text-right font-black">{item.total.toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-bold">{(item.unitPrice || 0).toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-black">{(item.total || 0).toFixed(2)}</TableCell>
                   </TableRow>
                 ))}
                 {/* Filas vacías para completar el formato si hay pocos items */}
@@ -204,16 +204,16 @@ export default function QuotationsPage() {
               <div className="w-64 space-y-2">
                 <div className="flex justify-between text-xs">
                   <span className="font-bold uppercase">Subtotal</span>
-                  <span className="font-bold">S/ {viewingQuotation.subtotal.toFixed(2)}</span>
+                  <span className="font-bold">S/ {(viewingQuotation.subtotal || 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-xs">
                   <span className="font-bold uppercase">IGV (18%)</span>
-                  <span className="font-bold">S/ {viewingQuotation.tax.toFixed(2)}</span>
+                  <span className="font-bold">S/ {(viewingQuotation.tax || 0).toFixed(2)}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between text-sm">
                   <span className="font-black uppercase text-red-600">Total Neto</span>
-                  <span className="font-black text-red-600">S/ {viewingQuotation.total.toFixed(2)}</span>
+                  <span className="font-black text-red-600">S/ {(viewingQuotation.total || 0).toFixed(2)}</span>
                 </div>
               </div>
             </div>
@@ -340,8 +340,8 @@ export default function QuotationsPage() {
                         <Label className="text-[9px] uppercase">Precio Unit.</Label>
                         <Input 
                           type="number"
-                          value={item.price} 
-                          onChange={(e) => handleItemChange(idx, "price", Number(e.target.value))}
+                          value={item.unitPrice} 
+                          onChange={(e) => handleItemChange(idx, "unitPrice", Number(e.target.value))}
                           className="h-8 text-xs text-right"
                         />
                       </div>
@@ -362,7 +362,7 @@ export default function QuotationsPage() {
                 <div className="bg-muted p-4 rounded-md">
                   <div className="flex justify-between items-center text-xs font-bold uppercase">
                     <span>Total Estimado (Inc. IGV):</span>
-                    <span className="text-lg text-primary">S/ {(items.reduce((acc, i) => acc + (i.quantity * i.price), 0) * 1.18).toFixed(2)}</span>
+                    <span className="text-lg text-primary">S/ {(items.reduce((acc, i) => acc + (i.quantity * i.unitPrice), 0) * 1.18).toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -413,7 +413,7 @@ export default function QuotationsPage() {
                       <TableCell className="font-bold text-primary uppercase">{q.quotationNumber}</TableCell>
                       <TableCell className="font-bold uppercase text-[11px]">{client?.name || "Desconocido"}</TableCell>
                       <TableCell>{q.date}</TableCell>
-                      <TableCell className="font-black">S/ {q.total?.toFixed(2)}</TableCell>
+                      <TableCell className="font-black">S/ {(q.total || 0).toFixed(2)}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className="text-[9px] font-bold uppercase">{q.status}</Badge>
                       </TableCell>
@@ -422,7 +422,7 @@ export default function QuotationsPage() {
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setViewingQuotation(q)}>
                             <Printer className="h-3.5 w-3.5" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingQuotation(q); setItems(q.items.map((i: any) => ({ description: i.description, quantity: i.quantity, price: i.unitPrice }))); setIsAdding(true); }}>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingQuotation(q); setItems(q.items.map((i: any) => ({ description: i.description, quantity: i.quantity, unitPrice: i.unitPrice }))); setIsAdding(true); }}>
                             <Edit2 className="h-3.5 w-3.5" />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7 hover:text-destructive" onClick={() => handleDelete(q.id)}>
