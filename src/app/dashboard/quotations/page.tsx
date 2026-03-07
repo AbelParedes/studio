@@ -300,11 +300,11 @@ export default function QuotationsPage() {
             </div>
           </div>
 
-          {/* PIE DE PÁGINA ORO PROFESIONAL DINÁMICO */}
+          {/* PIE DE PÁGINA DINÁMICO */}
           <div 
             className="mt-auto shrink-0 flex flex-col items-center justify-center relative overflow-hidden py-6"
             style={{ 
-              backgroundColor: 'rgb(255, 215, 0)',
+              backgroundColor: company?.footerBgColor || 'rgb(255, 215, 0)',
               WebkitPrintColorAdjust: 'exact',
               printColorAdjust: 'exact'
             }}
@@ -323,7 +323,7 @@ export default function QuotationsPage() {
               </div>
               <div className="mt-1">
                 <p className="text-[10px] font-black text-[#1c1c1c] uppercase tracking-[0.2em] flex items-center gap-2">
-                  <Globe className="h-3.5 w-3.5" /> {company?.website || "WWW.SERVIFUMIGAPRO.COM"}
+                  <Globe className="h-3.5 w-3.5" /> {company?.website || "WWW.TUEMPRESA.COM"}
                 </p>
               </div>
             </div>

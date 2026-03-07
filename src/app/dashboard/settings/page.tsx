@@ -23,8 +23,9 @@ import {
   AlertCircle,
   CheckCircle2,
   Info,
-  Image as ImageIcon,
-  Save
+  ImageIcon,
+  Save,
+  Paintbrush
 } from "lucide-react"
 import { useUser, useFirestore, useDoc, useMemoFirebase, useAuth, useCollection } from "@/firebase"
 import { doc, setDoc, collection, query, where, limit } from "firebase/firestore"
@@ -57,6 +58,7 @@ export default function SettingsPage() {
     website: "",
     primaryColor: "#1a2b3c",
     accentColor: "#d9534f",
+    footerBgColor: "#FFD700",
     themeMode: "light" as "light" | "dark"
   })
 
@@ -93,6 +95,7 @@ export default function SettingsPage() {
         website: company.website || "",
         primaryColor: company.primaryColor || "#1a2b3c",
         accentColor: company.accentColor || "#d9534f",
+        footerBgColor: company.footerBgColor || "#FFD700",
         themeMode: (company.themeMode as "light" | "dark") || "light"
       })
     }
@@ -134,7 +137,7 @@ export default function SettingsPage() {
 
       toast({ 
         title: "Organización Actualizada", 
-        description: "Los recursos gráficos y datos corporativos se han guardado." 
+        description: "Los recursos gráficos y colores corporativos se han guardado." 
       })
     } catch (error) {
       console.error(error)
@@ -218,10 +221,42 @@ export default function SettingsPage() {
             <div className="space-y-6">
               <Card className="shadow-sm border-none">
                 <CardHeader>
-                  <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary">Identidad Visual y Membretes</CardTitle>
-                  <CardDescription>Configure los elementos gráficos que aparecerán en sus documentos oficiales (Cotizaciones, Certificados, etc).</CardDescription>
+                  <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary">Identidad Visual y Colores</CardTitle>
+                  <CardDescription>Configure los elementos gráficos y la paleta de colores oficial de su organización.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-8">
+                  {/* COLORES CORPORATIVOS */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-[10px] font-black uppercase text-primary tracking-widest">
+                      <Paintbrush className="h-3 w-3" /> Paleta de Colores de Documentos
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-bold uppercase text-muted-foreground">Color Principal</Label>
+                        <div className="flex gap-2">
+                          <Input type="color" className="w-12 h-10 p-1" value={companyData.primaryColor} onChange={(e) => setCompanyData({...companyData, primaryColor: e.target.value})} />
+                          <Input value={companyData.primaryColor} onChange={(e) => setCompanyData({...companyData, primaryColor: e.target.value})} className="font-mono text-xs" />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-bold uppercase text-muted-foreground">Color de Acento</Label>
+                        <div className="flex gap-2">
+                          <Input type="color" className="w-12 h-10 p-1" value={companyData.accentColor} onChange={(e) => setCompanyData({...companyData, accentColor: e.target.value})} />
+                          <Input value={companyData.accentColor} onChange={(e) => setCompanyData({...companyData, accentColor: e.target.value})} className="font-mono text-xs" />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-bold uppercase text-muted-foreground">Fondo Pie de Página</Label>
+                        <div className="flex gap-2">
+                          <Input type="color" className="w-12 h-10 p-1" value={companyData.footerBgColor} onChange={(e) => setCompanyData({...companyData, footerBgColor: e.target.value})} />
+                          <Input value={companyData.footerBgColor} onChange={(e) => setCompanyData({...companyData, footerBgColor: e.target.value})} className="font-mono text-xs" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator />
+
                   {/* LOGOTIPO */}
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 text-[10px] font-black uppercase text-primary tracking-widest">
@@ -242,7 +277,6 @@ export default function SettingsPage() {
                           value={companyData.logoUrl} 
                           onChange={(e) => setCompanyData({...companyData, logoUrl: e.target.value})} 
                         />
-                        <p className="text-[9px] text-muted-foreground font-medium uppercase tracking-tighter">Este logo aparecerá en el menú lateral y como respaldo en documentos.</p>
                       </div>
                     </div>
                   </div>
@@ -268,10 +302,6 @@ export default function SettingsPage() {
                           value={companyData.headerUrl} 
                           onChange={(e) => setCompanyData({...companyData, headerUrl: e.target.value})} 
                         />
-                        <div className="flex items-center gap-2 p-2 bg-primary/5 rounded border border-primary/10">
-                          <Info className="h-3 w-3 text-primary shrink-0" />
-                          <p className="text-[9px] font-bold text-primary uppercase leading-tight">Medida Recomendada: 800 x 200 píxeles para un ajuste perfecto.</p>
-                        </div>
                       </div>
                     </div>
 
@@ -292,10 +322,6 @@ export default function SettingsPage() {
                           value={companyData.footerUrl} 
                           onChange={(e) => setCompanyData({...companyData, footerUrl: e.target.value})} 
                         />
-                        <div className="flex items-center gap-2 p-2 bg-primary/5 rounded border border-primary/10">
-                          <Info className="h-3 w-3 text-primary shrink-0" />
-                          <p className="text-[9px] font-bold text-primary uppercase leading-tight">Medida Recomendada: 800 x 150 píxeles para cubrir la base A4.</p>
-                        </div>
                       </div>
                     </div>
                   </div>

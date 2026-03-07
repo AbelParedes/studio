@@ -19,6 +19,7 @@
         "website": { "type": "string", "description": "Sitio web oficial de la empresa." },
         "primaryColor": { "type": "string", "description": "Color principal en formato HEX" },
         "accentColor": { "type": "string", "description": "Color de acento en formato HEX" },
+        "footerBgColor": { "type": "string", "description": "Color de fondo del pie de página en formato HEX o RGB" },
         "themeMode": { "type": "string", "enum": ["light", "dark"] },
         "status": { "type": "string", "enum": ["Active", "Pending", "Suspended"] },
         "plan": { "type": "string", "enum": ["Básico", "Profesional", "Empresarial"] },
