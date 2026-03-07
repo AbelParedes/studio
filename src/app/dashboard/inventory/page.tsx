@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Flame, Plus, Search, Loader2, Trash2, Edit2 } from "lucide-react"
+import { Package, Plus, Search, Loader2, Trash2, Edit2, Flame } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, useUser } from "@/firebase"
 import { collection, doc, query, where } from "firebase/firestore"
@@ -62,11 +62,11 @@ export default function InventoryPage() {
 
     if (editingItem) {
       updateDocumentNonBlocking(doc(db, "all_extinguishers", editingItem.id), equipmentData)
-      toast({ title: "Equipo actualizado" })
+      toast({ title: "Registro actualizado" })
     } else {
       const newEquip = { ...equipmentData, id: crypto.randomUUID() }
       addDocumentNonBlocking(collection(db, "all_extinguishers"), newEquip)
-      toast({ title: "Equipo registrado" })
+      toast({ title: "Registro exitoso" })
     }
 
     setIsAdding(false)
@@ -75,7 +75,7 @@ export default function InventoryPage() {
 
   const handleDelete = (id: string) => {
     deleteDocumentNonBlocking(doc(db, "all_extinguishers", id))
-    toast({ variant: "destructive", title: "Equipo removido" })
+    toast({ variant: "destructive", title: "Registro removido" })
   }
 
   const openEdit = (item: any) => {
@@ -93,29 +93,29 @@ export default function InventoryPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase">Inventario de Equipos</h2>
-          <p className="text-muted-foreground text-sm">Control exclusivo de extintores y activos de su organización.</p>
+          <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase">Catálogo de Productos y Servicios</h2>
+          <p className="text-muted-foreground text-sm">Control exclusivo de equipos y servicios de su organización.</p>
         </div>
         <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) setEditingItem(null); }}>
           <DialogTrigger asChild>
             <Button className="bg-primary text-white h-9">
-              <Plus className="mr-2 h-4 w-4" /> Registrar Equipo
+              <Plus className="mr-2 h-4 w-4" /> Nuevo Registro
             </Button>
           </DialogTrigger>
           <DialogContent>
             <form onSubmit={handleSaveEquipment}>
               <DialogHeader>
-                <DialogTitle>{editingItem ? "Editar Equipo" : "Registrar Nuevo Equipo"}</DialogTitle>
-                <DialogDescription>Los detalles técnicos serán almacenados en el silo de datos de su empresa.</DialogDescription>
+                <DialogTitle>{editingItem ? "Editar Registro" : "Nuevo Registro"}</DialogTitle>
+                <DialogDescription>Los detalles serán almacenados en el silo de datos de su empresa.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="serial">Número de Serie</Label>
-                  <Input id="serial" name="serial" defaultValue={editingItem?.serialNumber} required placeholder="SN-XXXXXX" />
+                  <Label htmlFor="serial">Código / N° Serie</Label>
+                  <Input id="serial" name="serial" defaultValue={editingItem?.serialNumber} required placeholder="REF-XXXXXX" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="type">Tipo de Agente</Label>
+                    <Label htmlFor="type">Tipo / Agente</Label>
                     <Select name="type" required defaultValue={editingItem?.type || "PQS ABC"}>
                       <SelectTrigger>
                         <SelectValue placeholder="Tipo" />
@@ -125,6 +125,8 @@ export default function InventoryPage() {
                         <SelectItem value="CO2">CO2</SelectItem>
                         <SelectItem value="K-Class">K-Class</SelectItem>
                         <SelectItem value="Agua">Agua Presurizada</SelectItem>
+                        <SelectItem value="Fumigación">Servicio Fumigación</SelectItem>
+                        <SelectItem value="Inspección">Servicio Inspección</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -135,21 +137,21 @@ export default function InventoryPage() {
                         <SelectValue placeholder="Estado" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Operativo">Operativo</SelectItem>
-                        <SelectItem value="Mantenimiento">Mantenimiento</SelectItem>
-                        <SelectItem value="Vencido">Vencido</SelectItem>
+                        <SelectItem value="Operativo">Activo / Operativo</SelectItem>
+                        <SelectItem value="Mantenimiento">En Mantenimiento</SelectItem>
+                        <SelectItem value="Vencido">Vencido / Fuera Servicio</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="size">Capacidad</Label>
-                    <Input id="size" name="size" defaultValue={editingItem?.size} required placeholder="Ej. 10 lbs" />
+                    <Label htmlFor="size">Capacidad / Dimensión</Label>
+                    <Input id="size" name="size" defaultValue={editingItem?.size} required placeholder="Ej. 10 lbs / M2" />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="location">Ubicación</Label>
-                    <Input id="location" name="location" defaultValue={editingItem?.location} required placeholder="Pasillo principal" />
+                    <Label htmlFor="location">Ubicación / Área</Label>
+                    <Input id="location" name="location" defaultValue={editingItem?.location} required placeholder="Planta principal" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -164,7 +166,7 @@ export default function InventoryPage() {
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit" className="w-full">{editingItem ? "Actualizar" : "Registrar Equipo"}</Button>
+                <Button type="submit" className="w-full">{editingItem ? "Actualizar" : "Registrar"}</Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -174,7 +176,7 @@ export default function InventoryPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-status-success/5 border-status-success/20">
           <CardHeader className="py-3">
-            <CardTitle className="text-xs text-status-success uppercase font-bold">Operativos</CardTitle>
+            <CardTitle className="text-xs text-status-success uppercase font-bold">Activos Operativos</CardTitle>
           </CardHeader>
           <CardContent className="py-2">
             <div className="text-2xl font-bold text-status-success">{stats.operativos}</div>
@@ -182,7 +184,7 @@ export default function InventoryPage() {
         </Card>
         <Card className="bg-status-warning/5 border-status-warning/20">
           <CardHeader className="py-3">
-            <CardTitle className="text-xs text-status-warning uppercase font-bold">Mantenimiento</CardTitle>
+            <CardTitle className="text-xs text-status-warning uppercase font-bold">En Revisión</CardTitle>
           </CardHeader>
           <CardContent className="py-2">
             <div className="text-2xl font-bold text-status-warning">{stats.mantenimiento}</div>
@@ -190,7 +192,7 @@ export default function InventoryPage() {
         </Card>
         <Card className="bg-status-error/5 border-status-error/20">
           <CardHeader className="py-3">
-            <CardTitle className="text-xs text-status-error uppercase font-bold">Vencidos</CardTitle>
+            <CardTitle className="text-xs text-status-error uppercase font-bold">Vencidos / Críticos</CardTitle>
           </CardHeader>
           <CardContent className="py-2">
             <div className="text-2xl font-bold text-status-error">{stats.vencidos}</div>
@@ -203,7 +205,7 @@ export default function InventoryPage() {
           <div className="relative w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
-              placeholder="Buscar en mi inventario..." 
+              placeholder="Buscar en el catálogo..." 
               className="pl-9 h-8" 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -219,10 +221,10 @@ export default function InventoryPage() {
             <Table className="dense-table">
               <TableHeader className="bg-primary">
                 <TableRow>
-                  <TableHead className="text-white">Serie</TableHead>
-                  <TableHead className="text-white">Tipo</TableHead>
+                  <TableHead className="text-white">Código / Serie</TableHead>
+                  <TableHead className="text-white">Producto / Servicio</TableHead>
                   <TableHead className="text-white">Ubicación</TableHead>
-                  <TableHead className="text-white">Vto.</TableHead>
+                  <TableHead className="text-white">Vencimiento</TableHead>
                   <TableHead className="text-white">Estado</TableHead>
                   <TableHead className="text-white w-[100px]"></TableHead>
                 </TableRow>
@@ -230,7 +232,8 @@ export default function InventoryPage() {
               <TableBody>
                 {inventory?.filter(i => 
                   i.serialNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  i.location?.toLowerCase().includes(searchTerm.toLowerCase())
+                  i.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  i.type?.toLowerCase().includes(searchTerm.toLowerCase())
                 ).map((item) => (
                   <TableRow key={item.id}>
                     <TableCell className="font-bold">{item.serialNumber}</TableCell>
@@ -262,7 +265,7 @@ export default function InventoryPage() {
                 {inventory?.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-20 text-muted-foreground">
-                      No hay equipos registrados para su empresa.
+                      No hay productos o servicios registrados para su empresa.
                     </TableCell>
                   </TableRow>
                 )}
