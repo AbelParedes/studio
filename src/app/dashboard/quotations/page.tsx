@@ -21,7 +21,8 @@ import {
   Globe,
   Gavel,
   Printer,
-  Download
+  Download,
+  PackageSearch
 } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, useUser, useDoc } from "@/firebase"
 import { collection, doc, query, where } from "firebase/firestore"
@@ -51,7 +52,7 @@ export default function QuotationsPage() {
   const [isAdding, setIsAdding] = useState(false)
   const [viewingQuotation, setViewingQuotation] = useState<any | null>(null)
   const [editingQuotation, setEditingQuotation] = useState<any | null>(null)
-  const [items, setItems] = useState<{description: string, quantity: number, unitPrice: number}[]>([])
+  const [items, setItems] = useState<{description: string, quantity: number, unitPrice: number, catalogItemId?: string}[]>([])
 
   // 1. Perfil y Empresa
   const userProfileQuery = useMemoFirebase(() => 
@@ -65,7 +66,7 @@ export default function QuotationsPage() {
   [db, companyId])
   const { data: company } = useDoc(companyRef)
 
-  // 2. Datos de Cotizaciones y Clientes
+  // 2. Datos de Cotizaciones, Clientes y Catálogo
   const quotationsRef = useMemoFirebase(() => 
     companyId ? query(collection(db, "quotations"), where("companyId", "==", companyId)) : null,
   [db, companyId])
@@ -75,6 +76,11 @@ export default function QuotationsPage() {
     companyId ? query(collection(db, "clients"), where("companyId", "==", companyId)) : null,
   [db, companyId])
   const { data: clients } = useCollection(clientsRef)
+
+  const catalogRef = useMemoFirebase(() => 
+    companyId ? query(collection(db, "all_extinguishers"), where("companyId", "==", companyId)) : null,
+  [db, companyId])
+  const { data: catalog } = useCollection(catalogRef)
 
   // 3. Lógica de Numeración Correlativa Anual
   const currentYear = new Date().getFullYear()
@@ -107,6 +113,20 @@ export default function QuotationsPage() {
     setItems(newItems)
   }
 
+  const handleSelectFromCatalog = (index: number, productId: string) => {
+    const product = catalog?.find(p => p.id === productId)
+    if (product) {
+      const newItems = [...items]
+      newItems[index] = {
+        ...newItems[index],
+        catalogItemId: product.id,
+        description: product.description,
+        unitPrice: product.sellPrice
+      }
+      setItems(newItems)
+    }
+  }
+
   const handleSaveQuotation = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!companyId) return
@@ -125,7 +145,8 @@ export default function QuotationsPage() {
         description: i.description, 
         quantity: Number(i.quantity || 0), 
         unitPrice: Number(i.unitPrice || 0),
-        total: Number(i.quantity || 0) * Number(i.unitPrice || 0) 
+        total: Number(i.quantity || 0) * Number(i.unitPrice || 0),
+        catalogItemId: i.catalogItemId || null
       })),
       subtotal,
       tax,
@@ -159,7 +180,8 @@ export default function QuotationsPage() {
     setItems(q.items?.map((i: any) => ({ 
       description: i.description, 
       quantity: Number(i.quantity || 1), 
-      unitPrice: Number(i.unitPrice || 0) 
+      unitPrice: Number(i.unitPrice || 0),
+      catalogItemId: i.catalogItemId
     })) || [])
     setIsAdding(true)
   }
@@ -191,7 +213,6 @@ export default function QuotationsPage() {
           </div>
         </div>
 
-        {/* Contenedor Proforma optimizado para impresión A4 */}
         <div className="proforma-container bg-white p-0 shadow-2xl mx-auto w-[210mm] min-h-[297mm] flex flex-col relative overflow-hidden text-[#1c1c1c] border print:shadow-none print:border-none print:m-0 print:w-full print:min-h-[297mm]">
           <div className="pt-12 px-12 pb-8 shrink-0 flex items-center justify-between border-b-[3px] border-[#d9534f]">
             <div className="relative h-20 w-64">
@@ -298,7 +319,6 @@ export default function QuotationsPage() {
             </div>
           </div>
 
-          {/* Pie de página con forzado de color para impresión */}
           <div 
             className="mt-auto shrink-0 flex flex-col items-center justify-center py-6 print-footer"
             style={{ 
@@ -339,7 +359,7 @@ export default function QuotationsPage() {
               <Plus className="mr-2 h-4 w-4" /> Nueva Cotización
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
             <form onSubmit={handleSaveQuotation}>
               <DialogHeader>
                 <DialogTitle className="uppercase font-black text-[#d9534f] text-xl tracking-tight">Registro de Proforma</DialogTitle>
@@ -390,16 +410,37 @@ export default function QuotationsPage() {
                   <div className="space-y-3">
                     {items.map((item, idx) => (
                       <div key={idx} className="grid grid-cols-12 gap-3 items-end border p-4 rounded-xl bg-slate-50/50">
-                        <div className="col-span-12 md:col-span-6 grid gap-1.5">
-                          <Label className="text-[9px] font-black uppercase text-slate-500">Descripción</Label>
+                        <div className="col-span-12 md:col-span-4 grid gap-1.5">
+                          <Label className="text-[9px] font-black uppercase text-slate-500 flex items-center gap-1">
+                            <PackageSearch className="h-3 w-3" /> Cargar del Catálogo
+                          </Label>
+                          <Select 
+                            value={item.catalogItemId || ""} 
+                            onValueChange={(val) => handleSelectFromCatalog(idx, val)}
+                          >
+                            <SelectTrigger className="h-9 text-[10px] font-bold bg-white">
+                              <SelectValue placeholder="Seleccionar producto/servicio..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {catalog?.map(p => (
+                                <SelectItem key={p.id} value={p.id} className="text-[11px]">
+                                  [{p.category}] {p.description} - S/ {p.sellPrice}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="col-span-12 md:col-span-4 grid gap-1.5">
+                          <Label className="text-[9px] font-black uppercase text-slate-500">Descripción en Proforma</Label>
                           <Input 
                             value={item.description} 
                             onChange={(e) => handleItemChange(idx, "description", e.target.value)}
                             className="h-10 text-xs font-bold"
                             required
+                            placeholder="Nombre detallado del ítem..."
                           />
                         </div>
-                        <div className="col-span-4 md:col-span-2 grid gap-1.5">
+                        <div className="col-span-3 md:col-span-1 grid gap-1.5">
                           <Label className="text-[9px] font-black uppercase text-slate-500">Cant.</Label>
                           <Input 
                             type="number"
@@ -410,7 +451,7 @@ export default function QuotationsPage() {
                             required
                           />
                         </div>
-                        <div className="col-span-6 md:col-span-3 grid gap-1.5">
+                        <div className="col-span-6 md:col-span-2 grid gap-1.5">
                           <Label className="text-[9px] font-black uppercase text-slate-500">P. Unit. (S/)</Label>
                           <Input 
                             type="number"
@@ -421,7 +462,7 @@ export default function QuotationsPage() {
                             required
                           />
                         </div>
-                        <div className="col-span-2 md:col-span-1 flex justify-center">
+                        <div className="col-span-3 md:col-span-1 flex justify-center">
                           <Button type="button" variant="ghost" size="icon" onClick={() => setItems(items.filter((_, i) => i !== idx))} className="h-10 w-10 text-destructive">
                             <Trash2 className="h-4 w-4" />
                           </Button>
