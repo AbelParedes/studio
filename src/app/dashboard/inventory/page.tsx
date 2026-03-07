@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState } from "react"
@@ -17,12 +16,12 @@ import {
   Wrench, 
   ShoppingCart, 
   RefreshCw,
-  DollarSign,
-  Tag,
   Boxes,
   Percent,
   CalendarClock,
-  FlaskConical
+  FlaskConical,
+  TrendingUp,
+  Flame
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, useUser } from "@/firebase"
@@ -39,7 +38,6 @@ import {
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
 import { toast } from "@/hooks/use-toast"
 
 export default function InventoryPage() {
@@ -49,14 +47,12 @@ export default function InventoryPage() {
   const [editingItem, setEditingItem] = useState<any | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
 
-  // Obtener perfil para companyId
   const userProfileQuery = useMemoFirebase(() => 
     user?.email ? query(collection(db, "company_users"), where("email", "==", user.email)) : null,
   [db, user?.email])
   const { data: profiles } = useCollection(userProfileQuery)
   const companyId = profiles?.[0]?.companyId
 
-  // Filtrar catálogo por empresa
   const itemsRef = useMemoFirebase(() => 
     companyId ? query(collection(db, "all_extinguishers"), where("companyId", "==", companyId)) : null,
   [db, companyId])
