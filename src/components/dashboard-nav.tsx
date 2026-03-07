@@ -54,12 +54,12 @@ export function DashboardNav({ onNavItemClick, companyName, logoUrl, userRole }:
     router.push("/login")
   }
 
-  // Lógica de filtrado de navegación basada en el rol
+  // Filter navigation items based on role
   const filteredItems = navItems.filter(item => {
-    // Solo el "Administrador" (Super Admin) ve el módulo de Empresas
+    // Only "Administrador" (Super Admin) sees the Companies module
     if (item.superAdminOnly && userRole !== "Administrador") return false
     
-    // Roles operativos solo ven lo esencial (esto se puede ajustar después)
+    // Admin only roles
     if (item.adminOnly && userRole !== "Administrador" && userRole !== "Coordinador de Servicios") return false
 
     return true
@@ -69,25 +69,25 @@ export function DashboardNav({ onNavItemClick, companyName, logoUrl, userRole }:
     <div className="flex flex-col h-full text-sidebar-foreground">
       <div className="p-6 flex items-center gap-3">
         {logoUrl ? (
-          <div className="relative h-10 w-10 bg-white rounded border overflow-hidden">
+          <div className="relative h-10 w-10 bg-white rounded border overflow-hidden shrink-0">
             <Image src={logoUrl} alt="Logo" fill className="object-contain p-1" unoptimized />
           </div>
         ) : (
-          <div className="h-10 w-10 bg-white/10 rounded flex items-center justify-center">
-            <Building2 className="h-6 w-6 text-white" />
+          <div className="h-10 w-10 bg-white/10 rounded flex items-center justify-center shrink-0 border border-white/10">
+            <ShieldCheck className="h-6 w-6 text-white" />
           </div>
         )}
         <div className="flex flex-col">
-          <h1 className="text-sm font-bold tracking-wider text-white uppercase truncate max-w-[140px]">
-            {companyName || "PRO" }
+          <h1 className="text-xs font-bold tracking-wider text-white uppercase truncate max-w-[140px]">
+            {companyName || "SERVIFUMIGA PRO"}
           </h1>
           <span className="text-[9px] font-bold uppercase text-accent tracking-tighter opacity-80">
-            {logoUrl ? "ORGANIZACIÓN" : "SISTEMA PRO"}
+            SISTEMA DE GESTIÓN
           </span>
         </div>
       </div>
       
-      <nav className="flex-1 space-y-1 px-4 overflow-y-auto">
+      <nav className="flex-1 space-y-1 px-4 overflow-y-auto custom-scrollbar">
         {filteredItems.map((item) => {
           const isActive = pathname === item.href
           return (
@@ -96,15 +96,15 @@ export function DashboardNav({ onNavItemClick, companyName, logoUrl, userRole }:
               href={item.href}
               onClick={onNavItemClick}
               className={cn(
-                "group flex items-center px-3 py-2 text-[12px] font-bold uppercase transition-colors rounded-md",
+                "group flex items-center px-3 py-2 text-[11px] font-bold uppercase transition-colors rounded-md",
                 isActive 
-                  ? "bg-sidebar-accent text-white" 
-                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-white"
+                  ? "bg-sidebar-accent text-white shadow-sm" 
+                  : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-white"
               )}
             >
               <item.icon className={cn(
                 "mr-3 h-4 w-4",
-                isActive ? "text-white" : "text-sidebar-foreground/70 group-hover:text-white"
+                isActive ? "text-white" : "text-sidebar-foreground/50 group-hover:text-white"
               )} />
               {item.name}
             </Link>
@@ -116,14 +116,14 @@ export function DashboardNav({ onNavItemClick, companyName, logoUrl, userRole }:
         <Link
           href="/dashboard/settings"
           onClick={onNavItemClick}
-          className="group flex items-center px-3 py-2 text-[12px] font-bold uppercase text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-white transition-colors"
+          className="group flex items-center px-3 py-2 text-[11px] font-bold uppercase text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-white transition-colors"
         >
           <Settings className="mr-3 h-4 w-4" />
           Ajustes
         </Link>
         <button
           onClick={handleSignOut}
-          className="w-full group flex items-center px-3 py-2 text-[12px] font-bold uppercase text-sidebar-foreground/70 hover:bg-destructive hover:text-white transition-colors"
+          className="w-full group flex items-center px-3 py-2 text-[11px] font-bold uppercase text-sidebar-foreground/60 hover:bg-destructive hover:text-white transition-colors"
         >
           <LogOut className="mr-3 h-4 w-4" />
           Cerrar Sesión

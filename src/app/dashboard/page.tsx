@@ -12,28 +12,35 @@ import {
   Clock,
   Bell,
   Loader2,
-  Calendar
+  Calendar,
+  ShieldCheck
 } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase"
-import { collection, query, where, limit, orderBy } from "firebase/firestore"
-import { format, startOfDay, endOfDay, addDays, isAfter, isBefore, parseISO } from "date-fns"
+import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from "@/firebase"
+import { collection, query, where, limit, doc } from "firebase/firestore"
+import { format, isBefore, parseISO, addDays } from "date-fns"
 import { es } from "date-fns/locale"
 
 export default function DashboardPage() {
   const db = useFirestore()
   const { user } = useUser()
 
-  // 1. Obtener perfil para companyId
+  // 1. User profile
   const userProfileQuery = useMemoFirebase(() => 
     user?.email ? query(collection(db, "company_users"), where("email", "==", user.email), limit(1)) : null,
   [db, user?.email])
   const { data: profiles } = useCollection(userProfileQuery)
   const companyId = profiles?.[0]?.companyId
 
-  // 2. Cargar Datos Reales
+  // 2. Company data
+  const companyRef = useMemoFirebase(() => 
+    companyId ? doc(db, "companies", companyId) : null,
+  [db, companyId])
+  const { data: company } = useDoc(companyRef)
+
+  // 3. Real data loading
   const clientsRef = useMemoFirebase(() => 
     companyId ? query(collection(db, "clients"), where("companyId", "==", companyId)) : null,
   [db, companyId])
@@ -49,7 +56,7 @@ export default function DashboardPage() {
   [db, companyId])
   const { data: inventory, isLoading: loadingInventory } = useCollection(inventoryRef)
 
-  // 3. Procesar Estadísticas
+  // 4. Statistics processing
   const todayStr = format(new Date(), "yyyy-MM-dd")
   const next7Days = addDays(new Date(), 7)
   const next7DaysStr = format(next7Days, "yyyy-MM-dd")
@@ -67,9 +74,9 @@ export default function DashboardPage() {
 
     return [
       { title: "Clientes Activos", value: clients.length.toString(), icon: Users, color: "text-blue-600" },
-      { title: "Servicios Hoy", value: todayApts.length.toString(), icon: CheckCircle2, color: "text-green-600" },
+      { title: "Servicios Hoy", value: todayApts.length.toString(), icon: CheckCircle2, color: "text-status-success" },
       { title: "Equipos por Vencer", value: criticalInventory.length.toString(), icon: AlertTriangle, color: "text-status-warning" },
-      { title: "Próximos 7 días", value: upcoming7Days.length.toString(), icon: Clock, color: "text-status-success" },
+      { title: "Próximos 7 días", value: upcoming7Days.length.toString(), icon: Clock, color: "text-primary" },
     ]
   }, [clients, appointments, inventory, todayStr, next7Days, next7DaysStr])
 
@@ -117,24 +124,29 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-1">
-        <h2 className="text-2xl font-bold tracking-tight font-headline">PANEL DE CONTROL</h2>
-        <p className="text-muted-foreground text-sm uppercase font-bold text-[10px]">
-          Resumen operativo: {format(new Date(), "PPPP", { locale: es })}
+        <h2 className="text-2xl font-bold tracking-tight font-headline flex items-center gap-3">
+          PANEL DE CONTROL
+          <Badge variant="outline" className="text-[10px] font-bold uppercase py-0 px-2 border-primary/20 text-primary">
+            {company?.name || "SERVIFUMIGA PRO"}
+          </Badge>
+        </h2>
+        <p className="text-muted-foreground text-[10px] uppercase font-bold tracking-widest">
+          ESTADO OPERATIVO: {format(new Date(), "PPPP", { locale: es }).toUpperCase()}
         </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats?.map((stat) => (
-          <Card key={stat.title} className="shadow-sm border-none bg-white">
+          <Card key={stat.title} className="shadow-sm border-none bg-white hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">{stat.title}</CardTitle>
               <stat.icon className={cn("h-4 w-4", stat.color)} />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
+              <div className="text-2xl font-bold text-primary">{stat.value}</div>
               <div className="flex items-center text-[9px] text-muted-foreground mt-1 font-bold uppercase">
-                <TrendingUp className="h-3.5 w-3.5 mr-1 text-green-500" />
-                <span>Datos en tiempo real</span>
+                <TrendingUp className="h-3.5 w-3.5 mr-1 text-status-success" />
+                <span>Datos Actualizados</span>
               </div>
             </CardContent>
           </Card>
@@ -220,9 +232,9 @@ export default function DashboardPage() {
             )}
             
             <div className="pt-4 border-t border-white/10 mt-4">
-              <p className="text-[9px] font-bold uppercase opacity-50 tracking-widest">Estado SaaS</p>
+              <p className="text-[9px] font-bold uppercase opacity-50 tracking-widest">SaaS Master Sync</p>
               <div className="flex items-center gap-2 mt-1">
-                <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse"></div>
+                <div className="h-2 w-2 rounded-full bg-status-success animate-pulse"></div>
                 <span className="text-[10px] font-bold uppercase">Sincronización Activa</span>
               </div>
             </div>

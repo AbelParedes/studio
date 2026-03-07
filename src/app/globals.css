@@ -5,55 +5,56 @@
 
 @layer base {
   :root {
+    /* SERVIFUMIGA PRO - Corporate Colors (#1a2b3c) */
     --background: 210 20% 98%;
-    --foreground: 222 47% 11%;
+    --foreground: 210 40% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 210 40% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 222 47% 11%;
+    --popover-foreground: 210 40% 11%;
+    --primary: 210 40% 17%;
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary-foreground: 210 40% 11%;
     --muted: 210 40% 96%;
     --muted-foreground: 215 16% 47%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 2 64% 58%;
+    --accent-foreground: 210 40% 98%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
     --border: 214 32% 91%;
     --input: 214 32% 91%;
-    --ring: 222 47% 11%;
+    --ring: 210 40% 17%;
     --radius: 0.5rem;
 
     --status-success: 142 76% 36%;
     --status-warning: 38 92% 50%;
     --status-error: 0 84% 60%;
 
-    --sidebar-background: 222 47% 11%;
+    --sidebar-background: 210 40% 11%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 210 40% 98%;
-    --sidebar-primary-foreground: 222 47% 11%;
+    --sidebar-primary-foreground: 210 40% 11%;
     --sidebar-accent: 217 33% 17%;
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 217 33% 17%;
-    --sidebar-ring: 222 47% 11%;
+    --sidebar-ring: 210 40% 17%;
   }
 
   .dark {
-    --background: 222 47% 11%;
+    --background: 210 40% 11%;
     --foreground: 210 40% 98%;
-    --card: 222 47% 11%;
+    --card: 210 40% 11%;
     --card-foreground: 210 40% 98%;
-    --popover: 222 47% 11%;
+    --popover: 210 40% 11%;
     --popover-foreground: 210 40% 98%;
     --primary: 210 40% 98%;
-    --primary-foreground: 222 47% 11%;
+    --primary-foreground: 210 40% 11%;
     --secondary: 217 33% 17%;
     --secondary-foreground: 210 40% 98%;
     --muted: 217 33% 17%;
     --muted-foreground: 215 20% 65%;
-    --accent: 217 33% 17%;
+    --accent: 2 64% 58%;
     --accent-foreground: 210 40% 98%;
     --destructive: 0 62% 30%;
     --destructive-foreground: 210 40% 98%;
@@ -61,10 +62,10 @@
     --input: 217 33% 17%;
     --ring: 212 27% 38%;
     
-    --sidebar-background: 222 47% 6%;
+    --sidebar-background: 210 40% 6%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 210 40% 98%;
-    --sidebar-primary-foreground: 222 47% 6%;
+    --sidebar-primary-foreground: 210 40% 6%;
     --sidebar-accent: 217 33% 12%;
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 217 33% 12%;

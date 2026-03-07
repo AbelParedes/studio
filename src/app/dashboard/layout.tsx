@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { DashboardNav } from "@/components/dashboard-nav"
-import { Bell, Loader2, Menu, Building2, Clock, ShieldAlert, LogOut } from "lucide-react"
+import { Bell, Loader2, Menu, Building2, Clock, ShieldAlert, LogOut, ShieldCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection, useAuth } from "@/firebase"
 import { doc, collection, query, where, limit } from "firebase/firestore"
@@ -23,7 +23,7 @@ export default function DashboardLayout({
   const router = useRouter()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
-  // Perfil del usuario para obtener companyId
+  // User profile
   const userProfileQuery = useMemoFirebase(() => 
     user?.email ? query(collection(db, "company_users"), where("email", "==", user.email), limit(1)) : null,
   [db, user?.email])
@@ -31,13 +31,13 @@ export default function DashboardLayout({
   const { data: profiles, isLoading: isLoadingProfile } = useCollection(userProfileQuery)
   const profile = profiles?.[0] || null
 
-  // Datos de la Empresa vinculada al perfil
+  // Company data
   const companyRef = useMemoFirebase(() => 
     profile?.companyId ? doc(db, "companies", profile.companyId) : null,
   [db, profile?.companyId])
   const { data: company, isLoading: loadingCompany } = useDoc(companyRef)
 
-  // Datos del Rol para el badge del usuario
+  // Role data
   const roleRef = useMemoFirebase(() => 
     profile?.roleId ? doc(db, "system_roles", profile.roleId) : null,
   [db, profile?.roleId])
@@ -45,7 +45,7 @@ export default function DashboardLayout({
 
   const isMasterAdmin = roleData?.title === "Administrador"
 
-  // Aplicar Tema y Colores dinámicamente
+  // Dynamic theme and colors
   useEffect(() => {
     if (company && company.status === "Active") {
       if (company.themeMode === 'dark') {
@@ -80,7 +80,7 @@ export default function DashboardLayout({
     )
   }
 
-  // Pantalla de espera de aprobación (Bypass para el Super Admin)
+  // Pending approval screen
   if (!isMasterAdmin && (profile?.status === "Pending" || company?.status === "Pending")) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-[#f8fafc] p-6">
@@ -111,12 +111,13 @@ export default function DashboardLayout({
   const displayName = profile?.name || user?.email?.split('@')[0] || "Usuario"
   const displayRole = roleData?.title || "Colaborador"
   const companyLogo = company?.logoUrl || null
+  const companyName = company?.name || "SERVIFUMIGA PRO"
 
   return (
     <div className="flex h-screen bg-background dark:bg-slate-950 overflow-hidden text-foreground">
       <aside className="w-64 bg-sidebar shrink-0 hidden lg:block border-r border-sidebar-border shadow-xl">
         <DashboardNav 
-          companyName={company?.name || "SERVIFUMIGA"} 
+          companyName={companyName} 
           logoUrl={companyLogo} 
           userRole={displayRole}
         />
@@ -134,7 +135,7 @@ export default function DashboardLayout({
               <SheetContent side="left" className="p-0 w-64 bg-sidebar border-none">
                 <DashboardNav 
                   onNavItemClick={() => setIsMobileMenuOpen(false)} 
-                  companyName={company?.name || "SERVIFUMIGA"} 
+                  companyName={companyName} 
                   logoUrl={companyLogo} 
                   userRole={displayRole}
                 />
@@ -143,14 +144,16 @@ export default function DashboardLayout({
 
             <div className="flex items-center gap-2">
               {companyLogo ? (
-                <div className="relative h-8 w-8 rounded overflow-hidden border bg-white">
+                <div className="relative h-8 w-8 rounded overflow-hidden border bg-white shadow-sm">
                   <Image src={companyLogo} alt="Logo" fill className="object-contain p-1" unoptimized />
                 </div>
               ) : (
-                <Building2 className="h-5 w-5 text-primary" />
+                <div className="h-8 w-8 bg-primary/10 rounded flex items-center justify-center border border-primary/20">
+                  <ShieldCheck className="h-5 w-5 text-primary" />
+                </div>
               )}
-              <span className="text-xs font-bold uppercase hidden sm:block truncate max-w-[200px]">
-                {company?.name || "Panel de Control"}
+              <span className="text-xs font-bold uppercase hidden sm:block truncate max-w-[300px] tracking-tight text-primary">
+                {companyName}
               </span>
             </div>
           </div>
