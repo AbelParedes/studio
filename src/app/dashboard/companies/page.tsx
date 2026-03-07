@@ -75,6 +75,9 @@ export default function CompaniesPage() {
   const roleRef = useMemoFirebase(() => profile?.roleId ? doc(db, "system_roles", profile.roleId) : null, [db, profile?.roleId])
   const { data: roleData, isLoading: loadingRole } = useDoc(roleRef)
 
+  const companiesRef = useMemoFirebase(() => collection(db, "companies"), [db])
+  const { data: companies } = useCollection(companiesRef)
+
   const isSuperAdmin = roleData?.title === "Super Administrador" || roleData?.permissions?.manage_saas === true
 
   useEffect(() => {
@@ -183,9 +186,6 @@ export default function CompaniesPage() {
     setEditingCompany(comp)
     setIsAdding(true)
   }
-
-  const companiesRef = useMemoFirebase(() => collection(db, "companies"), [db])
-  const { data: companies } = useCollection(companiesRef)
 
   const filteredCompanies = companies?.filter(c => 
     c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
