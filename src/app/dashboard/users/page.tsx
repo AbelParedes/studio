@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { UserPlus, Search, Shield, Mail, Trash2, Edit2, Loader2, Key, Building2, Info } from "lucide-react"
-import { useCollection, useFirestore, useMemoFirebase, deleteDocumentNonBlocking, addDocumentNonBlocking, updateDocumentNonBlocking, useUser } from "@/firebase"
+import { useCollection, useFirestore, useMemoFirebase, deleteDocumentNonBlocking, addDocumentNonBlocking, updateDocumentNonBlocking, useUser, useDoc } from "@/firebase"
 import { collection, doc, query, where } from "firebase/firestore"
 import { initializeApp, deleteApp, getApps } from "firebase/app"
 import { getAuth, createUserWithEmailAndPassword, signOut } from "firebase/auth"
@@ -40,20 +40,36 @@ export default function UsersPage() {
     currentUser?.email ? query(collection(db, "company_users"), where("email", "==", currentUser.email)) : null,
   [db, currentUser?.email])
   const { data: adminProfiles } = useCollection(adminProfileQuery)
-  const currentCompanyId = adminProfiles?.[0]?.companyId
+  const adminProfile = adminProfiles?.[0]
+  const currentCompanyId = adminProfile?.companyId
 
-  // Listado de empresas para el selector
+  // Obtener rol del usuario actual para verificar si es Super Admin
+  const currentRoleRef = useMemoFirebase(() => 
+    adminProfile?.roleId ? doc(db, "system_roles", adminProfile.roleId) : null,
+  [db, adminProfile?.roleId])
+  const { data: currentRoleData } = useDoc(currentRoleRef)
+  
+  const isSuperAdmin = currentRoleData?.title === "Super Administrador" || currentRoleData?.permissions?.manage_saas === true
+
+  // Listado de empresas (solo relevante para Super Admin)
   const companiesRef = useMemoFirebase(() => collection(db, "companies"), [db])
   const { data: companies } = useCollection(companiesRef)
 
-  // Filtrar usuarios de la empresa actual (o todos si es super admin, aquí mostramos los de la empresa actual)
-  const usersRef = useMemoFirebase(() => 
-    currentCompanyId ? query(collection(db, "company_users"), where("companyId", "==", currentCompanyId)) : null, 
-  [db, currentCompanyId])
+  // Filtrar usuarios: Super Admin ve todos, Admin normal solo los de su empresa
+  const usersRef = useMemoFirebase(() => {
+    if (!currentCompanyId) return null
+    return isSuperAdmin 
+      ? collection(db, "company_users")
+      : query(collection(db, "company_users"), where("companyId", "==", currentCompanyId))
+  }, [db, currentCompanyId, isSuperAdmin])
   const { data: users, isLoading: loadingUsers } = useCollection(usersRef)
 
+  // Listado de roles disponibles
   const rolesRef = useMemoFirebase(() => collection(db, "system_roles"), [db])
   const { data: roles } = useCollection(rolesRef)
+
+  // Filtrar roles: No permitir asignar Super Administrador si no se es uno
+  const availableRoles = roles?.filter(r => isSuperAdmin || r.title !== "Super Administrador")
 
   const filteredUsers = users?.filter(u => 
     u.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -67,7 +83,7 @@ export default function UsersPage() {
     const email = formData.get("email") as string
     const password = formData.get("password") as string
     const name = formData.get("name") as string
-    const targetCompanyId = formData.get("companyId") as string || currentCompanyId
+    const targetCompanyId = isSuperAdmin ? (formData.get("companyId") as string) : currentCompanyId
 
     if (!roleId || roleId === "none") {
       toast({ variant: "destructive", title: "Error", description: "Debe seleccionar un rol válido." })
@@ -93,6 +109,7 @@ export default function UsersPage() {
         const newUser = { ...userData, id: crypto.randomUUID(), createdAt: new Date().toISOString() }
         addDocumentNonBlocking(collection(db, "company_users"), newUser)
 
+        // Creación de cuenta Auth mediante aplicación secundaria para no desloguear al admin actual
         const secondaryAppName = `AuthCreator_${Date.now()}`
         const secondaryApp = initializeApp(firebaseConfig, secondaryAppName)
         const secondaryAuth = getAuth(secondaryApp)
@@ -131,7 +148,11 @@ export default function UsersPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight mb-1">COLABORADORES</h2>
-          <p className="text-muted-foreground text-sm">Gestione los técnicos y administradores de su organización.</p>
+          <p className="text-muted-foreground text-sm">
+            {isSuperAdmin 
+              ? "Gestión global de personal en todas las instancias SaaS." 
+              : "Gestione los técnicos y administradores de su organización."}
+          </p>
         </div>
         
         <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) setEditingUser(null); }}>
@@ -144,23 +165,29 @@ export default function UsersPage() {
             <form onSubmit={handleSaveUser}>
               <DialogHeader>
                 <DialogTitle>{editingUser ? "Editar Colaborador" : "Nuevo Registro"}</DialogTitle>
-                <DialogDescription>Asigne una empresa y credenciales de acceso.</DialogDescription>
+                <DialogDescription>
+                  {isSuperAdmin 
+                    ? "Asigne una empresa y credenciales de acceso maestro." 
+                    : `El usuario será vinculado automáticamente a ${companies?.find(c => c.id === currentCompanyId)?.name || 'su empresa'}.`}
+                </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 
-                <div className="grid gap-2">
-                  <Label htmlFor="companyId" className="text-xs uppercase font-bold">Empresa / Organización</Label>
-                  <Select name="companyId" defaultValue={editingUser?.companyId || currentCompanyId} required>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccione Empresa" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {companies?.map(c => (
-                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {isSuperAdmin && (
+                  <div className="grid gap-2">
+                    <Label htmlFor="companyId" className="text-xs uppercase font-bold text-accent">Empresa (Solo Super Admin)</Label>
+                    <Select name="companyId" defaultValue={editingUser?.companyId || currentCompanyId} required>
+                      <SelectTrigger className="border-accent/30">
+                        <SelectValue placeholder="Seleccione Empresa" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {companies?.map(c => (
+                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 <div className="grid gap-2">
                   <Label htmlFor="name" className="text-xs uppercase font-bold">Nombre Completo</Label>
@@ -184,7 +211,7 @@ export default function UsersPage() {
                         <SelectValue placeholder="Seleccione" />
                       </SelectTrigger>
                       <SelectContent>
-                        {roles?.map(role => (
+                        {availableRoles?.map(role => (
                           <SelectItem key={role.id} value={role.id}>{role.title}</SelectItem>
                         ))}
                       </SelectContent>
