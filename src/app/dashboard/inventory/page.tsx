@@ -6,7 +6,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Package, Plus, Search, Loader2, Trash2, Edit2, Flame, Bug, Tool, ShoppingCart, RefreshCw } from "lucide-react"
+import { 
+  Package, 
+  Plus, 
+  Search, 
+  Loader2, 
+  Trash2, 
+  Edit2, 
+  Flame, 
+  Bug, 
+  Wrench, 
+  ShoppingCart, 
+  RefreshCw,
+  CheckCircle2,
+  AlertTriangle 
+} from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, useUser } from "@/firebase"
 import { collection, doc, query, where } from "firebase/firestore"
@@ -283,7 +297,7 @@ export default function InventoryPage() {
                         {item.category === 'Fumigación' && <Bug className="mr-1 h-2.5 w-2.5 text-accent" />}
                         {item.category === 'Recarga' && <RefreshCw className="mr-1 h-2.5 w-2.5 text-blue-500" />}
                         {item.category === 'Venta' && <ShoppingCart className="mr-1 h-2.5 w-2.5 text-green-600" />}
-                        {item.category === 'Mantenimiento' && <Tool className="mr-1 h-2.5 w-2.5 text-orange-500" />}
+                        {item.category === 'Mantenimiento' && <Wrench className="mr-1 h-2.5 w-2.5 text-orange-500" />}
                         {item.category || "General"}
                       </Badge>
                     </TableCell>
@@ -335,5 +349,3 @@ export default function InventoryPage() {
     </div>
   )
 }
-
-import { CheckCircle2, AlertTriangle } from "lucide-react"
