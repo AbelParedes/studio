@@ -142,9 +142,7 @@ export default function QuotationsPage() {
     const client = clients?.find(c => c.id === viewingQuotation.clientId)
     const defaultLogo = PlaceHolderImages.find(img => img.id === 'apeva-logo')?.imageUrl || "https://res.cloudinary.com/djz39v86m/image/upload/v1711100000/apeva-logo.png"
     
-    // Priorizamos Cabecera de Ajustes, luego Logo de Ajustes, luego Logo de Apeva
     const headerSrc = company?.headerUrl || company?.logoUrl || defaultLogo
-    // Priorizamos Pie de Página de Ajustes, de lo contrario usamos el estilo Apeva
     const footerSrc = company?.footerUrl || null
 
     return (
@@ -163,7 +161,7 @@ export default function QuotationsPage() {
           </div>
         </div>
 
-        <div className="bg-white p-0 shadow-2xl mx-auto print-container max-w-[21cm] min-h-[29.7cm] flex flex-col relative overflow-hidden text-slate-900 border border-slate-200">
+        <div className="bg-white p-0 shadow-2xl mx-auto print-container max-w-[21cm] min-h-[29.7cm] flex flex-col relative overflow-hidden text-slate-900 border border-slate-200" id="quotation-print-area">
           
           {/* HEADER DINÁMICO */}
           <div className="pt-8 px-10 pb-4">
@@ -294,7 +292,7 @@ export default function QuotationsPage() {
           </div>
 
           {/* PIE DE PÁGINA DINÁMICO */}
-          <div className={cn("mt-auto", footerSrc ? "p-0" : "bg-[#ffdd00] py-10 px-10 border-t-[6px] border-red-600")}>
+          <div className={cn("mt-auto print-footer", footerSrc ? "p-0" : "bg-[#ffdd00] py-10 px-10 border-t-[6px] border-red-600")}>
             {footerSrc ? (
               <div className="relative h-40 w-full">
                 <Image src={footerSrc} alt="Footer Membrete" fill className="object-cover" unoptimized />
@@ -329,13 +327,13 @@ export default function QuotationsPage() {
               body * {
                 visibility: hidden;
               }
-              header, aside, .no-print {
+              header, aside, .no-print, nav {
                 display: none !important;
               }
-              .print-container, .print-container * {
+              #quotation-print-area, #quotation-print-area * {
                 visibility: visible;
               }
-              .print-container {
+              #quotation-print-area {
                 position: absolute;
                 left: 0;
                 top: 0;
@@ -348,6 +346,13 @@ export default function QuotationsPage() {
                 background-color: white !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
+                display: flex;
+                flex-direction: column;
+              }
+              .print-footer {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                background-color: #ffdd00 !important;
               }
               @page {
                 size: A4;
@@ -368,126 +373,128 @@ export default function QuotationsPage() {
           <p className="text-muted-foreground text-sm">Emita presupuestos oficiales con el formato corporativo configurado.</p>
         </div>
         
-        <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) { setEditingQuotation(null); setItems([]); } }}>
-          <DialogTrigger asChild>
-            <Button className="bg-primary text-white h-10 font-bold uppercase text-xs px-6 shadow-md hover:bg-primary/90">
-              <Plus className="mr-2 h-4 w-4" /> Generar Nueva Cotización
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <form onSubmit={handleSaveQuotation}>
-              <DialogHeader>
-                <DialogTitle className="uppercase font-bold text-primary">Configuración de Proforma</DialogTitle>
-                <DialogDescription className="text-xs uppercase font-medium">Los precios incluyen IGV del 18% automáticamente.</DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-6 py-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="grid gap-2">
-                    <Label className="text-[10px] font-bold uppercase">Cliente Receptor</Label>
-                    <Select name="clientId" defaultValue={editingQuotation?.clientId} required>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccione un cliente" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {clients?.map(c => (
-                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+        <div className="flex gap-2">
+          <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) { setEditingQuotation(null); setItems([]); } }}>
+            <DialogTrigger asChild>
+              <Button className="bg-primary text-white h-10 font-bold uppercase text-xs px-6 shadow-md hover:bg-primary/90">
+                <Plus className="mr-2 h-4 w-4" /> Generar Nueva Cotización
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <form onSubmit={handleSaveQuotation}>
+                <DialogHeader>
+                  <DialogTitle className="uppercase font-bold text-primary">Configuración de Proforma</DialogTitle>
+                  <DialogDescription className="text-xs uppercase font-medium">Los precios incluyen IGV del 18% automáticamente.</DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-6 py-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid gap-2">
+                      <Label className="text-[10px] font-bold uppercase">Cliente Receptor</Label>
+                      <Select name="clientId" defaultValue={editingQuotation?.clientId} required>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccione un cliente" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {clients?.map(c => (
+                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label className="text-[10px] font-bold uppercase">N° de Cotización</Label>
+                      <Input name="number" defaultValue={editingQuotation?.quotationNumber} placeholder="COT-001-2024" className="uppercase font-mono" />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label className="text-[10px] font-bold uppercase">Estado Inicial</Label>
+                      <Select name="status" defaultValue={editingQuotation?.status || "Borrador"}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Borrador">Borrador</SelectItem>
+                          <SelectItem value="Enviado">Enviado al Cliente</SelectItem>
+                          <SelectItem value="Aceptado">Aceptado / O.C.</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                  <div className="grid gap-2">
-                    <Label className="text-[10px] font-bold uppercase">N° de Cotización</Label>
-                    <Input name="number" defaultValue={editingQuotation?.quotationNumber} placeholder="COT-001-2024" className="uppercase font-mono" />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label className="text-[10px] font-bold uppercase">Estado Inicial</Label>
-                    <Select name="status" defaultValue={editingQuotation?.status || "Borrador"}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Borrador">Borrador</SelectItem>
-                        <SelectItem value="Enviado">Enviado al Cliente</SelectItem>
-                        <SelectItem value="Aceptado">Aceptado / O.C.</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
 
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between border-b pb-2">
-                    <Label className="text-[11px] font-black uppercase text-primary">Items del Presupuesto</Label>
-                    <Button type="button" variant="secondary" size="sm" onClick={handleAddItem} className="h-8 text-[10px] font-bold uppercase bg-accent text-white hover:bg-accent/90">
-                      <Plus className="h-3 w-3 mr-2" /> Agregar Item
-                    </Button>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between border-b pb-2">
+                      <Label className="text-[11px] font-black uppercase text-primary">Items del Presupuesto</Label>
+                      <Button type="button" variant="secondary" size="sm" onClick={handleAddItem} className="h-8 text-[10px] font-bold uppercase bg-accent text-white hover:bg-accent/90">
+                        <Plus className="h-3 w-3 mr-2" /> Agregar Item
+                      </Button>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      {items.map((item, idx) => (
+                        <div key={idx} className="grid grid-cols-12 gap-3 items-end border p-4 rounded-xl bg-slate-50 shadow-sm">
+                          <div className="col-span-12 md:col-span-6 grid gap-1.5">
+                            <Label className="text-[9px] font-black uppercase text-slate-500">Descripción Técnica</Label>
+                            <Input 
+                              value={item.description} 
+                              onChange={(e) => handleItemChange(idx, "description", e.target.value)}
+                              placeholder="Ej. Recarga de Extintor PQS ABC 10 Lbs..."
+                              className="h-9 text-xs font-bold"
+                              required
+                            />
+                          </div>
+                          <div className="col-span-4 md:col-span-2 grid gap-1.5">
+                            <Label className="text-[9px] font-black uppercase text-slate-500">Cant.</Label>
+                            <Input 
+                              type="number"
+                              min="1"
+                              value={item.quantity} 
+                              onChange={(e) => handleItemChange(idx, "quantity", Number(e.target.value))}
+                              className="h-9 text-xs text-center font-black"
+                              required
+                            />
+                          </div>
+                          <div className="col-span-6 md:col-span-3 grid gap-1.5">
+                            <Label className="text-[9px] font-black uppercase text-slate-500">Precio Unit. (S/)</Label>
+                            <Input 
+                              type="number"
+                              step="0.01"
+                              value={item.unitPrice} 
+                              onChange={(e) => handleItemChange(idx, "unitPrice", Number(e.target.value))}
+                              className="h-9 text-xs text-right font-black"
+                              required
+                            />
+                          </div>
+                          <div className="col-span-2 md:col-span-1 flex justify-center">
+                            <Button type="button" variant="ghost" size="icon" onClick={() => setItems(items.filter((_, i) => i !== idx))} className="h-9 w-9 text-destructive hover:bg-destructive/10">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  
-                  <div className="space-y-3">
-                    {items.map((item, idx) => (
-                      <div key={idx} className="grid grid-cols-12 gap-3 items-end border p-4 rounded-xl bg-slate-50 shadow-sm">
-                        <div className="col-span-12 md:col-span-6 grid gap-1.5">
-                          <Label className="text-[9px] font-black uppercase text-slate-500">Descripción Técnica</Label>
-                          <Input 
-                            value={item.description} 
-                            onChange={(e) => handleItemChange(idx, "description", e.target.value)}
-                            placeholder="Ej. Recarga de Extintor PQS ABC 10 Lbs..."
-                            className="h-9 text-xs font-bold"
-                            required
-                          />
-                        </div>
-                        <div className="col-span-4 md:col-span-2 grid gap-1.5">
-                          <Label className="text-[9px] font-black uppercase text-slate-500">Cant.</Label>
-                          <Input 
-                            type="number"
-                            min="1"
-                            value={item.quantity} 
-                            onChange={(e) => handleItemChange(idx, "quantity", Number(e.target.value))}
-                            className="h-9 text-xs text-center font-black"
-                            required
-                          />
-                        </div>
-                        <div className="col-span-6 md:col-span-3 grid gap-1.5">
-                          <Label className="text-[9px] font-black uppercase text-slate-500">Precio Unit. (S/)</Label>
-                          <Input 
-                            type="number"
-                            step="0.01"
-                            value={item.unitPrice} 
-                            onChange={(e) => handleItemChange(idx, "unitPrice", Number(e.target.value))}
-                            className="h-9 text-xs text-right font-black"
-                            required
-                          />
-                        </div>
-                        <div className="col-span-2 md:col-span-1 flex justify-center">
-                          <Button type="button" variant="ghost" size="icon" onClick={() => setItems(items.filter((_, i) => i !== idx))} className="h-9 w-9 text-destructive hover:bg-destructive/10">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
 
-                <div className="bg-slate-900 text-white p-6 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4">
-                  <div className="text-center md:text-left">
-                    <p className="text-[10px] font-black uppercase text-slate-400 mb-1">Total Estimado Neto (Incl. IGV)</p>
-                    <p className="text-3xl font-black text-red-500 tracking-tighter">
-                      S/ {(items.reduce((acc, i) => acc + (Number(i.quantity || 0) * Number(i.unitPrice || 0)), 0) * 1.18).toFixed(2)}
-                    </p>
-                  </div>
-                  <div className="flex flex-col items-center md:items-end text-[11px] font-bold opacity-80">
-                    <p>Subtotal: S/ {items.reduce((acc, i) => acc + (Number(i.quantity || 0) * Number(i.unitPrice || 0)), 0).toFixed(2)}</p>
-                    <p>I.G.V. (18%): S/ {(items.reduce((acc, i) => acc + (Number(i.quantity || 0) * Number(i.unitPrice || 0)), 0) * 0.18).toFixed(2)}</p>
+                  <div className="bg-slate-900 text-white p-6 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div className="text-center md:text-left">
+                      <p className="text-[10px] font-black uppercase text-slate-400 mb-1">Total Estimado Neto (Incl. IGV)</p>
+                      <p className="text-3xl font-black text-red-500 tracking-tighter">
+                        S/ {(items.reduce((acc, i) => acc + (Number(i.quantity || 0) * Number(i.unitPrice || 0)), 0) * 1.18).toFixed(2)}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-center md:items-end text-[11px] font-bold opacity-80">
+                      <p>Subtotal: S/ {items.reduce((acc, i) => acc + (Number(i.quantity || 0) * Number(i.unitPrice || 0)), 0).toFixed(2)}</p>
+                      <p>I.G.V. (18%): S/ {(items.reduce((acc, i) => acc + (Number(i.quantity || 0) * Number(i.unitPrice || 0)), 0) * 0.18).toFixed(2)}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <DialogFooter className="border-t pt-6">
-                <Button type="submit" className="w-full h-11 uppercase font-black text-xs tracking-widest bg-primary hover:bg-primary/90">
-                  {editingQuotation ? "Actualizar Proforma" : "Confirmar y Generar Cotización"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+                <DialogFooter className="border-t pt-6">
+                  <Button type="submit" className="w-full h-11 uppercase font-black text-xs tracking-widest bg-primary hover:bg-primary/90">
+                    {editingQuotation ? "Actualizar Proforma" : "Confirmar y Generar Cotización"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <Card className="shadow-sm border-none overflow-hidden">
