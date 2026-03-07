@@ -21,7 +21,8 @@ import {
   ShieldCheck, 
   CreditCard,
   Ban,
-  Activity
+  Activity,
+  Check
 } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, useUser, useDoc } from "@/firebase"
 import { collection, doc, query, where, getDocs, updateDoc, limit, writeBatch } from "firebase/firestore"
@@ -127,6 +128,29 @@ export default function CompaniesPage() {
     }
   }
 
+  const handleApproveCompany = async (companyId: string) => {
+    setIsStatusChanging(companyId)
+    try {
+      const batch = writeBatch(db)
+      
+      // 1. Activar Empresa
+      batch.update(doc(db, "companies", companyId), { status: "Active" })
+      
+      // 2. Activar todos los usuarios de esa empresa
+      const usersSnapshot = await getDocs(query(collection(db, "company_users"), where("companyId", "==", companyId)))
+      usersSnapshot.docs.forEach((userDoc) => {
+        batch.update(userDoc.ref, { status: "Active" })
+      })
+
+      await batch.commit()
+      toast({ title: "Organización Aprobada", description: "La empresa y sus usuarios ya pueden acceder." })
+    } catch (error) {
+      toast({ variant: "destructive", title: "Error al aprobar" })
+    } finally {
+      setIsStatusChanging(null)
+    }
+  }
+
   const handleSwitchCompany = async (companyId: string) => {
     if (!user?.email) return
     setIsSwitching(companyId)
@@ -142,6 +166,11 @@ export default function CompaniesPage() {
     } finally {
       setIsSwitching(null)
     }
+  }
+
+  const openEdit = (comp: any) => {
+    setEditingCompany(comp)
+    setIsAdding(true)
   }
 
   const filteredCompanies = companies?.filter(c => 
@@ -277,24 +306,40 @@ export default function CompaniesPage() {
                         comp.status === "Suspended" && "border-status-error text-status-error bg-status-error/5 animate-pulse",
                       )}
                     >
-                      {comp.status === "Suspended" ? <Ban className="mr-1 h-3 w-3" /> : <Activity className="mr-1 h-3 w-3" />}
+                      {comp.status === "Suspended" ? <Ban className="mr-1 h-3 w-3" /> : comp.status === "Pending" ? <Clock className="mr-1 h-3 w-3" /> : <Activity className="mr-1 h-3 w-3" />}
                       {comp.status || "Active"}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right pr-6">
                     <div className="flex items-center justify-end gap-2">
-                      <Button 
-                        variant="secondary" 
-                        size="sm" 
-                        className={cn(
-                          "h-7 text-[9px] font-bold uppercase",
-                          comp.status === "Active" ? "hover:bg-status-error/10 hover:text-status-error" : "hover:bg-status-success/10 hover:text-status-success"
-                        )}
-                        onClick={() => toggleStatus(comp.id, comp.status)}
-                        disabled={isStatusChanging === comp.id}
-                      >
-                        {isStatusChanging === comp.id ? <Loader2 className="h-3 w-3 animate-spin" /> : comp.status === "Active" ? "Suspender" : "Activar"}
-                      </Button>
+                      {comp.status === "Pending" && (
+                        <Button 
+                          variant="secondary" 
+                          size="sm" 
+                          className="h-7 text-[9px] font-bold uppercase bg-status-success text-white hover:bg-status-success/90"
+                          onClick={() => handleApproveCompany(comp.id)}
+                          disabled={isStatusChanging === comp.id}
+                        >
+                          {isStatusChanging === comp.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="mr-1 h-3 w-3" />}
+                          Aprobar
+                        </Button>
+                      )}
+                      
+                      {comp.status !== "Pending" && (
+                        <Button 
+                          variant="secondary" 
+                          size="sm" 
+                          className={cn(
+                            "h-7 text-[9px] font-bold uppercase",
+                            comp.status === "Active" ? "hover:bg-status-error/10 hover:text-status-error" : "hover:bg-status-success/10 hover:text-status-success"
+                          )}
+                          onClick={() => toggleStatus(comp.id, comp.status)}
+                          disabled={isStatusChanging === comp.id}
+                        >
+                          {isStatusChanging === comp.id ? <Loader2 className="h-3 w-3 animate-spin" /> : comp.status === "Active" ? "Suspender" : "Activar"}
+                        </Button>
+                      )}
+
                       <Button 
                         variant="outline" 
                         size="sm" 
