@@ -165,7 +165,7 @@ export default function QuotationsPage() {
 
         <div className="bg-white p-0 shadow-2xl mx-auto print-container max-w-[21cm] min-h-[29.7cm] flex flex-col relative overflow-hidden text-slate-900 border border-slate-200">
           
-          {/* HEADER DINÁMICO */}
+          {/* HEADER DINÁMICO */}
           <div className="pt-8 px-10 pb-4">
             <div className="flex justify-between items-start">
               <div className="relative h-28 w-80 shrink-0">
