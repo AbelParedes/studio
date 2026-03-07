@@ -180,38 +180,38 @@ export default function QuotationsPage() {
         {/* CONTENEDOR A4 */}
         <div className="bg-white p-0 shadow-2xl mx-auto print-page w-[210mm] min-h-[297mm] flex flex-col relative overflow-hidden text-slate-900 border" id="quotation-print-area">
           
-          {/* CABECERA: LOGO IZQUIERDA, TEXTO DERECHA */}
-          {company?.headerUrl ? (
-            <div className="relative w-full h-[180px] shrink-0 flex items-center justify-center overflow-hidden">
-              <Image src={company.headerUrl} alt="Header Membrete" fill className="object-contain" unoptimized />
+          {/* CABECERA: LOGO (CABECERA) IZQUIERDA, TEXTO DERECHA */}
+          <div className="pt-10 px-10 pb-6 shrink-0 flex items-center justify-between border-b-2 border-primary/10">
+            {/* Logo a la izquierda (Usa la cabecera si existe) */}
+            <div className="relative h-24 w-64">
+              {company?.headerUrl || company?.logoUrl ? (
+                <Image 
+                  src={company.headerUrl || company.logoUrl} 
+                  alt="Logo Corporativo" 
+                  fill 
+                  className="object-contain object-left" 
+                  unoptimized 
+                />
+              ) : (
+                <div className="h-full w-full bg-slate-100 flex items-center justify-center border-2 border-dashed border-slate-300 rounded">
+                  <Building2 className="h-8 w-8 text-slate-300" />
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="pt-10 px-10 pb-6 shrink-0 flex items-center justify-between border-b-2 border-primary/10">
-              {/* Logo a la izquierda */}
-              <div className="relative h-20 w-44">
-                {company?.logoUrl ? (
-                  <Image src={company.logoUrl} alt="Logo Corporativo" fill className="object-contain" unoptimized />
-                ) : (
-                  <div className="h-full w-full bg-slate-100 flex items-center justify-center border-2 border-dashed border-slate-300 rounded">
-                    <Building2 className="h-8 w-8 text-slate-300" />
-                  </div>
-                )}
-              </div>
-              
-              {/* Razón Social y Número a la derecha */}
-              <div className="text-right space-y-1">
-                <h1 className="text-lg font-black text-primary uppercase tracking-tight">
-                  {company?.name || "EXTINTORES APEVA SAAS"}
-                </h1>
-                <div className="flex flex-col items-end">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">COTIZACIÓN COMERCIAL</span>
-                  <div className="mt-1 bg-primary text-white px-4 py-1.5 rounded font-bold text-xs shadow-sm">
-                    N° {viewingQuotation.quotationNumber}
-                  </div>
+            
+            {/* Razón Social y Número a la derecha */}
+            <div className="text-right space-y-1">
+              <h1 className="text-lg font-black text-primary uppercase tracking-tight">
+                {company?.name || "EXTINTORES APEVA SAAS"}
+              </h1>
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">COTIZACIÓN COMERCIAL</span>
+                <div className="mt-1 bg-primary text-white px-4 py-1.5 rounded font-bold text-xs shadow-sm">
+                  N° {viewingQuotation.quotationNumber}
                 </div>
               </div>
             </div>
-          )}
+          </div>
 
           {/* CUERPO DEL DOCUMENTO */}
           <div className="px-10 py-6 space-y-6 flex-1">
@@ -300,7 +300,7 @@ export default function QuotationsPage() {
             </div>
           </div>
 
-          {/* PIE DE PÁGINA: CENTRADO TOTAL */}
+          {/* PIE DE PÁGINA: MEMBRETE O DATOS */}
           {company?.footerUrl ? (
             <div className="relative w-full h-[120px] shrink-0 mt-auto flex items-center justify-center overflow-hidden">
               <Image src={company.footerUrl} alt="Footer Membrete" fill className="object-contain" unoptimized />
