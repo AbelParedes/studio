@@ -244,7 +244,7 @@ export default function QuotationsPage() {
 
             <div className="space-y-3 pt-4">
               <h3 className="text-[10px] font-black text-[#1c1c1c] uppercase flex items-center gap-2 tracking-widest">
-                <FileText className="h-4 w-4 text-[#d9534f]" /> REQUERIMIENTO TÉCNICO
+                <FileText className="h-4 w-4 text-[#d9534f]" /> REQUERIMIENTO
               </h3>
               <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
                 <table className="w-full text-[10px] border-collapse">
