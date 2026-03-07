@@ -39,11 +39,9 @@ export default function LoginPage() {
     setIsMasterLogging(true)
     setError(null)
     try {
-      // Para el prototipo, usamos un login anónimo que mapeamos a un perfil de Super Admin
       const userCredential = await signInAnonymously(auth)
       const masterUid = userCredential.user.uid
       
-      // Creamos/Aseguramos el rol de Super Administrador en Firestore
       const rolesRef = collection(db, "system_roles")
       const rolesSnap = await getDocs(query(rolesRef, where("title", "==", "Super Administrador"), limit(1)))
       let roleId = rolesSnap.docs[0]?.id
@@ -57,7 +55,6 @@ export default function LoginPage() {
         roleId = newRoleRef.id
       }
 
-      // Creamos el perfil de usuario con este rol
       await setDoc(doc(db, "company_users", masterUid), {
         id: masterUid,
         name: "SaaS Master Admin",
@@ -90,10 +87,12 @@ export default function LoginPage() {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password)
         const newUser = userCredential.user
 
+        // Crear empresa con Plan Demo por defecto
         const companyRef = await addDoc(collection(db, "companies"), {
           name: companyName || "Mi Nueva Empresa",
           taxId: "Pendiente",
           status: "Pending",
+          plan: "Demo",
           createdAt: new Date().toISOString(),
           primaryColor: "#1a2b3c",
           accentColor: "#d9534f",
@@ -112,7 +111,7 @@ export default function LoginPage() {
 
         toast({ 
           title: "Registro exitoso", 
-          description: "Tu solicitud ha sido enviada para aprobación del SaaS Master." 
+          description: "Tu solicitud con Plan Demo ha sido enviada para aprobación." 
         })
         setMode("login")
       }
@@ -149,7 +148,7 @@ export default function LoginPage() {
             SERVIFUMIGA <span className="text-accent-foreground/50">PRO</span>
           </CardTitle>
           <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-            {mode === "login" ? "Plataforma SaaS de Gestión Operativa" : "Únete a la red de Servifumiga Pro"}
+            {mode === "login" ? "Plataforma SaaS de Gestión Operativa" : "Únete con el Plan Demo gratuito"}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -192,7 +191,7 @@ export default function LoginPage() {
               ) : mode === "login" ? (
                 <><LogIn className="mr-2 h-4 w-4" /> Entrar al Sistema</>
               ) : (
-                <><UserPlus className="mr-2 h-4 w-4" /> Solicitar Acceso SaaS</>
+                <><UserPlus className="mr-2 h-4 w-4" /> Activar Plan Demo</>
               )}
             </Button>
           </form>
@@ -214,9 +213,9 @@ export default function LoginPage() {
           {mode === "register" && (
             <Alert className="mt-4 bg-primary/5 border-primary/20">
               <Clock className="h-4 w-4 text-primary" />
-              <AlertTitle className="text-[10px] font-bold uppercase">Proceso de Verificación</AlertTitle>
+              <AlertTitle className="text-[10px] font-bold uppercase">Registro Gratuito</AlertTitle>
               <AlertDescription className="text-[9px] text-muted-foreground uppercase leading-tight">
-                Todas las solicitudes de registro están sujetas a aprobación manual por el administrador maestro del sistema.
+                Inicia con 15 días de Plan Demo. Sujeto a aprobación manual por el SaaS Master.
               </AlertDescription>
             </Alert>
           )}
@@ -226,7 +225,7 @@ export default function LoginPage() {
               onClick={() => setMode(mode === "login" ? "register" : "login")}
               className="text-[11px] font-bold uppercase text-primary hover:underline"
             >
-              {mode === "login" ? "¿Nuevo en la plataforma? Solicita tu cuenta" : "Ya tengo una cuenta, ir al login"}
+              {mode === "login" ? "¿Nuevo? Prueba el Plan Demo Gratis" : "Ya tengo una cuenta, ir al login"}
             </button>
           </div>
         </CardContent>
