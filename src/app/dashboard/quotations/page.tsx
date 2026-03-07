@@ -173,14 +173,14 @@ export default function QuotationsPage() {
     return (
       <div className="space-y-4 animate-in fade-in duration-300">
         <div className="flex items-center justify-between no-print mb-4">
-          <Button variant="ghost" onClick={() => setViewingQuotation(null)} className="font-bold uppercase text-[10px] text-primary">
+          <Button variant="ghost" onClick={() => setViewingQuotation(null)} className="font-bold uppercase text-[10px] text-[#1c1c1c]">
             <ArrowLeft className="mr-2 h-3 w-3" /> Volver al Listado
           </Button>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={handlePrint} className="font-bold uppercase text-[10px] h-8 border-primary text-primary">
+            <Button variant="outline" onClick={handlePrint} className="font-bold uppercase text-[10px] h-8 border-[#1c1c1c] text-[#1c1c1c]">
               <Printer className="mr-2 h-3 w-3" /> Imprimir
             </Button>
-            <Button onClick={handlePrint} className="bg-primary text-white font-bold uppercase text-[10px] h-8 shadow-md">
+            <Button onClick={handlePrint} className="bg-[#d9534f] text-white font-bold uppercase text-[10px] h-8 shadow-md">
               <Download className="mr-2 h-3 w-3" /> Guardar PDF
             </Button>
           </div>
@@ -188,7 +188,7 @@ export default function QuotationsPage() {
 
         <div className="bg-white p-0 shadow-2xl mx-auto print-page w-[210mm] min-h-[297mm] flex flex-col relative overflow-hidden text-[#1c1c1c] border" id="quotation-print-area">
           
-          {/* CABECERA INDUSTRIAL ASIMÉTRICA */}
+          {/* CABECERA CORPORATIVA ASIMÉTRICA */}
           <div className="pt-12 px-12 pb-8 shrink-0 flex items-center justify-between border-b-[3px] border-[#d9534f]">
             <div className="relative h-20 w-64">
               {(company?.headerUrl || company?.logoUrl) ? (
@@ -225,8 +225,8 @@ export default function QuotationsPage() {
             <div className="grid grid-cols-2 gap-12">
               <div className="space-y-3">
                 <div className="flex items-center gap-4">
-                  <h3 className="text-[10px] font-black text-[#1c1c1c] uppercase shrink-0">DATOS DEL CLIENTE</h3>
-                  <div className="h-[2px] bg-[#d9534f] w-full"></div>
+                  <h3 className="text-[10px] font-black text-[#d9534f] uppercase shrink-0">DATOS DEL CLIENTE</h3>
+                  <div className="h-[2px] bg-[#1c1c1c] w-full"></div>
                 </div>
                 <div className="text-[11px] space-y-2 pt-1">
                   <p className="font-black uppercase text-[#1c1c1c] text-[12px]">{client?.name || "---"}</p>
@@ -236,8 +236,8 @@ export default function QuotationsPage() {
               </div>
               <div className="space-y-3">
                 <div className="flex items-center gap-4">
-                  <h3 className="text-[10px] font-black text-[#1c1c1c] uppercase shrink-0">DETALLE DE EMISIÓN</h3>
-                  <div className="h-[2px] bg-[#d9534f] w-full"></div>
+                  <h3 className="text-[10px] font-black text-[#d9534f] uppercase shrink-0">DETALLE DE EMISIÓN</h3>
+                  <div className="h-[2px] bg-[#1c1c1c] w-full"></div>
                 </div>
                 <div className="text-[11px] space-y-2 pt-1 text-right">
                   <p className="font-black text-[#1c1c1c] uppercase"><span className="text-slate-400 font-normal">FECHA:</span> {viewingQuotation.date || "---"}</p>
@@ -301,9 +301,9 @@ export default function QuotationsPage() {
             </div>
           </div>
 
-          {/* PIE DE PÁGINA GOLD PROFESIONAL */}
+          {/* PIE DE PÁGINA ORO PROFESIONAL */}
           <div 
-            className="mt-auto shrink-0 flex flex-col items-center justify-center relative overflow-hidden py-6 print-gold-bg"
+            className="mt-auto shrink-0 flex flex-col items-center justify-center relative overflow-hidden py-6"
             style={{ 
               backgroundColor: 'rgb(255, 215, 0)',
               WebkitPrintColorAdjust: 'exact',
@@ -340,11 +340,7 @@ export default function QuotationsPage() {
                 border: none !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
-              }
-              .print-gold-bg {
-                background-color: rgb(255, 215, 0) !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
+                background-color: white !important;
               }
               @page { size: A4; margin: 0; }
             }
