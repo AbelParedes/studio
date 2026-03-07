@@ -40,6 +40,7 @@ import { toast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
 import { PlaceHolderImages } from "@/lib/placeholder-images"
+import { cn } from "@/lib/utils"
 
 export default function QuotationsPage() {
   const db = useFirestore()
@@ -89,7 +90,7 @@ export default function QuotationsPage() {
     if (!companyId) return
 
     const formData = new FormData(e.currentTarget)
-    const subtotal = items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0)
+    const subtotal = items.reduce((acc, item) => acc + (Number(item.quantity || 0) * Number(item.unitPrice || 0)), 0)
     const tax = subtotal * 0.18 // IGV 18%
     const total = subtotal + tax
 
@@ -98,7 +99,7 @@ export default function QuotationsPage() {
       clientId: formData.get("clientId") as string,
       quotationNumber: formData.get("number") as string || `COT-${Date.now().toString().slice(-6)}`,
       date: formData.get("date") as string || new Date().toISOString().split('T')[0],
-      items: items.map(i => ({ ...i, total: i.quantity * i.unitPrice })),
+      items: items.map(i => ({ ...i, total: Number(i.quantity || 0) * Number(i.unitPrice || 0) })),
       subtotal,
       tax,
       total,
@@ -139,7 +140,7 @@ export default function QuotationsPage() {
     setIsAdding(true)
   }
 
-  // 4. Renderizado de Vista de Impresión (Membretada Apeva)
+  // 4. Renderizado de Vista de Impresión (Membretada Oficial Apeva)
   if (viewingQuotation) {
     const client = clients?.find(c => c.id === viewingQuotation.clientId)
     const defaultLogo = PlaceHolderImages.find(img => img.id === 'apeva-logo')?.imageUrl || ''
@@ -234,8 +235,8 @@ export default function QuotationsPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-center font-black text-[11px] py-5">{item.quantity}</TableCell>
-                      <TableCell className="text-right font-bold text-[11px] py-5">{(item.unitPrice || 0).toFixed(2)}</TableCell>
-                      <TableCell className="text-right font-black text-[11px] py-5 text-red-600 pr-6">{(item.total || 0).toFixed(2)}</TableCell>
+                      <TableCell className="text-right font-bold text-[11px] py-5">{(Number(item.unitPrice) || 0).toFixed(2)}</TableCell>
+                      <TableCell className="text-right font-black text-[11px] py-5 text-red-600 pr-6">{(Number(item.total) || 0).toFixed(2)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -262,16 +263,16 @@ export default function QuotationsPage() {
               <div className="w-80 space-y-2 bg-slate-800 p-6 rounded-2xl shadow-xl">
                 <div className="flex justify-between text-[11px]">
                   <span className="font-bold uppercase text-slate-400">SUBTOTAL</span>
-                  <span className="font-black text-white">S/ {(viewingQuotation.subtotal || 0).toFixed(2)}</span>
+                  <span className="font-black text-white">S/ {(Number(viewingQuotation.subtotal) || 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-[11px]">
                   <span className="font-bold uppercase text-slate-400">I.G.V. (18%)</span>
-                  <span className="font-black text-white">S/ {(viewingQuotation.tax || 0).toFixed(2)}</span>
+                  <span className="font-black text-white">S/ {(Number(viewingQuotation.tax) || 0).toFixed(2)}</span>
                 </div>
                 <div className="h-px bg-slate-700 my-2"></div>
                 <div className="flex justify-between items-center pt-1">
                   <span className="font-black uppercase text-red-500 text-sm tracking-widest">TOTAL NETO</span>
-                  <span className="font-black text-white text-2xl tracking-tighter">S/ {(viewingQuotation.total || 0).toFixed(2)}</span>
+                  <span className="font-black text-white text-2xl tracking-tighter">S/ {(Number(viewingQuotation.total) || 0).toFixed(2)}</span>
                 </div>
               </div>
             </div>
@@ -356,7 +357,7 @@ export default function QuotationsPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase">Ventas y Proformas</h2>
+          <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase text-primary">Ventas y Proformas</h2>
           <p className="text-muted-foreground text-sm">Emita presupuestos oficiales con el formato corporativo de Apeva.</p>
         </div>
         
@@ -468,12 +469,14 @@ export default function QuotationsPage() {
 
                 <div className="bg-slate-900 text-white p-6 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4">
                   <div className="text-center md:text-left">
-                    <p className="text-[10px] font-black uppercase text-slate-400 mb-1">Total Estimado Neto</p>
-                    <p className="text-3xl font-black text-red-500 tracking-tighter">S/ {(items.reduce((acc, i) => acc + (i.quantity * i.unitPrice), 0) * 1.18).toFixed(2)}</p>
+                    <p className="text-[10px] font-black uppercase text-slate-400 mb-1">Total Estimado Neto (Incl. IGV)</p>
+                    <p className="text-3xl font-black text-red-500 tracking-tighter">
+                      S/ {(items.reduce((acc, i) => acc + (Number(i.quantity || 0) * Number(i.unitPrice || 0)), 0) * 1.18).toFixed(2)}
+                    </p>
                   </div>
                   <div className="flex flex-col items-center md:items-end text-[11px] font-bold opacity-80">
-                    <p>Subtotal: S/ {items.reduce((acc, i) => acc + (i.quantity * i.unitPrice), 0).toFixed(2)}</p>
-                    <p>I.G.V. (18%): S/ {(items.reduce((acc, i) => acc + (i.quantity * i.unitPrice), 0) * 0.18).toFixed(2)}</p>
+                    <p>Subtotal: S/ {items.reduce((acc, i) => acc + (Number(i.quantity || 0) * Number(i.unitPrice || 0)), 0).toFixed(2)}</p>
+                    <p>I.G.V. (18%): S/ {(items.reduce((acc, i) => acc + (Number(i.quantity || 0) * Number(i.unitPrice || 0)), 0) * 0.18).toFixed(2)}</p>
                   </div>
                 </div>
               </div>
@@ -526,7 +529,7 @@ export default function QuotationsPage() {
                       <TableCell className="font-bold text-primary uppercase tracking-tighter">{q.quotationNumber}</TableCell>
                       <TableCell className="font-black uppercase text-[11px]">{client?.name || "Desconocido"}</TableCell>
                       <TableCell className="text-[11px] font-bold text-slate-500">{q.date}</TableCell>
-                      <TableCell className="font-black text-slate-900">S/ {(q.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
+                      <TableCell className="font-black text-slate-900">S/ {(Number(q.total) || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className={cn(
                           "text-[9px] font-black uppercase px-2",
