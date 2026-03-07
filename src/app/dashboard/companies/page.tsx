@@ -7,9 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Search, Building2, Trash2, Edit2, Loader2, LogIn, ShieldAlert } from "lucide-react"
+import { Plus, Search, Building2, Trash2, Edit2, Loader2, LogIn, CheckCircle2, XCircle, Clock } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, useUser, useDoc } from "@/firebase"
-import { collection, doc, query, where, getDocs, updateDoc, limit } from "firebase/firestore"
+import { collection, doc, query, where, getDocs, updateDoc, limit, writeBatch } from "firebase/firestore"
 import {
   Dialog,
   DialogContent,
@@ -24,6 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
+import { cn } from "@/lib/utils"
 
 export default function CompaniesPage() {
   const db = useFirestore()
@@ -33,6 +34,7 @@ export default function CompaniesPage() {
   const [isAdding, setIsAdding] = useState(false)
   const [editingCompany, setEditingCompany] = useState<any | null>(null)
   const [isSwitching, setIsSwitching] = useState<string | null>(null)
+  const [isApproving, setIsApproving] = useState<string | null>(null)
 
   // Verificación de Super Admin
   const userProfileQuery = useMemoFirebase(() => 
@@ -76,6 +78,7 @@ export default function CompaniesPage() {
       primaryColor: formData.get("primaryColor") as string || "#1a2b3c",
       accentColor: formData.get("accentColor") as string || "#d9534f",
       themeMode: formData.get("themeMode") as string || "light",
+      status: formData.get("status") as string || "Active",
       updatedAt: new Date().toISOString()
     }
 
@@ -91,6 +94,28 @@ export default function CompaniesPage() {
 
     setIsAdding(false)
     setEditingCompany(null)
+  }
+
+  const handleApproveCompany = async (companyId: string) => {
+    setIsApproving(companyId)
+    try {
+      // 1. Activar la empresa
+      await updateDoc(doc(db, "companies", companyId), { status: "Active" })
+      
+      // 2. Activar a todos los usuarios vinculados a esa empresa
+      const usersSnapshot = await getDocs(query(collection(db, "company_users"), where("companyId", "==", companyId)))
+      const batch = writeBatch(db)
+      usersSnapshot.docs.forEach(userDoc => {
+        batch.update(userDoc.ref, { status: "Active" })
+      })
+      await batch.commit()
+
+      toast({ title: "Organización Activada", description: "La empresa y sus usuarios ya pueden operar." })
+    } catch (error) {
+      toast({ variant: "destructive", title: "Error al aprobar" })
+    } finally {
+      setIsApproving(null)
+    }
   }
 
   const handleSwitchCompany = async (companyId: string) => {
@@ -126,71 +151,58 @@ export default function CompaniesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase">Maestro de Empresas</h2>
-          <p className="text-muted-foreground text-sm">Panel exclusivo de gestión SaaS para el Super Administrador.</p>
+          <p className="text-muted-foreground text-sm">Panel de control SaaS para la gestión de organizaciones.</p>
         </div>
         
         <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) setEditingCompany(null); }}>
           <DialogTrigger asChild>
             <Button className="bg-primary text-white h-9">
-              <Plus className="mr-2 h-4 w-4" /> Registrar Nueva Organización
+              <Plus className="mr-2 h-4 w-4" /> Nueva Organización
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <form onSubmit={handleSaveCompany}>
               <DialogHeader>
-                <DialogTitle>{editingCompany ? "Editar Organización" : "Nueva Organización SaaS"}</DialogTitle>
-                <DialogDescription>Defina la identidad y datos fiscales de la nueva empresa cliente.</DialogDescription>
+                <DialogTitle>{editingCompany ? "Editar Organización" : "Nueva Organización"}</DialogTitle>
+                <DialogDescription>Datos fiscales e identidad de la nueva empresa.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="name">Nombre Comercial</Label>
-                    <Input id="name" name="name" defaultValue={editingCompany?.name} required placeholder="Ej. Servifumiga Perú" />
+                    <Input id="name" name="name" defaultValue={editingCompany?.name} required />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="taxId">RUC / DNI</Label>
-                    <Input id="taxId" name="taxId" defaultValue={editingCompany?.taxId} required placeholder="Identificación Fiscal" />
+                    <Input id="taxId" name="taxId" defaultValue={editingCompany?.taxId} required />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="email">Email Corporativo</Label>
-                    <Input id="email" name="email" type="email" defaultValue={editingCompany?.email} required />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="phone">Teléfono</Label>
-                    <Input id="phone" name="phone" defaultValue={editingCompany?.phone} />
-                  </div>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="logoUrl">URL Logo Empresa</Label>
-                  <Input id="logoUrl" name="logoUrl" defaultValue={editingCompany?.logoUrl} placeholder="https://..." />
-                </div>
-                <div className="grid grid-cols-3 gap-4 border-t pt-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="primaryColor">Primario</Label>
-                    <Input id="primaryColor" name="primaryColor" type="color" defaultValue={editingCompany?.primaryColor || "#1a2b3c"} />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="accentColor">Acento</Label>
-                    <Input id="accentColor" name="accentColor" type="color" defaultValue={editingCompany?.accentColor || "#d9534f"} />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="themeMode">Modo Tema</Label>
-                    <Select name="themeMode" defaultValue={editingCompany?.themeMode || "light"}>
+                    <Label htmlFor="status">Estado Inicial</Label>
+                    <Select name="status" defaultValue={editingCompany?.status || "Active"}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Tema" />
+                        <SelectValue placeholder="Estado" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="light">Claro</SelectItem>
-                        <SelectItem value="dark">Oscuro</SelectItem>
+                        <SelectItem value="Active">Activo</SelectItem>
+                        <SelectItem value="Pending">Pendiente</SelectItem>
+                        <SelectItem value="Suspended">Suspendido</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="email">Email Admin</Label>
+                    <Input id="email" name="email" type="email" defaultValue={editingCompany?.email} required />
+                  </div>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="logoUrl">URL Logo</Label>
+                  <Input id="logoUrl" name="logoUrl" defaultValue={editingCompany?.logoUrl} />
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit" className="w-full uppercase font-bold text-xs">{editingCompany ? "Actualizar" : "Habilitar Empresa"}</Button>
+                <Button type="submit" className="w-full uppercase font-bold text-xs">{editingCompany ? "Actualizar" : "Crear Empresa"}</Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -219,9 +231,9 @@ export default function CompaniesPage() {
               <TableHeader className="bg-primary">
                 <TableRow>
                   <TableHead className="text-white">Organización</TableHead>
-                  <TableHead className="text-white">Identidad Fiscal</TableHead>
-                  <TableHead className="text-white">Configuración</TableHead>
-                  <TableHead className="text-white w-[150px]"></TableHead>
+                  <TableHead className="text-white">Estado</TableHead>
+                  <TableHead className="text-white">Identidad</TableHead>
+                  <TableHead className="text-white w-[250px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -240,21 +252,41 @@ export default function CompaniesPage() {
                         </div>
                         <div className="flex flex-col">
                           <span className="font-bold text-primary uppercase truncate max-w-[150px]">{comp.name}</span>
-                          <span className="text-[10px] text-muted-foreground truncate">{comp.email}</span>
+                          <span className="text-[10px] text-muted-foreground">{comp.taxId}</span>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="text-[10px] font-mono">{comp.taxId}</Badge>
+                      <Badge 
+                        variant="outline" 
+                        className={cn(
+                          "text-[9px] uppercase font-bold",
+                          comp.status === "Active" && "border-status-success text-status-success",
+                          comp.status === "Pending" && "border-status-warning text-status-warning bg-status-warning/5",
+                          comp.status === "Suspended" && "border-status-error text-status-error",
+                        )}
+                      >
+                        {comp.status === "Pending" && <Clock className="mr-1 h-3 w-3" />}
+                        {comp.status || "Active"}
+                      </Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="h-4 w-4 rounded shadow-sm border" style={{ backgroundColor: comp.primaryColor }}></div>
-                        <Badge variant="outline" className="text-[8px] uppercase font-bold">{comp.themeMode}</Badge>
-                      </div>
+                      <div className="h-4 w-4 rounded shadow-sm border" style={{ backgroundColor: comp.primaryColor }}></div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
+                        {comp.status === "Pending" && (
+                          <Button 
+                            variant="default" 
+                            size="sm" 
+                            className="bg-status-success hover:bg-status-success/90 h-8 text-[10px] font-bold uppercase"
+                            onClick={() => handleApproveCompany(comp.id)}
+                            disabled={isApproving === comp.id}
+                          >
+                            {isApproving === comp.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="mr-1.5 h-3 w-3" />}
+                            Aprobar
+                          </Button>
+                        )}
                         <Button 
                           variant="secondary" 
                           size="sm" 

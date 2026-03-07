@@ -4,11 +4,12 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { DashboardNav } from "@/components/dashboard-nav"
-import { Bell, Loader2, Menu, Building2 } from "lucide-react"
+import { Bell, Loader2, Menu, Building2, Clock, ShieldAlert, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection } from "@/firebase"
+import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection, useAuth } from "@/firebase"
 import { doc, collection, query, where, limit } from "firebase/firestore"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { signOut } from "firebase/auth"
 import Image from "next/image"
 
 export default function DashboardLayout({
@@ -18,6 +19,7 @@ export default function DashboardLayout({
 }) {
   const { user, isUserLoading } = useUser()
   const db = useFirestore()
+  const auth = useAuth()
   const router = useRouter()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
@@ -43,7 +45,7 @@ export default function DashboardLayout({
 
   // Aplicar Tema y Colores dinámicamente
   useEffect(() => {
-    if (company) {
+    if (company && company.status === "Active") {
       if (company.themeMode === 'dark') {
         document.documentElement.classList.add('dark')
       } else {
@@ -72,6 +74,34 @@ export default function DashboardLayout({
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-background gap-4">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
         <p className="text-sm font-bold text-primary uppercase tracking-widest">Sincronizando Entorno SaaS...</p>
+      </div>
+    )
+  }
+
+  // Pantalla de espera de aprobación
+  if (profile?.status === "Pending" || company?.status === "Pending") {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-[#f8fafc] p-6">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl p-10 text-center border-t-8 border-t-primary">
+          <div className="h-20 w-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Clock className="h-10 w-10 text-primary animate-pulse" />
+          </div>
+          <h1 className="text-2xl font-bold uppercase tracking-tight text-primary mb-4">Acceso en Verificación</h1>
+          <p className="text-sm text-muted-foreground leading-relaxed mb-8 font-medium">
+            Hola, <span className="text-primary font-bold">{profile?.name}</span>. Tu cuenta y la organización <span className="text-primary font-bold">{company?.name || "solicitada"}</span> están siendo revisadas por nuestro equipo de soporte maestro.
+          </p>
+          <div className="p-4 bg-muted/30 rounded-lg text-[11px] text-muted-foreground uppercase font-bold mb-8 flex items-center gap-3">
+            <ShieldAlert className="h-5 w-5 text-accent shrink-0" />
+            Recibirás un correo una vez que tu entorno SaaS sea activado.
+          </div>
+          <Button 
+            variant="outline" 
+            className="w-full font-bold uppercase text-xs h-11 border-primary text-primary"
+            onClick={() => signOut(auth).then(() => router.push("/login"))}
+          >
+            <LogOut className="mr-2 h-4 w-4" /> Salir del Sistema
+          </Button>
+        </div>
       </div>
     )
   }

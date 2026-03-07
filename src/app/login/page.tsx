@@ -7,9 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ShieldCheck, Loader2, AlertCircle, Building2, UserPlus, LogIn } from "lucide-react"
+import { ShieldCheck, Loader2, AlertCircle, Building2, UserPlus, LogIn, Clock } from "lucide-react"
 import { useAuth, useUser, useFirestore } from "@/firebase"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth"
 import { doc, setDoc, collection, addDoc } from "firebase/firestore"
 import { toast } from "@/hooks/use-toast"
@@ -42,47 +42,51 @@ export default function LoginPage() {
     try {
       if (mode === "login") {
         await signInWithEmailAndPassword(auth, email, password)
-        toast({ title: "Bienvenido", description: "Iniciando sesión..." })
+        toast({ title: "Iniciando sesión..." })
       } else {
         // 1. Crear usuario en Auth
         const userCredential = await createUserWithEmailAndPassword(auth, email, password)
         const newUser = userCredential.user
 
-        // 2. Crear Empresa Inicial
+        // 2. Crear Empresa Inicial en estado PENDING
         const companyRef = await addDoc(collection(db, "companies"), {
           name: companyName || "Mi Nueva Empresa",
           taxId: "Pendiente",
+          status: "Pending", // Nuevo: Requiere aprobación del Super Admin
           createdAt: new Date().toISOString(),
           primaryColor: "#1a2b3c",
           accentColor: "#d9534f",
           themeMode: "light"
         })
 
-        // 3. Crear Perfil de Usuario Administrador
+        // 3. Crear Perfil de Usuario Administrador en estado PENDING
         await setDoc(doc(db, "company_users", newUser.uid), {
           id: newUser.uid,
           companyId: companyRef.id,
           name: fullName || email.split('@')[0],
           email: email,
-          roleId: "Administrador", // Asignamos el nombre del rol directamente para facilitar el acceso inicial
-          status: "Active",
+          roleId: "Administrador",
+          status: "Pending", // Nuevo: Requiere aprobación
           createdAt: new Date().toISOString()
         })
 
-        toast({ title: "Cuenta creada", description: "Tu organización ha sido inicializada con éxito." })
+        toast({ 
+          title: "Registro exitoso", 
+          description: "Tu solicitud ha sido enviada. El administrador maestro revisará tu cuenta pronto." 
+        })
+        setMode("login")
       }
     } catch (err: any) {
       setIsSubmitting(false)
-      console.error(err)
-      if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
-        setError("Credenciales incorrectas. Verifique sus datos.")
+      if (err.code === 'auth/invalid-credential') {
+        setError("Credenciales incorrectas.")
       } else if (err.code === 'auth/email-already-in-use') {
-        setError("El correo ya está registrado en el sistema.")
-      } else if (err.code === 'auth/weak-password') {
-        setError("La contraseña debe tener al menos 6 caracteres.")
+        setError("El correo ya está registrado.")
       } else {
-        setError("Error en la operación: " + err.message)
+        setError("Error: " + err.message)
       }
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -104,8 +108,8 @@ export default function LoginPage() {
           <CardTitle className="text-2xl font-bold tracking-tighter uppercase text-primary">
             SERVIFUMIGA <span className="text-accent-foreground/50">PRO</span>
           </CardTitle>
-          <CardDescription className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-            {mode === "login" ? "Gestión Operativa - Perú" : "Registro de Nueva Organización"}
+          <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+            {mode === "login" ? "Plataforma SaaS de Gestión Operativa" : "Únete a la red de Servifumiga Pro"}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -113,35 +117,21 @@ export default function LoginPage() {
             {error && (
               <Alert variant="destructive" className="py-2">
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription className="text-[11px] leading-tight">{error}</AlertDescription>
+                <AlertDescription className="text-[11px]">{error}</AlertDescription>
               </Alert>
             )}
 
             {mode === "register" && (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="fullName" className="text-xs font-bold uppercase">Nombre Completo</Label>
-                  <Input 
-                    id="fullName" 
-                    placeholder="Juan Pérez" 
-                    required 
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className="h-10"
-                  />
+                  <Label htmlFor="fullName" className="text-xs font-bold uppercase">Nombre del Responsable</Label>
+                  <Input id="fullName" placeholder="Ej. Carlos Mendoza" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="companyName" className="text-xs font-bold uppercase">Nombre de tu Empresa</Label>
+                  <Label htmlFor="companyName" className="text-xs font-bold uppercase">Nombre de la Empresa</Label>
                   <div className="relative">
                     <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                      id="companyName" 
-                      placeholder="Ej. Fumigaciones Lima SAC" 
-                      required 
-                      value={companyName}
-                      onChange={(e) => setCompanyName(e.target.value)}
-                      className="h-10 pl-9"
-                    />
+                    <Input id="companyName" placeholder="Ej. Fumigaciones Perú SAC" required value={companyName} onChange={(e) => setCompanyName(e.target.value)} className="pl-9" />
                   </div>
                 </div>
               </>
@@ -149,61 +139,46 @@ export default function LoginPage() {
 
             <div className="space-y-2">
               <Label htmlFor="email" className="text-xs font-bold uppercase">Correo Electrónico</Label>
-              <Input 
-                id="email" 
-                type="email" 
-                placeholder="usuario@servifumiga.com" 
-                required 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="h-10"
-              />
+              <Input id="email" type="email" placeholder="usuario@empresa.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <Label htmlFor="password" name="password" className="text-xs font-bold uppercase">Contraseña</Label>
-                {mode === "login" && (
-                  <Button type="button" variant="link" className="text-[10px] p-0 h-auto font-bold uppercase text-muted-foreground">¿Olvidó su clave?</Button>
-                )}
-              </div>
-              <Input 
-                id="password" 
-                type="password" 
-                required 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="h-10"
-              />
+              <Label htmlFor="password" name="password" className="text-xs font-bold uppercase">Contraseña</Label>
+              <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
 
             <Button type="submit" className="w-full h-11 bg-primary text-white font-bold uppercase tracking-widest text-xs shadow-lg mt-2" disabled={isSubmitting}>
               {isSubmitting ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : mode === "login" ? (
-                <><LogIn className="mr-2 h-4 w-4" /> Iniciar Sesión</>
+                <><LogIn className="mr-2 h-4 w-4" /> Entrar al Sistema</>
               ) : (
-                <><UserPlus className="mr-2 h-4 w-4" /> Registrar Empresa</>
+                <><UserPlus className="mr-2 h-4 w-4" /> Solicitar Acceso SaaS</>
               )}
             </Button>
           </form>
+
+          {mode === "register" && (
+            <Alert className="mt-4 bg-primary/5 border-primary/20">
+              <Clock className="h-4 w-4 text-primary" />
+              <AlertTitle className="text-[10px] font-bold uppercase">Proceso de Verificación</AlertTitle>
+              <AlertDescription className="text-[9px] text-muted-foreground uppercase leading-tight">
+                Todas las solicitudes de registro están sujetas a aprobación manual por el administrador maestro del sistema.
+              </AlertDescription>
+            </Alert>
+          )}
 
           <div className="mt-6 text-center">
             <button 
               onClick={() => setMode(mode === "login" ? "register" : "login")}
               className="text-[11px] font-bold uppercase text-primary hover:underline"
             >
-              {mode === "login" 
-                ? "¿No tienes cuenta? Registra tu empresa aquí" 
-                : "Ya tengo una cuenta, iniciar sesión"}
+              {mode === "login" ? "¿Nuevo en la plataforma? Solicita tu cuenta" : "Ya tengo una cuenta, ir al login"}
             </button>
           </div>
         </CardContent>
         <CardFooter className="flex flex-col border-t bg-muted/20 py-4">
-          <p className="text-[10px] text-center text-muted-foreground font-bold uppercase tracking-tighter">
-            Acceso restringido para personal autorizado.
-          </p>
-          <p className="text-[9px] text-center text-muted-foreground/60 mt-2 uppercase font-medium">
-            © 2024 Servifumiga Pro Perú v2.5
+          <p className="text-[9px] text-center text-muted-foreground font-bold uppercase tracking-tighter">
+            Servifumiga Pro SaaS v2.5 - © 2024
           </p>
         </CardFooter>
       </Card>
