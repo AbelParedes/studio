@@ -180,14 +180,15 @@ export default function QuotationsPage() {
         {/* CONTENEDOR A4 */}
         <div className="bg-white p-0 shadow-2xl mx-auto print-page w-[210mm] min-h-[297mm] flex flex-col relative overflow-hidden text-slate-900 border" id="quotation-print-area">
           
-          {/* CABECERA: CENTRADO TOTAL */}
+          {/* CABECERA: LOGO IZQUIERDA, TEXTO DERECHA */}
           {company?.headerUrl ? (
             <div className="relative w-full h-[180px] shrink-0 flex items-center justify-center overflow-hidden">
               <Image src={company.headerUrl} alt="Header Membrete" fill className="object-contain" unoptimized />
             </div>
           ) : (
-            <div className="pt-10 px-10 pb-6 shrink-0 flex flex-col items-center text-center">
-              <div className="relative h-20 w-44 mb-4">
+            <div className="pt-10 px-10 pb-6 shrink-0 flex items-center justify-between border-b-2 border-primary/10">
+              {/* Logo a la izquierda */}
+              <div className="relative h-20 w-44">
                 {company?.logoUrl ? (
                   <Image src={company.logoUrl} alt="Logo Corporativo" fill className="object-contain" unoptimized />
                 ) : (
@@ -196,11 +197,17 @@ export default function QuotationsPage() {
                   </div>
                 )}
               </div>
-              <div>
-                <h1 className="text-2xl font-black text-primary uppercase tracking-tighter">PROFORMA COMERCIAL</h1>
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{company?.name || "EXTINTORES APEVA SAAS"}</p>
-                <div className="mt-3 bg-primary text-white px-4 py-1.5 rounded-full font-bold text-xs inline-block shadow-sm">
-                  N° {viewingQuotation.quotationNumber}
+              
+              {/* Razón Social y Número a la derecha */}
+              <div className="text-right space-y-1">
+                <h1 className="text-lg font-black text-primary uppercase tracking-tight">
+                  {company?.name || "EXTINTORES APEVA SAAS"}
+                </h1>
+                <div className="flex flex-col items-end">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">COTIZACIÓN COMERCIAL</span>
+                  <div className="mt-1 bg-primary text-white px-4 py-1.5 rounded font-bold text-xs shadow-sm">
+                    N° {viewingQuotation.quotationNumber}
+                  </div>
                 </div>
               </div>
             </div>
