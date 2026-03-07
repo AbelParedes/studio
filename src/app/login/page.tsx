@@ -33,12 +33,11 @@ export default function LoginPage() {
     setIsSubmitting(true)
     setError(null)
     
-    // Utilizamos el SDK directamente para manejar el error de forma local en el formulario
     signInWithEmailAndPassword(auth, email, password)
       .catch((err: any) => {
         setIsSubmitting(false)
         if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
-          setError("Las credenciales son incorrectas. Asegúrate de que el usuario haya sido creado en la consola de Firebase y que el proveedor de Correo/Contraseña esté habilitado.")
+          setError("Las credenciales son incorrectas. Por favor, verifique su usuario y contraseña.")
         } else {
           setError("Error al iniciar sesión: " + err.message)
         }
@@ -60,7 +59,7 @@ export default function LoginPage() {
           <div className="mx-auto h-16 w-16 bg-primary rounded-full flex items-center justify-center mb-4 shadow-lg">
             <ShieldCheck className="h-10 w-10 text-white" />
           </div>
-          <CardTitle className="text-2xl font-bold tracking-tighter uppercase">SERVIFUMIGA <span className="text-accent">PRO</span></CardTitle>
+          <CardTitle className="text-2xl font-bold tracking-tighter uppercase text-primary">SERVIFUMIGA <span className="text-accent-foreground/50">PRO</span></CardTitle>
           <CardDescription className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Sistema de Gestión Operativa - Perú</CardDescription>
         </CardHeader>
         <CardContent>
@@ -76,7 +75,7 @@ export default function LoginPage() {
               <Input 
                 id="email" 
                 type="email" 
-                placeholder="admin@servifumiga.com" 
+                placeholder="usuario@servifumiga.com" 
                 required 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -97,22 +96,16 @@ export default function LoginPage() {
                 className="h-11"
               />
             </div>
-            <Button type="submit" className="w-full h-11 bg-primary text-white font-bold uppercase tracking-widest text-xs" disabled={isSubmitting}>
+            <Button type="submit" className="w-full h-11 bg-primary text-white font-bold uppercase tracking-widest text-xs shadow-lg" disabled={isSubmitting}>
               {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Iniciar Sesión"}
             </Button>
           </form>
         </CardContent>
-        <CardFooter className="flex flex-col border-t bg-muted/20 py-4">
+        <CardFooter className="flex flex-col border-t bg-muted/20 py-6">
           <p className="text-[10px] text-center text-muted-foreground font-bold uppercase tracking-tighter">
             Acceso restringido para personal autorizado.
           </p>
-          <div className="mt-4 p-3 bg-white/50 border rounded-md text-[9px] text-muted-foreground uppercase text-center space-y-1">
-            <p className="font-bold">Nota de Prototipo:</p>
-            <p>1. Ve a la Consola de Firebase &gt; Authentication.</p>
-            <p>2. Habilita el método "Email/Password".</p>
-            <p>3. Crea manualmente un usuario para probar el acceso.</p>
-          </div>
-          <p className="text-[9px] text-center text-muted-foreground/60 mt-4 uppercase">
+          <p className="text-[9px] text-center text-muted-foreground/60 mt-4 uppercase font-medium">
             © 2024 Servifumiga Pro Perú v2.5
           </p>
         </CardFooter>
