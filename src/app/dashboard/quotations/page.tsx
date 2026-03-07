@@ -125,11 +125,11 @@ export default function QuotationsPage() {
 
     if (editingQuotation) {
       updateDocumentNonBlocking(doc(db, "quotations", editingQuotation.id), quotationData)
-      toast({ title: "Proforma Actualizada" })
+      toast({ title: "Cotización Actualizada" })
     } else {
       const newId = crypto.randomUUID()
       addDocumentNonBlocking(collection(db, "quotations"), { ...quotationData, id: newId, createdAt: new Date().toISOString() })
-      toast({ title: "Proforma Generada" })
+      toast({ title: "Cotización Generada" })
     }
 
     setIsAdding(false)
@@ -139,7 +139,7 @@ export default function QuotationsPage() {
 
   const handleDelete = (id: string) => {
     deleteDocumentNonBlocking(doc(db, "quotations", id))
-    toast({ variant: "destructive", title: "Proforma Eliminada" })
+    toast({ variant: "destructive", title: "Cotización Eliminada" })
   }
 
   const handlePrint = () => {
@@ -200,12 +200,13 @@ export default function QuotationsPage() {
             </div>
             
             {/* Razón Social y Número a la derecha */}
-            <div className="text-right space-y-1 max-w-[50%]">
+            <div className="text-right space-y-1 max-w-[55%]">
               <h1 className="text-sm font-black text-primary uppercase tracking-tight truncate">
                 {company?.name || "EXTINTORES APEVA SAAS"}
               </h1>
               <div className="flex flex-col items-end">
-                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">PROFORMA COMERCIAL</span>
+                <span className="text-[10px] font-bold text-slate-700 uppercase tracking-tight mb-1">RUC: {company?.taxId || "---"}</span>
+                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200 w-full text-right pb-0.5">COTIZACIÓN</span>
                 <div className="mt-1 bg-primary text-white px-4 py-1.5 rounded font-black text-xs shadow-sm">
                   N° {viewingQuotation.quotationNumber}
                 </div>
@@ -220,7 +221,7 @@ export default function QuotationsPage() {
                 <h3 className="text-[9px] font-black text-primary uppercase border-b border-primary/20 pb-1">DATOS DEL CLIENTE</h3>
                 <div className="text-[10px] space-y-1.5">
                   <p className="font-bold uppercase text-slate-900">{client?.name || "---"}</p>
-                  <p className="text-slate-600 font-mono">ID FISCAL: {client?.taxId || "---"}</p>
+                  <p className="text-slate-600 font-mono">DNI / RUC: {client?.taxId || "---"}</p>
                   <p className="text-slate-600">DIRECCIÓN: {client?.address || "---"}</p>
                 </div>
               </div>
@@ -314,14 +315,14 @@ export default function QuotationsPage() {
                 <Image src={company.footerUrl} alt="Footer Membrete" fill className="object-contain" unoptimized />
               </div>
             ) : (
-              <div className="p-8 w-full flex flex-col items-center text-center gap-4">
-                <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 text-[9px] font-black text-slate-900 uppercase">
-                  <p className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5" /> {company?.address || "LIMA, PERÚ"}</p>
-                  <p className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" /> {company?.phone || "CENTRAL DE SERVICIOS"}</p>
-                  <p className="flex items-center gap-2"><Mail className="h-3.5 w-3.5" /> {company?.email || "EMAIL DE CONTACTO"}</p>
+              <div className="p-6 w-full flex flex-col items-center text-center gap-2">
+                <div className="flex flex-wrap justify-center gap-x-8 gap-y-1 text-[8px] font-black text-slate-900 uppercase">
+                  <p className="flex items-center gap-1.5"><MapPin className="h-3 w-3" /> {company?.address || "LIMA, PERÚ"}</p>
+                  <p className="flex items-center gap-1.5"><Phone className="h-3 w-3" /> {company?.phone || "CENTRAL DE SERVICIOS"}</p>
+                  <p className="flex items-center gap-1.5"><Mail className="h-3 w-3" /> {company?.email || "EMAIL DE CONTACTO"}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] font-black text-slate-900 uppercase tracking-widest opacity-60">
+                  <p className="text-[8px] font-black text-slate-900 uppercase tracking-widest opacity-60">
                     SISTEMA SAAS MASTER SYNC © {currentYear} | EXCLUSIVO EXTINTORES APEVA
                   </p>
                 </div>
@@ -360,19 +361,19 @@ export default function QuotationsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase text-primary">Gestión de Ventas</h2>
-          <p className="text-muted-foreground text-sm italic font-medium">Genere proformas oficiales con diseño corporativo Apeva.</p>
+          <p className="text-muted-foreground text-sm italic font-medium">Genere cotizaciones oficiales con diseño corporativo Apeva.</p>
         </div>
         
         <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) { setEditingQuotation(null); setItems([]); } }}>
           <DialogTrigger asChild>
             <Button className="bg-primary hover:bg-primary/90 text-white h-10 font-bold uppercase text-xs px-6 shadow-lg">
-              <Plus className="mr-2 h-4 w-4" /> Nueva Proforma
+              <Plus className="mr-2 h-4 w-4" /> Nueva Cotización
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <form onSubmit={handleSaveQuotation}>
               <DialogHeader>
-                <DialogTitle className="uppercase font-black text-primary text-xl tracking-tight">Emisión de Proforma</DialogTitle>
+                <DialogTitle className="uppercase font-black text-primary text-xl tracking-tight">Emisión de Cotización</DialogTitle>
                 <DialogDescription className="text-xs font-bold text-slate-500 uppercase">Reinicia correlativo anual automáticamente.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-6 py-4">
@@ -391,7 +392,7 @@ export default function QuotationsPage() {
                     </Select>
                   </div>
                   <div className="grid gap-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-500">N° Proforma</Label>
+                    <Label className="text-[10px] font-black uppercase text-slate-500">N° Cotización</Label>
                     <Input name="number" defaultValue={editingQuotation?.quotationNumber || suggestedQuotationNumber} placeholder="COT-0001-2025" className="h-10 uppercase font-mono font-bold" />
                   </div>
                   <div className="grid gap-2">
@@ -477,7 +478,7 @@ export default function QuotationsPage() {
               </div>
               <DialogFooter className="border-t pt-6">
                 <Button type="submit" className="w-full h-12 uppercase font-black text-xs tracking-widest bg-slate-900 hover:bg-black">
-                  {editingQuotation ? "Actualizar Proforma" : "Generar Proforma"}
+                  {editingQuotation ? "Actualizar Cotización" : "Generar Cotización"}
                 </Button>
               </DialogFooter>
             </form>
@@ -506,7 +507,7 @@ export default function QuotationsPage() {
             <Table className="dense-table">
               <TableHeader className="bg-primary hover:bg-primary">
                 <TableRow className="border-none">
-                  <TableHead className="text-white h-12 font-black uppercase text-[10px]">N° Proforma</TableHead>
+                  <TableHead className="text-white h-12 font-black uppercase text-[10px]">N° Cotización</TableHead>
                   <TableHead className="text-white h-12 font-black uppercase text-[10px]">Cliente</TableHead>
                   <TableHead className="text-white h-12 font-black uppercase text-[10px] text-right pr-6">Total (S/.)</TableHead>
                   <TableHead className="text-white h-12 font-black uppercase text-[10px]">Estado</TableHead>
