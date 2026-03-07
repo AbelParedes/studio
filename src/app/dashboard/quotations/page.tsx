@@ -19,7 +19,8 @@ import {
   Phone,
   Mail,
   Building2,
-  FileText
+  FileText,
+  Globe
 } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, useUser, useDoc } from "@/firebase"
 import { collection, doc, query, where } from "firebase/firestore"
@@ -262,8 +263,8 @@ export default function QuotationsPage() {
                   <tbody>
                     {(viewingQuotation.items || []).map((item: any, idx: number) => (
                       <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                        <td className="p-3 text-center font-bold border-r border-slate-100">{item.quantity || 0}</td>
-                        <td className="p-3 font-medium uppercase text-slate-700">{item.description || "---"}</td>
+                        <td className="p-3 text-center font-bold border-r border-slate-100">{(item.quantity || 0)}</td>
+                        <td className="p-3 font-medium uppercase text-slate-700">{(item.description || "---")}</td>
                         <td className="p-3 text-right border-l border-slate-100">{(Number(item.unitPrice || 0)).toFixed(2)}</td>
                         <td className="p-3 text-right font-black border-l border-slate-100 text-[#1c1c1c]">{(Number(item.total || 0)).toFixed(2)}</td>
                       </tr>
@@ -321,8 +322,8 @@ export default function QuotationsPage() {
                 )}
               </div>
               <div className="mt-1">
-                <p className="text-[8px] font-black text-[#1c1c1c] uppercase tracking-[0.3em] opacity-40">
-                  SISTEMA DE GESTIÓN INDUSTRIAL © {currentYear} | EXCELENCIA EN SEGURIDAD
+                <p className="text-[10px] font-black text-[#1c1c1c] uppercase tracking-[0.2em] flex items-center gap-2">
+                  <Globe className="h-3.5 w-3.5" /> {company?.website || "WWW.SERVIFUMIGAPRO.COM"}
                 </p>
               </div>
             </div>

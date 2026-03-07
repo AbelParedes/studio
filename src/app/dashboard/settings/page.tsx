@@ -54,6 +54,7 @@ export default function SettingsPage() {
     footerUrl: "",
     phone: "",
     email: "",
+    website: "",
     primaryColor: "#1a2b3c",
     accentColor: "#d9534f",
     themeMode: "light" as "light" | "dark"
@@ -89,6 +90,7 @@ export default function SettingsPage() {
         footerUrl: company.footerUrl || "",
         phone: company.phone || "",
         email: company.email || "",
+        website: company.website || "",
         primaryColor: company.primaryColor || "#1a2b3c",
         accentColor: company.accentColor || "#d9534f",
         themeMode: (company.themeMode as "light" | "dark") || "light"
@@ -312,6 +314,14 @@ export default function SettingsPage() {
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase text-muted-foreground">Central Telefónica</Label>
                       <Input value={companyData.phone} onChange={(e) => setCompanyData({...companyData, phone: e.target.value})} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase text-muted-foreground">Email de Contacto</Label>
+                      <Input value={companyData.email} onChange={(e) => setCompanyData({...companyData, email: e.target.value})} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase text-muted-foreground">Sitio Web</Label>
+                      <Input placeholder="www.tuempresa.com" value={companyData.website} onChange={(e) => setCompanyData({...companyData, website: e.target.value})} />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase text-muted-foreground">Dirección Fiscal / Sede</Label>
