@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -6,12 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ShieldCheck, Loader2, AlertCircle, Building2, UserPlus, LogIn, Clock } from "lucide-react"
+import { ShieldCheck, Loader2, AlertCircle, Building2, UserPlus, LogIn, Clock, Gift } from "lucide-react"
 import { useAuth, useUser, useFirestore } from "@/firebase"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth"
 import { doc, setDoc, collection, addDoc } from "firebase/firestore"
 import { toast } from "@/hooks/use-toast"
+import { Badge } from "@/components/ui/badge"
 
 export default function LoginPage() {
   const [mode, setMode] = useState<"login" | "register">("login")
@@ -46,7 +48,7 @@ export default function LoginPage() {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password)
         const newUser = userCredential.user
 
-        // Crear empresa con Plan Demo por defecto
+        // Crear empresa con Plan Demo por defecto - Único plan permitido por registro directo
         const companyRef = await addDoc(collection(db, "companies"), {
           name: companyName || "Mi Nueva Empresa",
           taxId: "Pendiente",
@@ -63,7 +65,7 @@ export default function LoginPage() {
           companyId: companyRef.id,
           name: fullName || email.split('@')[0],
           email: email,
-          roleId: "Administrador",
+          roleId: "Administrador", // Rol inicial para el creador
           status: "Pending",
           createdAt: new Date().toISOString()
         })
@@ -106,8 +108,17 @@ export default function LoginPage() {
           <CardTitle className="text-2xl font-bold tracking-tighter uppercase text-primary">
             SERVIFUMIGA <span className="text-accent-foreground/50">PRO</span>
           </CardTitle>
-          <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-            {mode === "login" ? "Plataforma SaaS de Gestión Operativa" : "Únete con el Plan Demo gratuito"}
+          <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex flex-col items-center gap-2">
+            {mode === "login" ? (
+              "Plataforma SaaS de Gestión Operativa"
+            ) : (
+              <>
+                <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 animate-pulse">
+                  <Gift className="mr-1 h-3 w-3" /> ACTIVACIÓN PLAN DEMO
+                </Badge>
+                Acceso gratuito por 15 días para su empresa
+              </>
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -158,9 +169,9 @@ export default function LoginPage() {
           {mode === "register" && (
             <Alert className="mt-4 bg-primary/5 border-primary/20">
               <Clock className="h-4 w-4 text-primary" />
-              <AlertTitle className="text-[10px] font-bold uppercase">Registro Gratuito</AlertTitle>
+              <AlertTitle className="text-[10px] font-bold uppercase">Términos de Prueba</AlertTitle>
               <AlertDescription className="text-[9px] text-muted-foreground uppercase leading-tight">
-                Inicia con 15 días de Plan Demo. Sujeto a aprobación manual por el SaaS Master.
+                El Plan Demo incluye 10 clientes, 1 usuario y vigencia de 15 días. Sujeto a aprobación por el SaaS Master.
               </AlertDescription>
             </Alert>
           )}
