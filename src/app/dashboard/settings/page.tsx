@@ -240,7 +240,7 @@ export default function SettingsPage() {
                           value={companyData.logoUrl} 
                           onChange={(e) => setCompanyData({...companyData, logoUrl: e.target.value})} 
                         />
-                        <p className="text-[9px] text-muted-foreground font-medium">Este logo aparecerá en el menú lateral y como respaldo en documentos.</p>
+                        <p className="text-[9px] text-muted-foreground font-medium uppercase tracking-tighter">Este logo aparecerá en el menú lateral y como respaldo en documentos.</p>
                       </div>
                     </div>
                   </div>
@@ -251,27 +251,31 @@ export default function SettingsPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-4">
                       <div className="flex items-center gap-2 text-[10px] font-black uppercase text-primary tracking-widest">
-                        <ImageIcon className="h-3 w-3" /> Cabecera Corporativa (Documentos)
+                        <ImageIcon className="h-3 w-3" /> Cabecera Corporativa (Membrete)
                       </div>
                       <div className="space-y-3">
                         <div className="relative h-28 w-full border rounded-xl bg-white overflow-hidden flex items-center justify-center shadow-inner">
                           {companyData.headerUrl ? (
                             <Image src={companyData.headerUrl} alt="Header Preview" fill className="object-contain" unoptimized />
                           ) : (
-                            <span className="text-[10px] uppercase font-bold text-muted-foreground opacity-50">Vista previa cabecera membrete</span>
+                            <span className="text-[10px] uppercase font-bold text-muted-foreground opacity-50">Vista previa cabecera</span>
                           )}
                         </div>
                         <Input 
-                          placeholder="URL de la Cabecera (800x200px recomendado)" 
+                          placeholder="URL de la Cabecera" 
                           value={companyData.headerUrl} 
                           onChange={(e) => setCompanyData({...companyData, headerUrl: e.target.value})} 
                         />
+                        <div className="flex items-center gap-2 p-2 bg-primary/5 rounded border border-primary/10">
+                          <Info className="h-3 w-3 text-primary shrink-0" />
+                          <p className="text-[9px] font-bold text-primary uppercase leading-tight">Medida Recomendada: 800 x 200 píxeles para un ajuste perfecto.</p>
+                        </div>
                       </div>
                     </div>
 
                     <div className="space-y-4">
                       <div className="flex items-center gap-2 text-[10px] font-black uppercase text-primary tracking-widest">
-                        <ImageIcon className="h-3 w-3" /> Pie de Página Corporativo
+                        <ImageIcon className="h-3 w-3" /> Pie de Página (Membrete)
                       </div>
                       <div className="space-y-3">
                         <div className="relative h-28 w-full border rounded-xl bg-white overflow-hidden flex items-center justify-center shadow-inner">
@@ -282,10 +286,14 @@ export default function SettingsPage() {
                           )}
                         </div>
                         <Input 
-                          placeholder="URL del Pie de Página (800x150px recomendado)" 
+                          placeholder="URL del Pie de Página" 
                           value={companyData.footerUrl} 
                           onChange={(e) => setCompanyData({...companyData, footerUrl: e.target.value})} 
                         />
+                        <div className="flex items-center gap-2 p-2 bg-primary/5 rounded border border-primary/10">
+                          <Info className="h-3 w-3 text-primary shrink-0" />
+                          <p className="text-[9px] font-bold text-primary uppercase leading-tight">Medida Recomendada: 800 x 150 píxeles para cubrir la base A4.</p>
+                        </div>
                       </div>
                     </div>
                   </div>
