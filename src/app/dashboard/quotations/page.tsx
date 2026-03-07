@@ -20,7 +20,8 @@ import {
   Mail,
   Building2,
   FileText,
-  Globe
+  Globe,
+  Gavel
 } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, useUser, useDoc } from "@/firebase"
 import { collection, doc, query, where } from "firebase/firestore"
@@ -37,6 +38,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
+import { Textarea } from "@/components/ui/textarea"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
 
@@ -128,6 +130,7 @@ export default function QuotationsPage() {
       subtotal,
       tax,
       total,
+      conditions: formData.get("conditions") as string || "• Validez de la oferta: 15 días.\n• Forma de pago: Contado / Transferencia.\n• Tiempo de ejecución: A coordinar.\n• Garantía de servicio: 12 meses.",
       status: formData.get("status") as string || "Borrador",
       updatedAt: new Date().toISOString()
     }
@@ -167,7 +170,7 @@ export default function QuotationsPage() {
 
   if (viewingQuotation) {
     const client = clients?.find(c => c.id === viewingQuotation.clientId)
-    const currentYear = viewingQuotation.date ? new Date(viewingQuotation.date).getFullYear() : new Date().getFullYear()
+    const conditions = viewingQuotation.conditions || "• Validez de la oferta: 15 días.\n• Forma de pago: Contado / Transferencia.\n• Tiempo de ejecución: A coordinar.\n• Garantía de servicio: 12 meses."
 
     return (
       <div className="space-y-4 animate-in fade-in duration-300">
@@ -212,8 +215,8 @@ export default function QuotationsPage() {
               <div className="flex flex-col items-end">
                 <span className="text-[10px] font-bold text-slate-600">RUC: {company?.taxId || "---"}</span>
                 <span className="text-[9px] font-black text-[#d9534f] uppercase tracking-[0.2em] mt-2">COTIZACIÓN</span>
-                <div className="mt-2 bg-[#d9534f] text-white px-6 py-2 rounded-md font-black text-[12px] shadow-md border-b-2 border-black/20">
-                   {viewingQuotation.quotationNumber}
+                <div className="mt-2 bg-[#1c1c1c] text-white px-6 py-2 rounded-md font-black text-[12px] shadow-md border-b-2 border-[#d9534f]">
+                   N° {viewingQuotation.quotationNumber}
                 </div>
               </div>
             </div>
@@ -240,7 +243,6 @@ export default function QuotationsPage() {
                 </div>
                 <div className="text-[11px] space-y-2 pt-1 text-right">
                   <p className="font-black text-[#1c1c1c] uppercase"><span className="text-slate-400 font-normal">FECHA:</span> {viewingQuotation.date || "---"}</p>
-                  <p className="text-slate-600 uppercase font-bold"><span className="text-slate-400 font-normal">VALIDEZ:</span> 15 DÍAS</p>
                   <p className="text-slate-600 uppercase font-bold"><span className="text-slate-400 font-normal">MONEDA:</span> SOLES (S/.)</p>
                 </div>
               </div>
@@ -269,7 +271,7 @@ export default function QuotationsPage() {
                         <td className="p-3 text-right font-black border-l border-slate-100 text-[#1c1c1c]">{(Number(item.total || 0)).toFixed(2)}</td>
                       </tr>
                     ))}
-                    {Array.from({ length: Math.max(0, 10 - (viewingQuotation.items?.length || 0)) }).map((_, i) => (
+                    {Array.from({ length: Math.max(0, 8 - (viewingQuotation.items?.length || 0)) }).map((_, i) => (
                       <tr key={`empty-${i}`} className="h-9 border-b border-slate-50">
                         <td className="border-r border-slate-50"></td>
                         <td></td>
@@ -282,19 +284,29 @@ export default function QuotationsPage() {
               </div>
             </div>
 
-            <div className="flex justify-end pt-6">
-              <div className="w-64 space-y-1.5">
-                <div className="flex justify-between text-[10px] px-3 font-bold">
-                  <span className="uppercase text-slate-400">SUBTOTAL</span>
-                  <span className="text-[#1c1c1c]">S/. {(Number(viewingQuotation.subtotal || 0)).toFixed(2)}</span>
+            <div className="grid grid-cols-12 gap-12 pt-4">
+              <div className="col-span-7 space-y-3">
+                <h3 className="text-[10px] font-black text-[#1c1c1c] uppercase flex items-center gap-2 tracking-widest">
+                  <Gavel className="h-4 w-4 text-[#d9534f]" /> CONDICIONES COMERCIALES
+                </h3>
+                <div className="p-4 bg-slate-50 border rounded-lg text-[10px] text-slate-600 leading-relaxed whitespace-pre-line font-medium border-dashed border-slate-300">
+                  {conditions}
                 </div>
-                <div className="flex justify-between text-[10px] px-3 font-bold">
-                  <span className="uppercase text-slate-400">I.G.V. (18%)</span>
-                  <span className="text-[#1c1c1c]">S/. {(Number(viewingQuotation.tax || 0)).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-[12px] bg-[#d9534f] text-white p-4 rounded-xl font-black mt-3 shadow-lg border-b-4 border-black/20">
-                  <span className="uppercase tracking-wider">TOTAL NETO</span>
-                  <span className="text-base">S/. {(Number(viewingQuotation.total || 0)).toFixed(2)}</span>
+              </div>
+              <div className="col-span-5 flex justify-end items-start">
+                <div className="w-full space-y-1.5">
+                  <div className="flex justify-between text-[10px] px-3 font-bold">
+                    <span className="uppercase text-slate-400">SUBTOTAL</span>
+                    <span className="text-[#1c1c1c]">S/. {(Number(viewingQuotation.subtotal || 0)).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-[10px] px-3 font-bold">
+                    <span className="uppercase text-slate-400">I.G.V. (18%)</span>
+                    <span className="text-[#1c1c1c]">S/. {(Number(viewingQuotation.tax || 0)).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-[12px] bg-[#1c1c1c] text-white p-4 rounded-xl font-black mt-3 shadow-lg border-b-4 border-[#d9534f]">
+                    <span className="uppercase tracking-wider">TOTAL NETO</span>
+                    <span className="text-base">S/. {(Number(viewingQuotation.total || 0)).toFixed(2)}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -459,6 +471,16 @@ export default function QuotationsPage() {
                       </div>
                     ))}
                   </div>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label className="text-[10px] font-black uppercase text-slate-500">Condiciones Comerciales</Label>
+                  <Textarea 
+                    name="conditions" 
+                    defaultValue={editingQuotation?.conditions || "• Validez de la oferta: 15 días.\n• Forma de pago: Contado / Transferencia.\n• Tiempo de ejecución: A coordinar.\n• Garantía de servicio: 12 meses."}
+                    className="min-h-[120px] text-xs font-medium"
+                    placeholder="Ingrese las condiciones de pago, validez y garantía..."
+                  />
                 </div>
 
                 <div className="bg-[#1c1c1c] text-white p-6 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4 shadow-xl border-b-4 border-[#d9534f]">
