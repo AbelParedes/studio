@@ -18,6 +18,12 @@
       "description": "Technician profile picture",
       "imageUrl": "https://picsum.photos/seed/tech1/100/100",
       "imageHint": "worker uniform"
+    },
+    {
+      "id": "apeva-logo",
+      "description": "Logo oficial de Extintores Apeva",
+      "imageUrl": "https://picsum.photos/seed/apevalogo/400/200",
+      "imageHint": "company logo"
     }
   ]
 }

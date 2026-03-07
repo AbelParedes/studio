@@ -23,7 +23,7 @@ import {
   MousePointer2,
   Flame
 } from "lucide-react"
-import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, useUser } from "@/firebase"
+import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, useUser, useDoc } from "@/firebase"
 import { collection, doc, query, where } from "firebase/firestore"
 import {
   Dialog,
@@ -41,6 +41,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
+import { PlaceHolderImages } from "@/lib/placeholder-images"
 
 export default function QuotationsPage() {
   const db = useFirestore()
@@ -57,6 +58,12 @@ export default function QuotationsPage() {
   [db, user?.email])
   const { data: profiles } = useCollection(userProfileQuery)
   const companyId = profiles?.[0]?.companyId
+
+  // Datos de la empresa para el logo y membrete
+  const companyRef = useMemoFirebase(() => 
+    companyId ? doc(db, "companies", companyId) : null,
+  [db, companyId])
+  const { data: company } = useDoc(companyRef)
 
   // Filtrar cotizaciones por empresa
   const quotationsRef = useMemoFirebase(() => 
@@ -126,10 +133,12 @@ export default function QuotationsPage() {
 
   if (viewingQuotation) {
     const client = clients?.find(c => c.id === viewingQuotation.clientId)
+    const defaultLogo = PlaceHolderImages.find(img => img.id === 'apeva-logo')?.imageUrl || ''
+
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between no-print">
-          <Button variant="ghost" onClick={() => setViewingQuotation(null)} className="font-bold uppercase text-xs">
+          <Button variant="ghost" onClick={() => setViewingQuotation(null)} className="font-bold uppercase text-xs text-primary">
             <ArrowLeft className="mr-2 h-4 w-4" /> Regresar
           </Button>
           <Button onClick={handlePrint} className="bg-primary text-white font-bold uppercase text-xs">
@@ -137,42 +146,21 @@ export default function QuotationsPage() {
           </Button>
         </div>
 
-        {/* Formato Membretado A4 Extintores Apeva - NUEVO LOGO */}
+        {/* Formato Membretado A4 Extintores Apeva - LOGO IMAGEN */}
         <div className="bg-white p-0 shadow-2xl mx-auto print-container max-w-[21cm] min-h-[29.7cm] flex flex-col relative overflow-hidden text-slate-900 border border-slate-200">
           
-          {/* Header con el Estilo del Nuevo Logo */}
+          {/* Header con el Logo Real (Imagen) */}
           <div className="pt-8 px-10 pb-4">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-4">
-                {/* Logo Circular Dinámico */}
-                <div className="relative h-24 w-24 shrink-0">
-                  <div className="absolute inset-0 rounded-full border-[6px] border-red-600 bg-white flex items-center justify-center shadow-lg">
-                    <div className="relative h-14 w-14">
-                       <Flame className="absolute -left-1 -top-1 h-12 w-12 text-orange-500 opacity-80" />
-                       <span className="relative z-10 text-red-600 font-black text-4xl italic flex items-center justify-center h-full">EA</span>
-                    </div>
-                  </div>
-                  <div className="absolute -bottom-1 -right-1 bg-white p-1 rounded-full shadow-md">
-                    <Flame className="h-6 w-6 text-red-600" />
-                  </div>
-                </div>
-
-                {/* Texto del Logo Estilo Apeva */}
-                <div className="flex flex-col">
-                  <span className="text-2xl font-black text-slate-700 tracking-[0.2em] leading-none mb-1">EXTINTORES</span>
-                  <div className="relative">
-                    <h1 className="text-6xl font-black text-red-600 tracking-tighter leading-none italic uppercase flex items-baseline gap-0">
-                      APEVA
-                    </h1>
-                    {/* Elementos de llama decorativos simulando el logo */}
-                    <div className="absolute -bottom-2 left-0 right-0 flex justify-between px-2">
-                       <Flame className="h-6 w-6 text-orange-400 fill-orange-400" />
-                       <Flame className="h-5 w-5 text-orange-500 fill-orange-500" />
-                       <Flame className="h-7 w-7 text-red-500 fill-red-500" />
-                       <Flame className="h-4 w-4 text-orange-400 fill-orange-400" />
-                    </div>
-                  </div>
-                </div>
+            <div className="flex justify-between items-start">
+              <div className="relative h-28 w-80 shrink-0">
+                <Image 
+                  src={company?.logoUrl || defaultLogo} 
+                  alt="Logotipo Corporativo" 
+                  fill 
+                  className="object-contain"
+                  unoptimized={!!company?.logoUrl}
+                  data-ai-hint="company logo"
+                />
               </div>
 
               <div className="text-right flex flex-col items-end pt-4">
@@ -187,7 +175,7 @@ export default function QuotationsPage() {
             </div>
           </div>
 
-          {/* Línea Divisoria Decorativa con Llamas */}
+          {/* Línea Divisoria Decorativa */}
           <div className="px-10 mt-4">
             <div className="h-[3px] bg-red-600 w-full mb-[2px]"></div>
             <div className="h-[1px] bg-orange-400 w-full"></div>
@@ -210,7 +198,7 @@ export default function QuotationsPage() {
                 </div>
               </div>
               <div className="text-right space-y-1.5 p-5 border border-red-100 border-r-[6px] border-r-red-600 bg-red-50/20 rounded-l-xl flex flex-col justify-center">
-                <p className="font-black uppercase text-red-600 text-[10px] tracking-widest">EXTINTORES APEVA SAC</p>
+                <p className="font-black uppercase text-red-600 text-[10px] tracking-widest">{company?.name || "EXTINTORES APEVA SAC"}</p>
                 <p className="text-[11px] font-bold text-slate-700 uppercase">SEDE CENTRAL LIMA NORTE</p>
                 <p className="text-[10px] text-slate-500 font-medium italic">Atención Inmediata a Industrias y Comercios</p>
               </div>
@@ -238,12 +226,6 @@ export default function QuotationsPage() {
                       <TableCell className="text-center font-black text-[11px] py-5">{item.quantity}</TableCell>
                       <TableCell className="text-right font-bold text-[11px] py-5">{(item.unitPrice || 0).toFixed(2)}</TableCell>
                       <TableCell className="text-right font-black text-[11px] py-5 text-red-600 pr-6">{(item.total || 0).toFixed(2)}</TableCell>
-                    </TableRow>
-                  ))}
-                  {/* Filas de relleno estéticas */}
-                  {viewingQuotation.items.length < 10 && Array(10 - viewingQuotation.items.length).fill(0).map((_, i) => (
-                    <TableRow key={`empty-${i}`} className="h-10 border-b border-slate-50/50">
-                      <TableCell colSpan={4}></TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -290,7 +272,7 @@ export default function QuotationsPage() {
               <div className="flex flex-col items-center">
                 <div className="w-48 h-px bg-red-600 mb-2"></div>
                 <p className="text-[10px] font-black uppercase text-red-600">DEPARTAMENTO TÉCNICO</p>
-                <p className="text-[9px] font-bold text-slate-500 italic">Extintores Apeva SAC</p>
+                <p className="text-[9px] font-bold text-slate-500 italic">{company?.name || "Extintores Apeva SAC"}</p>
               </div>
             </div>
           </div>
@@ -301,17 +283,17 @@ export default function QuotationsPage() {
               <div className="flex items-center justify-center gap-10 w-full">
                 <div className="flex items-center gap-3 text-[10px] font-black uppercase text-slate-900 bg-white/40 px-3 py-1.5 rounded-full border border-slate-900/10">
                   <MapPin className="h-4 w-4 text-red-600" />
-                  <span>Av. Naranjal 215 int A 06 Independencia - Lima</span>
+                  <span>{company?.address || "Av. Naranjal 215 int A 06 Independencia - Lima"}</span>
                 </div>
                 <div className="flex items-center gap-3 text-[10px] font-black uppercase text-slate-900 bg-white/40 px-3 py-1.5 rounded-full border border-slate-900/10">
                   <Phone className="h-4 w-4 text-red-600" />
-                  <span>933 261 752 / 918 790 212</span>
+                  <span>{company?.phone || "933 261 752 / 918 790 212"}</span>
                 </div>
               </div>
               <div className="flex items-center justify-center gap-10 w-full">
                 <div className="flex items-center gap-3 text-[10px] font-black uppercase text-slate-900 bg-white/40 px-3 py-1.5 rounded-full border border-slate-900/10">
                   <Mail className="h-4 w-4 text-red-600" />
-                  <span className="lowercase">extintoresapeva@hotmail.com</span>
+                  <span className="lowercase">{company?.email || "extintoresapeva@hotmail.com"}</span>
                 </div>
                 <div className="flex items-center gap-3 text-[10px] font-black uppercase text-slate-900 bg-white/40 px-3 py-1.5 rounded-full border border-slate-900/10">
                   <Globe className="h-4 w-4 text-red-600" />
@@ -443,11 +425,6 @@ export default function QuotationsPage() {
                       </div>
                     </div>
                   ))}
-                  {items.length === 0 && (
-                    <div className="text-center py-6 border-dashed border-2 rounded-md text-[10px] text-muted-foreground uppercase font-bold">
-                      No hay items en la cotización
-                    </div>
-                  )}
                 </div>
 
                 <div className="bg-muted p-4 rounded-md">
