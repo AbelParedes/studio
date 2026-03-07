@@ -43,6 +43,8 @@ export default function DashboardLayout({
   [db, profile?.roleId])
   const { data: roleData } = useDoc(roleRef)
 
+  const isMasterAdmin = roleData?.title === "Administrador"
+
   // Aplicar Tema y Colores dinámicamente
   useEffect(() => {
     if (company && company.status === "Active") {
@@ -78,8 +80,8 @@ export default function DashboardLayout({
     )
   }
 
-  // Pantalla de espera de aprobación
-  if (profile?.status === "Pending" || company?.status === "Pending") {
+  // Pantalla de espera de aprobación (Bypass para el Super Admin)
+  if (!isMasterAdmin && (profile?.status === "Pending" || company?.status === "Pending")) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-[#f8fafc] p-6">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl p-10 text-center border-t-8 border-t-primary">
