@@ -86,6 +86,28 @@
         "conditions": { "type": "string", "description": "Términos y condiciones de la cotización." },
         "status": { "type": "string", "enum": ["Borrador", "Enviado", "Aceptado", "Rechazado"] }
       }
+    },
+    "CatalogItem": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "CatalogItem",
+      "type": "object",
+      "description": "Producto o servicio del catálogo maestro para cotizaciones.",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "category": { "type": "string", "enum": ["Extintor", "Fumigación", "Accesorios"] },
+        "operationType": { "type": "string", "enum": ["Venta", "Recarga", "Mantenimiento", "Inspección"] },
+        "description": { "type": "string" },
+        "extinguishingAgent": { "type": "string" },
+        "capacity": { "type": "string" },
+        "buyPrice": { "type": "number" },
+        "sellPrice": { "type": "number" },
+        "currentStock": { "type": "integer" },
+        "maxDiscount": { "type": "number" },
+        "frequencyMonths": { "type": "integer" },
+        "status": { "type": "string" }
+      },
+      "required": ["id", "companyId", "category", "operationType", "description", "sellPrice"]
     }
   },
   "auth": {
@@ -107,6 +129,10 @@
     "quotations": {
       "schema": { "$ref": "#/backend/entities/Quotation" },
       "description": "Cotizaciones generadas por empresa."
+    },
+    "all_extinguishers": {
+      "schema": { "$ref": "#/backend/entities/CatalogItem" },
+      "description": "Catálogo maestro de productos y servicios."
     }
   }
 }

@@ -18,7 +18,11 @@ import {
   ShoppingCart, 
   RefreshCw,
   DollarSign,
-  Tag
+  Tag,
+  Boxes,
+  Percent,
+  CalendarClock,
+  FlaskConical
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, useUser } from "@/firebase"
@@ -65,19 +69,23 @@ export default function InventoryPage() {
     const formData = new FormData(e.currentTarget)
     const itemData = {
       companyId: companyId,
-      code: formData.get("code") as string,
-      name: formData.get("name") as string,
       category: formData.get("category") as string,
-      unitPrice: Number(formData.get("unitPrice") || 0),
-      unit: formData.get("unit") as string || "Und",
+      operationType: formData.get("operationType") as string,
       description: formData.get("description") as string,
+      extinguishingAgent: formData.get("extinguishingAgent") as string,
+      capacity: formData.get("capacity") as string,
+      buyPrice: Number(formData.get("buyPrice") || 0),
+      sellPrice: Number(formData.get("sellPrice") || 0),
+      currentStock: Number(formData.get("currentStock") || 0),
+      maxDiscount: Number(formData.get("maxDiscount") || 0),
+      frequencyMonths: Number(formData.get("frequencyMonths") || 0),
       status: "Activo",
       updatedAt: new Date().toISOString()
     }
 
     if (editingItem) {
       updateDocumentNonBlocking(doc(db, "all_extinguishers", editingItem.id), itemData)
-      toast({ title: "Producto/Servicio actualizado" })
+      toast({ title: "Ítem actualizado" })
     } else {
       const newItem = { ...itemData, id: crypto.randomUUID(), createdAt: new Date().toISOString() }
       addDocumentNonBlocking(collection(db, "all_extinguishers"), newItem)
@@ -90,89 +98,102 @@ export default function InventoryPage() {
 
   const handleDelete = (id: string) => {
     deleteDocumentNonBlocking(doc(db, "all_extinguishers", id))
-    toast({ variant: "destructive", title: "Ítem eliminado del catálogo" })
-  }
-
-  const openEdit = (item: any) => {
-    setEditingItem(item)
-    setIsAdding(true)
+    toast({ variant: "destructive", title: "Ítem eliminado" })
   }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase">Catálogo Maestro</h2>
-          <p className="text-muted-foreground text-sm uppercase font-bold text-[10px] tracking-wider">Defina los ítems disponibles para sus cotizaciones oficiales.</p>
+          <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase text-primary">Catálogo Maestro</h2>
+          <p className="text-muted-foreground text-sm uppercase font-bold text-[10px] tracking-wider">Gestión técnica y comercial para cotizaciones oficiales.</p>
         </div>
         <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) setEditingItem(null); }}>
           <DialogTrigger asChild>
-            <Button className="bg-primary text-white h-9 font-bold uppercase text-[11px]">
+            <Button className="bg-[#1c1c1c] text-white h-10 font-black uppercase text-[11px] border-b-4 border-primary">
               <Plus className="mr-2 h-4 w-4" /> Nuevo Ítem
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <form onSubmit={handleSaveItem}>
               <DialogHeader>
-                <DialogTitle className="uppercase font-black text-primary">Gestión de Catálogo</DialogTitle>
-                <DialogDescription className="text-[10px] font-bold uppercase">Configure un producto o servicio para usar en presupuestos.</DialogDescription>
+                <DialogTitle className="uppercase font-black text-primary">Configuración de Producto / Servicio</DialogTitle>
+                <DialogDescription className="text-[10px] font-bold uppercase">Defina los parámetros técnicos y de precios.</DialogDescription>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-6 py-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="category" className="text-[10px] font-black uppercase text-slate-500">Categoría</Label>
-                    <Select name="category" required defaultValue={editingItem?.category || "Venta"}>
+                    <Label className="text-[10px] font-black uppercase text-slate-500">Categoría</Label>
+                    <Select name="category" required defaultValue={editingItem?.category || "Extintor"}>
                       <SelectTrigger className="h-10 text-xs font-bold">
-                        <SelectValue placeholder="Categoría" />
+                        <SelectValue placeholder="Seleccione Categoría" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Venta">Venta de Equipos</SelectItem>
-                        <SelectItem value="Recarga">Servicio Recarga</SelectItem>
-                        <SelectItem value="Mantenimiento">Mantenimiento</SelectItem>
+                        <SelectItem value="Extintor">Extintor</SelectItem>
                         <SelectItem value="Fumigación">Fumigación</SelectItem>
+                        <SelectItem value="Accesorios">Accesorios</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="code" className="text-[10px] font-black uppercase text-slate-500">Código / SKU</Label>
-                    <Input id="code" name="code" defaultValue={editingItem?.code || editingItem?.serialNumber} required placeholder="EXP-001" className="h-10 font-bold text-xs" />
-                  </div>
-                </div>
-
-                <div className="grid gap-2">
-                  <Label htmlFor="name" className="text-[10px] font-black uppercase text-slate-500">Nombre del Producto/Servicio</Label>
-                  <Input id="name" name="name" defaultValue={editingItem?.name || editingItem?.type} required placeholder="Ej. Extintor PQS 10 Lbs" className="h-10 font-bold text-xs" />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="unitPrice" className="text-[10px] font-black uppercase text-slate-500">Precio Unitario (S/)</Label>
-                    <Input id="unitPrice" name="unitPrice" type="number" step="0.01" defaultValue={editingItem?.unitPrice} required className="h-10 text-xs font-black" />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="unit" className="text-[10px] font-black uppercase text-slate-500">Unidad</Label>
-                    <Select name="unit" required defaultValue={editingItem?.unit || "Und"}>
+                    <Label className="text-[10px] font-black uppercase text-slate-500">Tipo de Operación</Label>
+                    <Select name="operationType" required defaultValue={editingItem?.operationType || "Venta"}>
                       <SelectTrigger className="h-10 text-xs font-bold">
-                        <SelectValue placeholder="Unidad" />
+                        <SelectValue placeholder="Seleccione Operación" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Und">Unidad (Und)</SelectItem>
-                        <SelectItem value="Serv">Servicio (Serv)</SelectItem>
-                        <SelectItem value="m2">Metro Cuadrado (m2)</SelectItem>
-                        <SelectItem value="Gl">Galón (Gl)</SelectItem>
+                        <SelectItem value="Venta">Venta</SelectItem>
+                        <SelectItem value="Recarga">Recarga</SelectItem>
+                        <SelectItem value="Mantenimiento">Mantenimiento</SelectItem>
+                        <SelectItem value="Inspección">Inspección</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
 
                 <div className="grid gap-2">
-                  <Label htmlFor="description" className="text-[10px] font-black uppercase text-slate-500">Descripción Comercial</Label>
-                  <Textarea id="description" name="description" defaultValue={editingItem?.description} placeholder="Detalles que aparecerán en la cotización..." className="text-xs font-medium min-h-[80px]" />
+                  <Label className="text-[10px] font-black uppercase text-slate-500">Descripción / Nombre Detallado</Label>
+                  <Input name="description" defaultValue={editingItem?.description} required placeholder="Ej. Extintor PQS 6kg ABC Industrial" className="h-10 font-bold text-xs" />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label className="text-[10px] font-black uppercase text-slate-500">Agente Extintor (Si aplica)</Label>
+                    <Input name="extinguishingAgent" defaultValue={editingItem?.extinguishingAgent} placeholder="PQS, CO2, Acetato..." className="h-10 font-bold text-xs" />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label className="text-[10px] font-black uppercase text-slate-500">Capacidad</Label>
+                    <Input name="capacity" defaultValue={editingItem?.capacity} placeholder="4kg, 6kg, 9kg, 50kg..." className="h-10 font-bold text-xs" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="grid gap-2">
+                    <Label className="text-[10px] font-black uppercase text-slate-500">P. Compra (S/)</Label>
+                    <Input name="buyPrice" type="number" step="0.01" defaultValue={editingItem?.buyPrice} className="h-10 font-black text-xs" />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label className="text-[10px] font-black uppercase text-slate-500">P. Venta (S/)</Label>
+                    <Input name="sellPrice" type="number" step="0.01" defaultValue={editingItem?.sellPrice} required className="h-10 font-black text-xs text-primary" />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label className="text-[10px] font-black uppercase text-slate-500">Stock Actual</Label>
+                    <Input name="currentStock" type="number" defaultValue={editingItem?.currentStock} className="h-10 font-black text-xs" />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label className="text-[10px] font-black uppercase text-slate-500">Frecuencia (Meses)</Label>
+                    <Input name="frequencyMonths" type="number" defaultValue={editingItem?.frequencyMonths} placeholder="12" className="h-10 font-black text-xs" />
+                  </div>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label className="text-[10px] font-black uppercase text-slate-500">Descuento Máx. (%)</Label>
+                  <Input name="maxDiscount" type="number" step="0.1" defaultValue={editingItem?.maxDiscount} placeholder="0.0" className="h-10 font-black text-xs" />
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit" className="w-full bg-[#1c1c1c] text-white font-black uppercase text-xs h-11 border-b-4 border-primary">
-                  {editingItem ? "Actualizar Catálogo" : "Registrar en Catálogo"}
+                <Button type="submit" className="w-full bg-primary text-white font-black uppercase text-xs h-12 shadow-xl">
+                  {editingItem ? "Actualizar Registro" : "Registrar en Almacén/Catálogo"}
                 </Button>
               </DialogFooter>
             </form>
@@ -184,33 +205,35 @@ export default function InventoryPage() {
         <Card className="bg-primary/5 border-primary/20 shadow-none">
           <CardHeader className="py-3">
             <CardTitle className="text-[10px] text-primary uppercase font-black tracking-widest flex items-center gap-2">
-              <Package className="h-3 w-3" /> Total Ítems
+              <Boxes className="h-3 w-3" /> Valor de Almacén (Compra)
             </CardTitle>
           </CardHeader>
           <CardContent className="py-2">
-            <div className="text-2xl font-black text-primary">{catalog?.length || 0}</div>
+            <div className="text-2xl font-black text-primary">
+              S/ {catalog?.reduce((acc, curr) => acc + ((curr.buyPrice || 0) * (curr.currentStock || 0)), 0).toLocaleString()}
+            </div>
           </CardContent>
         </Card>
         <Card className="bg-status-success/5 border-status-success/20 shadow-none">
           <CardHeader className="py-3">
             <CardTitle className="text-[10px] text-status-success uppercase font-black tracking-widest flex items-center gap-2">
-              <DollarSign className="h-3 w-3" /> Promedio de Precio
+              <TrendingUp className="h-3 w-3" /> Potencial Venta
             </CardTitle>
           </CardHeader>
           <CardContent className="py-2">
             <div className="text-2xl font-black text-status-success">
-              S/ {catalog?.length ? (catalog.reduce((acc, curr) => acc + (curr.unitPrice || 0), 0) / catalog.length).toFixed(2) : "0.00"}
+              S/ {catalog?.reduce((acc, curr) => acc + ((curr.sellPrice || 0) * (curr.currentStock || 0)), 0).toLocaleString()}
             </div>
           </CardContent>
         </Card>
         <Card className="bg-accent/5 border-accent/20 shadow-none">
           <CardHeader className="py-3">
             <CardTitle className="text-[10px] text-accent uppercase font-black tracking-widest flex items-center gap-2">
-              <Tag className="h-3 w-3" /> Categorías Activas
+              <ShoppingCart className="h-3 w-3" /> Ítems Activos
             </CardTitle>
           </CardHeader>
           <CardContent className="py-2">
-            <div className="text-2xl font-black text-accent">4</div>
+            <div className="text-2xl font-black text-accent">{catalog?.length || 0}</div>
           </CardContent>
         </Card>
       </div>
@@ -220,8 +243,8 @@ export default function InventoryPage() {
           <div className="relative w-full max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
-              placeholder="Buscar por código, nombre o categoría..." 
-              className="pl-9 h-9 text-xs font-bold uppercase" 
+              placeholder="Buscar por descripción o categoría..." 
+              className="pl-9 h-10 text-xs font-bold uppercase tracking-tight" 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -236,42 +259,64 @@ export default function InventoryPage() {
             <Table className="dense-table">
               <TableHeader className="bg-[#1c1c1c] hover:bg-[#1c1c1c]">
                 <TableRow className="border-none">
-                  <TableHead className="text-white font-black uppercase text-[10px]">Cód/SKU</TableHead>
                   <TableHead className="text-white font-black uppercase text-[10px]">Categoría</TableHead>
-                  <TableHead className="text-white font-black uppercase text-[10px]">Producto / Servicio</TableHead>
-                  <TableHead className="text-white font-black uppercase text-[10px] text-right pr-10">Precio (S/.)</TableHead>
-                  <TableHead className="text-white w-[80px]"></TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px]">Operación</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px]">Descripción / Ítem</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px]">Técnico</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px] text-right">P. Venta</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px] text-center">Stock</TableHead>
+                  <TableHead className="text-white w-[100px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {catalog?.filter(i => 
-                  (i.code || i.serialNumber)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  (i.name || i.type)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  i.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                   i.category?.toLowerCase().includes(searchTerm.toLowerCase())
                 ).map((item) => (
-                  <TableRow key={item.id} className="hover:bg-muted/30 border-slate-100 transition-colors">
-                    <TableCell className="font-black text-primary uppercase tracking-tight">{item.code || item.serialNumber}</TableCell>
+                  <TableRow key={item.id} className="hover:bg-muted/30 transition-colors border-slate-100">
                     <TableCell>
                       <Badge variant="outline" className="text-[9px] font-black uppercase bg-slate-50">
-                        {item.category === 'Fumigación' && <Bug className="mr-1 h-2.5 w-2.5 text-accent" />}
-                        {item.category === 'Recarga' && <RefreshCw className="mr-1 h-2.5 w-2.5 text-blue-500" />}
-                        {item.category === 'Venta' && <ShoppingCart className="mr-1 h-2.5 w-2.5 text-green-600" />}
-                        {item.category === 'Mantenimiento' && <Wrench className="mr-1 h-2.5 w-2.5 text-orange-500" />}
-                        {item.category || "General"}
+                        {item.category === "Extintor" && <Flame className="mr-1 h-3 w-3 text-status-error" />}
+                        {item.category === "Fumigación" && <Bug className="mr-1 h-3 w-3 text-status-success" />}
+                        {item.category === "Accesorios" && <Package className="mr-1 h-3 w-3 text-blue-500" />}
+                        {item.category}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary" className="text-[9px] font-bold uppercase">
+                        {item.operationType === "Venta" && <ShoppingCart className="mr-1 h-2.5 w-2.5" />}
+                        {item.operationType === "Recarga" && <RefreshCw className="mr-1 h-2.5 w-2.5" />}
+                        {item.operationType === "Mantenimiento" && <Wrench className="mr-1 h-2.5 w-2.5" />}
+                        {item.operationType === "Inspección" && <Search className="mr-1 h-2.5 w-2.5" />}
+                        {item.operationType}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
-                        <span className="font-bold text-[#1c1c1c] text-[11px] uppercase">{item.name || item.type}</span>
-                        <span className="text-[9px] text-muted-foreground uppercase font-bold truncate max-w-[300px]">{item.description || "Sin descripción"}</span>
+                        <span className="font-black text-[#1c1c1c] text-[11px] uppercase">{item.description}</span>
+                        {item.frequencyMonths > 0 && (
+                          <span className="text-[9px] text-accent font-bold flex items-center gap-1">
+                            <CalendarClock className="h-2.5 w-2.5" /> Alerta cada {item.frequencyMonths} meses
+                          </span>
+                        )}
                       </div>
                     </TableCell>
-                    <TableCell className="text-[11px] font-black text-primary text-right pr-10">
-                      S/ {(item.unitPrice || 0).toFixed(2)} <span className="text-[9px] text-muted-foreground font-normal ml-1">/{item.unit || 'Und'}</span>
-                    </TableCell>
                     <TableCell>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => openEdit(item)}>
+                      <div className="flex flex-col text-[10px] font-bold text-slate-500 uppercase">
+                        {item.extinguishingAgent && <span className="flex items-center gap-1"><FlaskConical className="h-2.5 w-2.5" /> {item.extinguishingAgent}</span>}
+                        {item.capacity && <span>{item.capacity}</span>}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex flex-col items-end">
+                        <span className="font-black text-primary text-[11px]">S/ {(item.sellPrice || 0).toFixed(2)}</span>
+                        {item.maxDiscount > 0 && <span className="text-[9px] text-status-success font-bold flex items-center gap-1"><Percent className="h-2 w-2" /> Dcto Máx {item.maxDiscount}%</span>}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center font-black text-slate-400">{item.currentStock}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-1 justify-end">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => { setEditingItem(item); setIsAdding(true); }}>
                           <Edit2 className="h-3.5 w-3.5" />
                         </Button>
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/5" onClick={() => handleDelete(item.id)}>
@@ -281,16 +326,6 @@ export default function InventoryPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {catalog?.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-24 text-muted-foreground">
-                      <div className="flex flex-col items-center gap-3 opacity-30">
-                        <Package className="h-12 w-12" />
-                        <p className="text-[11px] font-black uppercase tracking-widest">Catálogo vacío. Registre productos para cotizar.</p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )}
               </TableBody>
             </Table>
           )}
