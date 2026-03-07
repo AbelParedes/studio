@@ -83,6 +83,7 @@
         "subtotal": { "type": "number" },
         "tax": { "type": "number" },
         "total": { "type": "number" },
+        "conditions": { "type": "string", "description": "Términos y condiciones de la cotización." },
         "status": { "type": "string", "enum": ["Borrador", "Enviado", "Aceptado", "Rechazado"] }
       }
     }
