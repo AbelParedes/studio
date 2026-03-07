@@ -20,7 +20,8 @@ import {
   Globe,
   MapPin,
   ArrowLeft,
-  MousePointer2
+  MousePointer2,
+  Flame
 } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, useUser } from "@/firebase"
 import { collection, doc, query, where } from "firebase/firestore"
@@ -136,79 +137,111 @@ export default function QuotationsPage() {
           </Button>
         </div>
 
-        {/* Formato Membretado A4 Extintores Apeva */}
-        <div className="bg-white p-0 shadow-2xl mx-auto print-container max-w-[21cm] min-h-[29.7cm] flex flex-col relative overflow-hidden text-slate-900">
+        {/* Formato Membretado A4 Extintores Apeva - NUEVO LOGO */}
+        <div className="bg-white p-0 shadow-2xl mx-auto print-container max-w-[21cm] min-h-[29.7cm] flex flex-col relative overflow-hidden text-slate-900 border border-slate-200">
           
-          {/* Fondo Membretado (Header) */}
-          <div className="pt-10 px-10 pb-4">
-            <div className="flex justify-between items-start">
-              <div className="flex flex-col">
-                <div className="flex items-center gap-1">
-                  <div className="relative h-14 w-14 overflow-hidden rounded-full border-2 border-red-600 flex items-center justify-center bg-white shadow-sm">
-                    <span className="text-red-600 font-black text-2xl italic">EA</span>
+          {/* Header con el Estilo del Nuevo Logo */}
+          <div className="pt-8 px-10 pb-4">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-4">
+                {/* Logo Circular Dinámico */}
+                <div className="relative h-24 w-24 shrink-0">
+                  <div className="absolute inset-0 rounded-full border-[6px] border-red-600 bg-white flex items-center justify-center shadow-lg">
+                    <div className="relative h-14 w-14">
+                       <Flame className="absolute -left-1 -top-1 h-12 w-12 text-orange-500 opacity-80" />
+                       <span className="relative z-10 text-red-600 font-black text-4xl italic flex items-center justify-center h-full">EA</span>
+                    </div>
                   </div>
-                  <div className="flex flex-col">
-                    <h1 className="text-2xl font-black text-red-600 tracking-tighter leading-none italic uppercase">EXTINTORES APEVA</h1>
-                    <p className="text-[10px] font-bold text-gray-600 uppercase italic mt-0.5">Su seguridad por encima de todo</p>
+                  <div className="absolute -bottom-1 -right-1 bg-white p-1 rounded-full shadow-md">
+                    <Flame className="h-6 w-6 text-red-600" />
+                  </div>
+                </div>
+
+                {/* Texto del Logo Estilo Apeva */}
+                <div className="flex flex-col">
+                  <span className="text-2xl font-black text-slate-700 tracking-[0.2em] leading-none mb-1">EXTINTORES</span>
+                  <div className="relative">
+                    <h1 className="text-6xl font-black text-red-600 tracking-tighter leading-none italic uppercase flex items-baseline gap-0">
+                      APEVA
+                    </h1>
+                    {/* Elementos de llama decorativos simulando el logo */}
+                    <div className="absolute -bottom-2 left-0 right-0 flex justify-between px-2">
+                       <Flame className="h-6 w-6 text-orange-400 fill-orange-400" />
+                       <Flame className="h-5 w-5 text-orange-500 fill-orange-500" />
+                       <Flame className="h-7 w-7 text-red-500 fill-red-500" />
+                       <Flame className="h-4 w-4 text-orange-400 fill-orange-400" />
+                    </div>
                   </div>
                 </div>
               </div>
-              <div className="text-right flex flex-col items-end">
-                <div className="border-[3px] border-primary p-4 rounded-xl bg-slate-50 min-w-[180px] shadow-sm">
-                  <p className="text-[10px] font-black uppercase text-primary tracking-widest mb-1">COTIZACIÓN</p>
-                  <p className="text-xl font-black text-slate-800">{viewingQuotation.quotationNumber}</p>
+
+              <div className="text-right flex flex-col items-end pt-4">
+                <div className="border-[4px] border-red-600 p-4 rounded-xl bg-slate-50 min-w-[200px] shadow-inner relative overflow-hidden">
+                  <div className="absolute top-0 right-0 bg-red-600 text-white px-2 py-0.5 text-[8px] font-black uppercase tracking-widest">OFICIAL</div>
+                  <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-1">R.U.C. 20602345678</p>
+                  <p className="text-xs font-black uppercase text-red-600 mb-1">COTIZACIÓN</p>
+                  <p className="text-2xl font-black text-slate-800 tracking-tight">{viewingQuotation.quotationNumber}</p>
                 </div>
-                <p className="text-[10px] mt-2 font-bold text-slate-500 uppercase tracking-tighter">Emisión: {viewingQuotation.date}</p>
+                <p className="text-[10px] mt-3 font-bold text-slate-500 uppercase tracking-tighter">FECHA DE EMISIÓN: {viewingQuotation.date}</p>
               </div>
             </div>
           </div>
 
-          {/* Línea Divisoria Membretada */}
-          <div className="px-10">
-            <div className="h-[2px] bg-slate-400 w-full mb-[2px]"></div>
-            <div className="h-[2px] bg-slate-400 w-full"></div>
+          {/* Línea Divisoria Decorativa con Llamas */}
+          <div className="px-10 mt-4">
+            <div className="h-[3px] bg-red-600 w-full mb-[2px]"></div>
+            <div className="h-[1px] bg-orange-400 w-full"></div>
           </div>
 
           {/* Cuerpo de la Cotización */}
           <div className="p-10 flex-1 flex flex-col">
-            <div className="grid grid-cols-2 gap-10 mb-8">
-              <div className="space-y-1.5 p-4 border-l-4 border-primary bg-slate-50 rounded-r-lg">
-                <p className="font-black uppercase text-slate-400 text-[9px] tracking-widest">DATOS DEL CLIENTE</p>
-                <p className="font-black text-sm uppercase text-primary">{client?.name || "Desconocido"}</p>
-                <p className="text-[11px] font-bold text-slate-700">RUC / DNI: <span className="font-mono">{client?.taxId}</span></p>
-                <div className="flex items-start gap-1 text-[11px] text-slate-600">
-                  <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
-                  <span>{client?.address}</span>
+            <div className="grid grid-cols-2 gap-10 mb-10">
+              <div className="space-y-1.5 p-5 border border-slate-200 border-l-[6px] border-l-red-600 bg-slate-50/50 rounded-r-xl">
+                <p className="font-black uppercase text-slate-400 text-[9px] tracking-widest mb-2 flex items-center">
+                   <MousePointer2 className="h-3 w-3 mr-1 text-red-600" />
+                   DIRIGIDO A:
+                </p>
+                <p className="font-black text-lg uppercase text-slate-800">{client?.name || "Desconocido"}</p>
+                <div className="h-px bg-slate-200 w-full my-2"></div>
+                <p className="text-[11px] font-bold text-slate-700">RUC / DNI: <span className="font-mono bg-white px-1 border rounded">{client?.taxId}</span></p>
+                <div className="flex items-start gap-1 text-[11px] text-slate-600 mt-1">
+                  <MapPin className="h-3 w-3 mt-0.5 shrink-0 text-red-600" />
+                  <span className="font-medium">{client?.address}</span>
                 </div>
               </div>
-              <div className="text-right space-y-1.5 p-4 border-r-4 border-red-600 bg-red-50/30 rounded-l-lg">
-                <p className="font-black uppercase text-slate-400 text-[9px] tracking-widest">LUGAR DE SERVICIO</p>
-                <p className="font-bold text-[11px] text-slate-700 uppercase">Sede Independencia - Lima Norte</p>
-                <p className="text-[10px] text-slate-500 italic">Válido para todo Lima Metropolitana</p>
+              <div className="text-right space-y-1.5 p-5 border border-red-100 border-r-[6px] border-r-red-600 bg-red-50/20 rounded-l-xl flex flex-col justify-center">
+                <p className="font-black uppercase text-red-600 text-[10px] tracking-widest">EXTINTORES APEVA SAC</p>
+                <p className="text-[11px] font-bold text-slate-700 uppercase">SEDE CENTRAL LIMA NORTE</p>
+                <p className="text-[10px] text-slate-500 font-medium italic">Atención Inmediata a Industrias y Comercios</p>
               </div>
             </div>
 
             <div className="flex-1">
-              <Table className="border rounded-lg overflow-hidden border-slate-200">
+              <Table className="border rounded-xl overflow-hidden border-slate-200 shadow-sm">
                 <TableHeader className="bg-slate-800 hover:bg-slate-800">
                   <TableRow className="hover:bg-transparent border-none">
-                    <TableHead className="text-white font-black uppercase text-[10px] tracking-wider py-4">DESCRIPCIÓN DEL EQUIPO O SERVICIO</TableHead>
-                    <TableHead className="text-center text-white font-black uppercase text-[10px] tracking-wider py-4 w-20">CANT.</TableHead>
-                    <TableHead className="text-right text-white font-black uppercase text-[10px] tracking-wider py-4 w-28">P. UNIT (S/)</TableHead>
-                    <TableHead className="text-right text-white font-black uppercase text-[10px] tracking-wider py-4 w-28">SUBTOTAL (S/)</TableHead>
+                    <TableHead className="text-white font-black uppercase text-[10px] tracking-wider py-5 pl-6">ITEM / DESCRIPCIÓN DEL SERVICIO</TableHead>
+                    <TableHead className="text-center text-white font-black uppercase text-[10px] tracking-wider py-5 w-24">CANTIDAD</TableHead>
+                    <TableHead className="text-right text-white font-black uppercase text-[10px] tracking-wider py-5 w-32">P. UNIT (S/)</TableHead>
+                    <TableHead className="text-right text-white font-black uppercase text-[10px] tracking-wider py-5 w-32 pr-6">PARCIAL (S/)</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {viewingQuotation.items.map((item: any, idx: number) => (
-                    <TableRow key={idx} className="border-b border-slate-100 last:border-none">
-                      <TableCell className="font-bold uppercase text-[11px] py-4 text-slate-700">{item.description}</TableCell>
-                      <TableCell className="text-center font-bold text-[11px] py-4">{item.quantity}</TableCell>
-                      <TableCell className="text-right font-bold text-[11px] py-4">{(item.unitPrice || 0).toFixed(2)}</TableCell>
-                      <TableCell className="text-right font-black text-[11px] py-4 text-slate-900">{(item.total || 0).toFixed(2)}</TableCell>
+                    <TableRow key={idx} className="border-b border-slate-100 last:border-none hover:bg-slate-50/50">
+                      <TableCell className="font-bold uppercase text-[11px] py-5 pl-6 text-slate-700">
+                        <div className="flex items-center gap-2">
+                           <span className="h-5 w-5 rounded bg-red-600 text-white flex items-center justify-center text-[9px] font-black shrink-0">{idx + 1}</span>
+                           {item.description}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center font-black text-[11px] py-5">{item.quantity}</TableCell>
+                      <TableCell className="text-right font-bold text-[11px] py-5">{(item.unitPrice || 0).toFixed(2)}</TableCell>
+                      <TableCell className="text-right font-black text-[11px] py-5 text-red-600 pr-6">{(item.total || 0).toFixed(2)}</TableCell>
                     </TableRow>
                   ))}
-                  {/* Filas de relleno para estética A4 */}
-                  {viewingQuotation.items.length < 8 && Array(8 - viewingQuotation.items.length).fill(0).map((_, i) => (
+                  {/* Filas de relleno estéticas */}
+                  {viewingQuotation.items.length < 10 && Array(10 - viewingQuotation.items.length).fill(0).map((_, i) => (
                     <TableRow key={`empty-${i}`} className="h-10 border-b border-slate-50/50">
                       <TableCell colSpan={4}></TableCell>
                     </TableRow>
@@ -217,65 +250,75 @@ export default function QuotationsPage() {
               </Table>
             </div>
 
-            <div className="mt-8 flex justify-end">
-              <div className="w-72 space-y-2 bg-slate-50 p-6 rounded-xl border border-slate-200 shadow-sm">
+            <div className="mt-8 flex justify-between items-end">
+              <div className="w-1/2 space-y-3">
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                  <p className="text-[10px] font-black uppercase text-red-600 tracking-widest flex items-center">
+                    <Flame className="h-3 w-3 mr-1" />
+                    NOTAS DE SERVICIO
+                  </p>
+                  <p className="text-[10px] text-slate-600 leading-relaxed font-bold">
+                    * Todos nuestros extintores cumplen con la norma NTP 350.043.<br/>
+                    * Garantía de 01 año por defecto de fabricación.<br/>
+                    * Entrega e instalación sin costo adicional en Lima.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="w-72 space-y-2 bg-slate-800 p-6 rounded-2xl shadow-xl transform translate-y-4">
                 <div className="flex justify-between text-[11px]">
-                  <span className="font-bold uppercase text-slate-500">Subtotal Operativo</span>
-                  <span className="font-bold text-slate-700">S/ {(viewingQuotation.subtotal || 0).toFixed(2)}</span>
+                  <span className="font-bold uppercase text-slate-400">SUBTOTAL</span>
+                  <span className="font-black text-white">S/ {(viewingQuotation.subtotal || 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-[11px]">
-                  <span className="font-bold uppercase text-slate-500">IGV (18%)</span>
-                  <span className="font-bold text-slate-700">S/ {(viewingQuotation.tax || 0).toFixed(2)}</span>
+                  <span className="font-bold uppercase text-slate-400">I.G.V. (18%)</span>
+                  <span className="font-black text-white">S/ {(viewingQuotation.tax || 0).toFixed(2)}</span>
                 </div>
-                <div className="h-px bg-slate-300 my-2"></div>
+                <div className="h-px bg-slate-700 my-2"></div>
                 <div className="flex justify-between items-center pt-1">
-                  <span className="font-black uppercase text-red-600 text-xs tracking-widest">TOTAL NETO</span>
-                  <span className="font-black text-red-600 text-xl tracking-tighter">S/ {(viewingQuotation.total || 0).toFixed(2)}</span>
+                  <span className="font-black uppercase text-red-500 text-sm tracking-widest">TOTAL NETO</span>
+                  <span className="font-black text-white text-2xl tracking-tighter">S/ {(viewingQuotation.total || 0).toFixed(2)}</span>
                 </div>
               </div>
             </div>
 
-            <div className="mt-12 grid grid-cols-2 gap-10">
-              <div className="space-y-2">
-                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">TÉRMINOS Y CONDICIONES</p>
-                <ul className="text-[9px] text-slate-500 space-y-1 font-bold italic">
-                  <li>• Vigencia de la cotización: 15 días calendario.</li>
-                  <li>• Los precios incluyen entrega a domicilio en Lima Metropolitana.</li>
-                  <li>• Forma de pago: Contado / Transferencia bancaria.</li>
-                  <li>• Todos los equipos cuentan con certificación y garantía.</li>
-                </ul>
+            <div className="mt-20 grid grid-cols-2 gap-20">
+              <div className="flex flex-col items-center">
+                <div className="w-48 h-px bg-slate-400 mb-2"></div>
+                <p className="text-[10px] font-black uppercase text-slate-400">ACEPTADO POR CLIENTE</p>
               </div>
-              <div className="flex flex-col items-center justify-end">
-                <div className="w-40 h-px bg-slate-400 mb-2"></div>
-                <p className="text-[10px] font-black uppercase text-primary">DPTO. DE VENTAS</p>
-                <p className="text-[9px] font-bold text-slate-400">Extintores Apeva SAC</p>
+              <div className="flex flex-col items-center">
+                <div className="w-48 h-px bg-red-600 mb-2"></div>
+                <p className="text-[10px] font-black uppercase text-red-600">DEPARTAMENTO TÉCNICO</p>
+                <p className="text-[9px] font-bold text-slate-500 italic">Extintores Apeva SAC</p>
               </div>
             </div>
           </div>
 
-          {/* Footer Membretado Amarillo (Full Width) */}
-          <div className="bg-[#ffdd00] py-6 px-10 no-print-bg">
-            <div className="flex flex-col items-center gap-2">
-              <div className="flex items-center justify-center gap-8 w-full max-w-4xl">
-                <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-800">
-                  <MapPin className="h-3.5 w-3.5 text-red-600" />
+          {/* Footer Oficial - Amarillo Apeva */}
+          <div className="bg-[#ffdd00] py-8 px-10 no-print-bg mt-auto border-t-4 border-red-600">
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex items-center justify-center gap-10 w-full">
+                <div className="flex items-center gap-3 text-[10px] font-black uppercase text-slate-900 bg-white/40 px-3 py-1.5 rounded-full border border-slate-900/10">
+                  <MapPin className="h-4 w-4 text-red-600" />
                   <span>Av. Naranjal 215 int A 06 Independencia - Lima</span>
                 </div>
-                <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-800">
-                  <Phone className="h-3.5 w-3.5 text-red-600" />
+                <div className="flex items-center gap-3 text-[10px] font-black uppercase text-slate-900 bg-white/40 px-3 py-1.5 rounded-full border border-slate-900/10">
+                  <Phone className="h-4 w-4 text-red-600" />
                   <span>933 261 752 / 918 790 212</span>
                 </div>
               </div>
-              <div className="flex items-center justify-center gap-8 w-full max-w-4xl">
-                <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-800">
-                  <Mail className="h-3.5 w-3.5 text-red-600" />
+              <div className="flex items-center justify-center gap-10 w-full">
+                <div className="flex items-center gap-3 text-[10px] font-black uppercase text-slate-900 bg-white/40 px-3 py-1.5 rounded-full border border-slate-900/10">
+                  <Mail className="h-4 w-4 text-red-600" />
                   <span className="lowercase">extintoresapeva@hotmail.com</span>
                 </div>
-                <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-800">
-                  <Globe className="h-3.5 w-3.5 text-red-600" />
+                <div className="flex items-center gap-3 text-[10px] font-black uppercase text-slate-900 bg-white/40 px-3 py-1.5 rounded-full border border-slate-900/10">
+                  <Globe className="h-4 w-4 text-red-600" />
                   <span className="lowercase">www.extintoresapeva.com</span>
                 </div>
               </div>
+              <p className="text-[9px] font-black text-red-700 tracking-[0.4em] mt-2 opacity-60">SEGURIDAD • GARANTÍA • CONFIANZA</p>
             </div>
           </div>
 
