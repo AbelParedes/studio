@@ -183,7 +183,7 @@ export default function QuotationsPage() {
           {/* CABECERA: LOGO IZQUIERDA, INFO DERECHA */}
           <div className="pt-12 px-12 pb-8 shrink-0 flex items-center justify-between">
             {/* Logo o Cabecera a la izquierda */}
-            <div className="relative h-20 w-56">
+            <div className="relative h-24 w-64">
               {(company?.headerUrl || company?.logoUrl) ? (
                 <Image 
                   src={company.headerUrl || company.logoUrl} 
@@ -201,14 +201,14 @@ export default function QuotationsPage() {
             
             {/* Info y Píldora a la derecha */}
             <div className="text-right space-y-1">
-              <h1 className="text-sm font-black text-slate-900 uppercase tracking-tight">
-                {company?.name || "SERVIFUMIGA PRO"}
+              <h1 className="text-sm font-black text-slate-900 uppercase tracking-tight leading-none">
+                {company?.name || "EXTINTORES APEVA"}
               </h1>
               <div className="flex flex-col items-end">
                 <span className="text-[10px] font-bold text-slate-600">RUC: {company?.taxId || "---"}</span>
-                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">COTIZACIÓN</span>
-                <div className="mt-2 bg-[#1a2b3c] text-white px-6 py-2 rounded-md font-black text-[12px] shadow-md">
-                  N° {viewingQuotation.quotationNumber}
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-2">COTIZACIÓN</span>
+                <div className="mt-2 bg-[#1a2b3c] text-white px-6 py-2 rounded-md font-black text-[12px] shadow-md border-b-2 border-[#d9534f]">
+                   {viewingQuotation.quotationNumber}
                 </div>
               </div>
             </div>
@@ -220,10 +220,10 @@ export default function QuotationsPage() {
               <div className="space-y-3">
                 <div className="flex items-center gap-4">
                   <h3 className="text-[10px] font-black text-slate-800 uppercase shrink-0">DATOS DEL CLIENTE</h3>
-                  <div className="h-px bg-slate-200 w-full"></div>
+                  <div className="h-[2px] bg-[#d9534f] w-full"></div>
                 </div>
-                <div className="text-[11px] space-y-2 pt-2">
-                  <p className="font-black uppercase text-slate-900 text-sm">{client?.name || "---"}</p>
+                <div className="text-[11px] space-y-2 pt-1">
+                  <p className="font-black uppercase text-slate-900 text-[12px]">{client?.name || "---"}</p>
                   <p className="text-slate-600 font-bold uppercase"><span className="text-slate-400 font-normal">DNI / RUC:</span> {client?.taxId || "---"}</p>
                   <p className="text-slate-600 font-bold uppercase"><span className="text-slate-400 font-normal">DIRECCIÓN:</span> {client?.address || "---"}</p>
                 </div>
@@ -231,9 +231,9 @@ export default function QuotationsPage() {
               <div className="space-y-3">
                 <div className="flex items-center gap-4">
                   <h3 className="text-[10px] font-black text-slate-800 uppercase shrink-0">DETALLE DE EMISIÓN</h3>
-                  <div className="h-px bg-slate-200 w-full"></div>
+                  <div className="h-[2px] bg-[#d9534f] w-full"></div>
                 </div>
-                <div className="text-[11px] space-y-2 pt-2 text-right">
+                <div className="text-[11px] space-y-2 pt-1 text-right">
                   <p className="font-black text-slate-900 uppercase"><span className="text-slate-400 font-normal">FECHA:</span> {viewingQuotation.date || "---"}</p>
                   <p className="text-slate-600 uppercase font-bold"><span className="text-slate-400 font-normal">VALIDEZ:</span> 15 DÍAS</p>
                   <p className="text-slate-600 uppercase font-bold"><span className="text-slate-400 font-normal">MONEDA:</span> SOLES (S/.)</p>
@@ -244,14 +244,14 @@ export default function QuotationsPage() {
             {/* TABLA DE PRODUCTOS / SERVICIOS */}
             <div className="space-y-3 pt-4">
               <h3 className="text-[10px] font-black text-slate-800 uppercase flex items-center gap-2">
-                <FileText className="h-4 w-4 text-primary" /> SERVICIOS Y EQUIPOS
+                <FileText className="h-4 w-4 text-[#d9534f]" /> DETALLE DE REQUERIMIENTO
               </h3>
               <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
-                <table className="w-full text-[11px] border-collapse">
+                <table className="w-full text-[10px] border-collapse">
                   <thead className="bg-[#1a2b3c] text-white">
                     <tr>
                       <th className="p-3 text-center font-black uppercase w-16 border-r border-white/10">CANT.</th>
-                      <th className="p-3 text-left font-black uppercase">DESCRIPCIÓN DEL SERVICIO</th>
+                      <th className="p-3 text-left font-black uppercase">DESCRIPCIÓN DEL SERVICIO / PRODUCTO</th>
                       <th className="p-3 text-right font-black uppercase w-28 border-l border-white/10">UNIT. (S/.)</th>
                       <th className="p-3 text-right font-black uppercase w-28 border-l border-white/10">TOTAL (S/.)</th>
                     </tr>
@@ -266,8 +266,8 @@ export default function QuotationsPage() {
                       </tr>
                     ))}
                     {/* FILAS VACÍAS PARA RELLENAR */}
-                    {Array.from({ length: Math.max(0, 10 - (viewingQuotation.items?.length || 0)) }).map((_, i) => (
-                      <tr key={`empty-${i}`} className="h-10 border-b border-slate-50">
+                    {Array.from({ length: Math.max(0, 12 - (viewingQuotation.items?.length || 0)) }).map((_, i) => (
+                      <tr key={`empty-${i}`} className="h-9 border-b border-slate-50">
                         <td className="border-r border-slate-50"></td>
                         <td></td>
                         <td className="border-l border-slate-50"></td>
@@ -281,18 +281,18 @@ export default function QuotationsPage() {
 
             {/* TOTALES */}
             <div className="flex justify-end pt-6">
-              <div className="w-72 space-y-2 pt-2">
-                <div className="flex justify-between text-[11px] px-3 font-bold">
+              <div className="w-64 space-y-1.5 pt-2">
+                <div className="flex justify-between text-[10px] px-3 font-bold">
                   <span className="uppercase text-slate-400">SUBTOTAL</span>
                   <span className="text-slate-900">S/. {(Number(viewingQuotation.subtotal || 0)).toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-[11px] px-3 font-bold">
+                <div className="flex justify-between text-[10px] px-3 font-bold">
                   <span className="uppercase text-slate-400">I.G.V. (18%)</span>
                   <span className="text-slate-900">S/. {(Number(viewingQuotation.tax || 0)).toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-[13px] bg-[#1a2b3c] text-white p-4 rounded-xl font-black mt-4 shadow-lg">
+                <div className="flex justify-between text-[12px] bg-[#1a2b3c] text-white p-3.5 rounded-xl font-black mt-3 shadow-md border-r-4 border-[#d9534f]">
                   <span className="uppercase tracking-wider">TOTAL NETO</span>
-                  <span className="text-lg">S/. {(Number(viewingQuotation.total || 0)).toFixed(2)}</span>
+                  <span className="text-base">S/. {(Number(viewingQuotation.total || 0)).toFixed(2)}</span>
                 </div>
               </div>
             </div>
@@ -300,7 +300,7 @@ export default function QuotationsPage() {
 
           {/* PIE DE PÁGINA GOLD */}
           <div 
-            className="mt-auto shrink-0 flex flex-col items-center justify-center relative overflow-hidden print-gold-bg py-6"
+            className="mt-auto shrink-0 flex flex-col items-center justify-center relative overflow-hidden print-gold-bg py-4"
             style={{ 
               backgroundColor: 'rgb(255, 215, 0)',
               WebkitPrintColorAdjust: 'exact',
@@ -308,19 +308,19 @@ export default function QuotationsPage() {
             }}
           >
             {company?.footerUrl ? (
-              <div className="relative w-full h-[80px] flex items-center justify-center px-12">
+              <div className="relative w-full h-[70px] flex items-center justify-center px-12">
                 <Image src={company.footerUrl} alt="Footer Membrete" fill className="object-contain" unoptimized />
               </div>
             ) : (
-              <div className="px-12 w-full flex flex-col items-center text-center gap-2">
-                <div className="flex flex-wrap justify-center gap-x-12 gap-y-1 text-[10px] font-black text-slate-900 uppercase">
-                  <p className="flex items-center gap-2"><MapPin className="h-4 w-4" /> {company?.address || "LIMA, PERÚ"}</p>
-                  <p className="flex items-center gap-2"><Phone className="h-4 w-4" /> {company?.phone || "CENTRAL DE SERVICIOS"}</p>
-                  <p className="flex items-center gap-2"><Mail className="h-4 w-4" /> {company?.email || "EMAIL DE CONTACTO"}</p>
+              <div className="px-12 w-full flex flex-col items-center text-center gap-1.5">
+                <div className="flex flex-wrap justify-center gap-x-8 gap-y-1 text-[9px] font-black text-slate-900 uppercase">
+                  <p className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5 text-slate-800" /> {company?.address || "LIMA, PERÚ"}</p>
+                  <p className="flex items-center gap-2"><Phone className="h-3.5 w-3.5 text-slate-800" /> {company?.phone || "CENTRAL DE SERVICIOS"}</p>
+                  <p className="flex items-center gap-2"><Mail className="h-3.5 w-3.5 text-slate-800" /> {company?.email || "EMAIL DE CONTACTO"}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] font-black text-slate-900 uppercase tracking-widest opacity-40">
-                    SISTEMA DE GESTIÓN © {currentYear} | {company?.name || "SERVIFUMIGA PRO"}
+                  <p className="text-[8px] font-black text-slate-900 uppercase tracking-widest opacity-50">
+                    SISTEMA DE GESTIÓN CORPORATIVO © {currentYear} | {company?.name || "EXTINTORES APEVA"}
                   </p>
                 </div>
               </div>
@@ -362,8 +362,8 @@ export default function QuotationsPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase text-primary">Gestión de Ventas</h2>
-          <p className="text-muted-foreground text-sm italic font-medium">Genere cotizaciones oficiales con diseño corporativo.</p>
+          <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase text-primary">Gestión Comercial</h2>
+          <p className="text-muted-foreground text-sm italic font-medium">Emisión de cotizaciones oficiales con formato industrial.</p>
         </div>
         
         <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) { setEditingQuotation(null); setItems([]); } }}>
@@ -375,8 +375,8 @@ export default function QuotationsPage() {
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <form onSubmit={handleSaveQuotation}>
               <DialogHeader>
-                <DialogTitle className="uppercase font-black text-primary text-xl tracking-tight">Emisión de Cotización</DialogTitle>
-                <DialogDescription className="text-xs font-bold text-slate-500 uppercase">Reinicia correlativo anual automáticamente.</DialogDescription>
+                <DialogTitle className="uppercase font-black text-primary text-xl tracking-tight">Registro de Cotización</DialogTitle>
+                <DialogDescription className="text-xs font-bold text-slate-500 uppercase">Numeración automática correlativa por año.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-6 py-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -394,7 +394,7 @@ export default function QuotationsPage() {
                     </Select>
                   </div>
                   <div className="grid gap-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-500">N° Cotización</Label>
+                    <Label className="text-[10px] font-black uppercase text-slate-500">Serie y Número</Label>
                     <Input name="number" defaultValue={editingQuotation?.quotationNumber || suggestedQuotationNumber} placeholder="COT-0001-2025" className="h-10 uppercase font-mono font-bold" />
                   </div>
                   <div className="grid gap-2">
@@ -414,9 +414,9 @@ export default function QuotationsPage() {
 
                 <div className="space-y-4">
                   <div className="flex items-center justify-between border-b pb-2">
-                    <Label className="text-[11px] font-black uppercase text-primary tracking-wider">Detalle de Servicios</Label>
+                    <Label className="text-[11px] font-black uppercase text-primary tracking-wider">Líneas de Detalle</Label>
                     <Button type="button" variant="secondary" size="sm" onClick={handleAddItem} className="h-8 text-[10px] font-bold uppercase bg-slate-900 text-white hover:bg-slate-800">
-                      <Plus className="h-3 w-3 mr-2" /> Agregar Item
+                      <Plus className="h-3 w-3 mr-2" /> Añadir Concepto
                     </Button>
                   </div>
                   
@@ -428,7 +428,7 @@ export default function QuotationsPage() {
                           <Input 
                             value={item.description} 
                             onChange={(e) => handleItemChange(idx, "description", e.target.value)}
-                            placeholder="Ej. Recarga de Extintor PQS..."
+                            placeholder="Ej. Mantenimiento Preventivo..."
                             className="h-10 text-xs font-bold"
                             required
                           />
@@ -445,7 +445,7 @@ export default function QuotationsPage() {
                           />
                         </div>
                         <div className="col-span-6 md:col-span-3 grid gap-1.5">
-                          <Label className="text-[9px] font-black uppercase text-slate-500">Precio Unitario (S/)</Label>
+                          <Label className="text-[9px] font-black uppercase text-slate-500">P. Unitario (S/)</Label>
                           <Input 
                             type="number"
                             step="0.01"
@@ -465,9 +465,9 @@ export default function QuotationsPage() {
                   </div>
                 </div>
 
-                <div className="bg-primary text-white p-6 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4 shadow-xl">
+                <div className="bg-[#1a2b3c] text-white p-6 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4 shadow-xl border-b-4 border-[#d9534f]">
                   <div className="text-center md:text-left">
-                    <p className="text-[10px] font-black uppercase opacity-60 mb-1">Total a Pagar</p>
+                    <p className="text-[10px] font-black uppercase opacity-60 mb-1">Inversión Total</p>
                     <p className="text-3xl font-black text-white tracking-tighter">
                       S/. {(items.reduce((acc, i) => acc + (Number(i.quantity || 0) * Number(i.unitPrice || 0)), 0) * 1.18).toFixed(2)}
                     </p>
@@ -480,7 +480,7 @@ export default function QuotationsPage() {
               </div>
               <DialogFooter className="border-t pt-6">
                 <Button type="submit" className="w-full h-12 uppercase font-black text-xs tracking-widest bg-slate-900 hover:bg-black">
-                  {editingQuotation ? "Actualizar Cotización" : "Generar Cotización"}
+                  {editingQuotation ? "Actualizar Documento" : "Emitir Cotización"}
                 </Button>
               </DialogFooter>
             </form>
@@ -509,9 +509,9 @@ export default function QuotationsPage() {
             <Table className="dense-table">
               <TableHeader className="bg-primary hover:bg-primary">
                 <TableRow className="border-none">
-                  <TableHead className="text-white h-12 font-black uppercase text-[10px]">N° Cotización</TableHead>
+                  <TableHead className="text-white h-12 font-black uppercase text-[10px]">Identificador</TableHead>
                   <TableHead className="text-white h-12 font-black uppercase text-[10px]">Cliente</TableHead>
-                  <TableHead className="text-white h-12 font-black uppercase text-[10px] text-right pr-6">Total (S/.)</TableHead>
+                  <TableHead className="text-white h-12 font-black uppercase text-[10px] text-right pr-6">Total Neto (S/.)</TableHead>
                   <TableHead className="text-white h-12 font-black uppercase text-[10px]">Estado</TableHead>
                   <TableHead className="text-white h-12 text-right pr-6 font-black uppercase text-[10px]">Acciones</TableHead>
                 </TableRow>
