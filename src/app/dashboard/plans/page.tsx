@@ -245,7 +245,11 @@ export default function PlansPage() {
                     {isCurrent ? (
                       <><ShieldCheck className="mr-2 h-4 w-4" /> Mi Suscripción</>
                     ) : (
-                      <a href="mailto:soporte@servifumiga.pro?subject=Solicitud de Mejora de Plan">
+                      <a 
+                        href={`https://wa.me/51918790212?text=Hola,%20deseo%20solicitar%20una%20mejora%20de%20mi%20plan%20en%20Servifumiga%20Pro.%20Me%20interesa%20el%20plan%20${plan.name}.`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                      >
                         <MessageSquare className="mr-2 h-4 w-4" /> Solicitar Mejora
                       </a>
                     )}
@@ -270,8 +274,18 @@ export default function PlansPage() {
               </p>
             </div>
           </div>
-          <Button variant="outline" className="h-14 border-2 border-white text-white hover:bg-white hover:text-primary font-black uppercase text-xs tracking-widest px-10 transition-all rounded-xl">
-            Hablar con Soporte
+          <Button 
+            variant="outline" 
+            className="h-14 border-2 border-white text-white hover:bg-white hover:text-primary font-black uppercase text-xs tracking-widest px-10 transition-all rounded-xl"
+            asChild
+          >
+            <a 
+              href="https://wa.me/51918790212?text=Hola,%20necesito%20soporte%20para%20cambiar%20mi%20plan%20en%20Servifumiga%20Pro." 
+              target="_blank" 
+              rel="noopener noreferrer"
+            >
+              Hablar con Soporte
+            </a>
           </Button>
         </div>
       )}
