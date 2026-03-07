@@ -5,7 +5,7 @@ import { useState } from "react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Check, ShieldCheck, Zap, Crown, Building2, Star, Loader2, ArrowRight, Info } from "lucide-react"
+import { Check, ShieldCheck, Zap, Crown, Building2, Star, Loader2, ArrowRight, Info, MessageSquare } from "lucide-react"
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase"
 import { collection, query, where, limit, doc, updateDoc } from "firebase/firestore"
 import { cn } from "@/lib/utils"
@@ -97,9 +97,23 @@ export default function PlansPage() {
   [db, profile?.companyId])
   const { data: company, isLoading: loadingCompany } = useDoc(companyRef)
 
-  const currentPlan = company?.plan || "Básico"
+  const roleRef = useMemoFirebase(() => 
+    profile?.roleId ? doc(db, "system_roles", profile.roleId) : null,
+  [db, profile?.roleId])
+  const { data: roleData } = useDoc(roleRef)
+
+  const isSuperAdmin = roleData?.title === "Super Administrador" || roleData?.permissions?.manage_saas === true
+  const currentPlan = company?.plan || "Demo"
 
   const handleUpdatePlan = async (planId: string) => {
+    if (!isSuperAdmin) {
+      toast({ 
+        title: "Acción no permitida", 
+        description: "Solo el SaaS Master puede realizar migraciones de planes. Contacte a soporte." 
+      })
+      return
+    }
+
     if (!profile?.companyId) return
     
     setIsUpdating(planId)
@@ -110,7 +124,7 @@ export default function PlansPage() {
       })
       toast({ 
         title: "Suscripción Actualizada", 
-        description: `Tu organización ha sido migrada al plan ${planId} exitosamente.` 
+        description: `La organización ha sido migrada al plan ${planId} exitosamente.` 
       })
     } catch (error) {
       toast({ 
@@ -137,12 +151,14 @@ export default function PlansPage() {
       <div className="text-center space-y-4">
         <div className="flex justify-center mb-4">
           <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 font-black uppercase text-[10px] tracking-widest py-1 px-4">
-            Gestión de Suscripciones SaaS
+            Catálogo de Servicios SaaS
           </Badge>
         </div>
         <h2 className="text-3xl font-black uppercase tracking-tighter text-primary">Planes de Alto Rendimiento</h2>
         <p className="text-muted-foreground max-w-2xl mx-auto text-sm font-medium uppercase tracking-wider">
-          Seleccione el nivel operativo que mejor se adapte a la escala de su organización.
+          {isSuperAdmin 
+            ? "Gestión maestra de planes para la organización seleccionada." 
+            : "Explore las capacidades operativas de cada nivel de suscripción."}
         </p>
       </div>
 
@@ -198,46 +214,67 @@ export default function PlansPage() {
               </CardContent>
               
               <CardFooter className="pt-8 pb-8">
-                <Button 
-                  onClick={() => handleUpdatePlan(plan.id)}
-                  className={cn(
-                    "w-full h-12 font-black uppercase text-xs tracking-widest shadow-xl transition-all",
-                    isCurrent 
-                      ? "bg-status-success hover:bg-status-success/90 cursor-default" 
-                      : "bg-[#1c1c1c] hover:bg-primary text-white"
-                  )}
-                  disabled={isCurrent || !!isUpdating}
-                >
-                  {updatingThis ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : isCurrent ? (
-                    <><ShieldCheck className="mr-2 h-4 w-4" /> Suscripción Activa</>
-                  ) : (
-                    <><ArrowRight className="mr-2 h-4 w-4" /> Activar este Plan</>
-                  )}
-                </Button>
+                {isSuperAdmin ? (
+                  <Button 
+                    onClick={() => handleUpdatePlan(plan.id)}
+                    className={cn(
+                      "w-full h-12 font-black uppercase text-xs tracking-widest shadow-xl transition-all",
+                      isCurrent 
+                        ? "bg-status-success hover:bg-status-success/90 cursor-default" 
+                        : "bg-[#1c1c1c] hover:bg-primary text-white"
+                    )}
+                    disabled={isCurrent || !!isUpdating}
+                  >
+                    {updatingThis ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : isCurrent ? (
+                      <><ShieldCheck className="mr-2 h-4 w-4" /> Plan Activo</>
+                    ) : (
+                      <><ArrowRight className="mr-2 h-4 w-4" /> Aplicar Plan</>
+                    )}
+                  </Button>
+                ) : (
+                  <Button 
+                    variant={isCurrent ? "default" : "outline"}
+                    className={cn(
+                      "w-full h-12 font-black uppercase text-xs tracking-widest",
+                      isCurrent && "bg-status-success text-white hover:bg-status-success pointer-events-none"
+                    )}
+                    asChild={!isCurrent}
+                  >
+                    {isCurrent ? (
+                      <><ShieldCheck className="mr-2 h-4 w-4" /> Mi Suscripción</>
+                    ) : (
+                      <a href="mailto:soporte@servifumiga.pro?subject=Solicitud de Mejora de Plan">
+                        <MessageSquare className="mr-2 h-4 w-4" /> Solicitar Mejora
+                      </a>
+                    )}
+                  </Button>
+                )}
               </CardFooter>
             </Card>
           )
         })}
       </div>
 
-      <div className="max-w-4xl mx-auto bg-primary text-white p-10 rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl border-b-[8px] border-accent">
-        <div className="flex items-center gap-6">
-          <div className="h-20 w-20 bg-white/10 rounded-3xl flex items-center justify-center shrink-0 border border-white/20 shadow-lg">
-            <Building2 className="h-10 w-10 text-accent" />
+      {!isSuperAdmin && (
+        <div className="max-w-4xl mx-auto bg-primary text-white p-10 rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl border-b-[8px] border-accent">
+          <div className="flex items-center gap-6">
+            <div className="h-20 w-20 bg-white/10 rounded-3xl flex items-center justify-center shrink-0 border border-white/20 shadow-lg">
+              <Building2 className="h-10 w-10 text-accent" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-2xl font-black uppercase tracking-tighter">¿Desea cambiar su plan?</h3>
+              <p className="text-sm opacity-80 font-medium leading-relaxed max-w-md uppercase text-[11px] font-bold tracking-wider">
+                Las migraciones de suscripción son gestionadas por el equipo de Servifumiga Pro para garantizar la integridad de sus datos.
+              </p>
+            </div>
           </div>
-          <div className="space-y-1">
-            <h3 className="text-2xl font-black uppercase tracking-tighter">¿Necesitas una infraestructura a medida?</h3>
-            <p className="text-sm opacity-80 font-medium leading-relaxed max-w-md uppercase text-[11px] font-bold tracking-wider">
-              Ofrecemos despliegues multi-instancia para corporativos con más de 50 técnicos y operaciones a nivel nacional.
-            </p>
-          </div>
+          <Button variant="outline" className="h-14 border-2 border-white text-white hover:bg-white hover:text-primary font-black uppercase text-xs tracking-widest px-10 transition-all rounded-xl">
+            Hablar con Soporte
+          </Button>
         </div>
-        <Button variant="outline" className="h-14 border-2 border-white text-white hover:bg-white hover:text-primary font-black uppercase text-xs tracking-widest px-10 transition-all rounded-xl">
-          Hablar con Ventas
-        </Button>
-      </div>
+      )}
     </div>
   )
 }
