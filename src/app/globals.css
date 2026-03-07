@@ -90,7 +90,6 @@
     @apply text-[12px] py-1;
   }
   
-  /* Custom scrollbar for dark mode */
   .dark ::-webkit-scrollbar {
     width: 10px;
     height: 10px;
@@ -107,12 +106,20 @@
   }
 }
 
-/* Estilos específicos para impresión */
 @media print {
-  body {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  html, body {
+    width: 210mm;
+    height: 297mm;
+    margin: 0 !important;
+    padding: 0 !important;
     background-color: white !important;
-    print-color-adjust: exact;
-    -webkit-print-color-adjust: exact;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   aside, 
@@ -127,15 +134,30 @@
     padding: 0 !important;
     margin: 0 !important;
     background: white !important;
+    overflow: visible !important;
   }
 
   .flex-1 {
     overflow: visible !important;
   }
 
-  /* Asegurar que el pie de página mantenga su color de fondo al imprimir */
-  [style*="background-color"] {
-    print-color-adjust: exact !important;
+  /* Forzar colores de fondo y bordes en todos los elementos */
+  * {
     -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .shadow-2xl, .shadow-md, .shadow-sm {
+    box-shadow: none !important;
+  }
+
+  /* Asegurar que el contenedor principal de la proforma ocupe toda la hoja */
+  .proforma-container {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 297mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
   }
 }
