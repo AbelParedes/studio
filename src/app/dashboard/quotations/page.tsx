@@ -130,11 +130,11 @@ export default function QuotationsPage() {
 
   const openEdit = (q: any) => {
     setEditingQuotation(q)
-    setItems(q.items.map((i: any) => ({ 
+    setItems(q.items?.map((i: any) => ({ 
       description: i.description, 
       quantity: i.quantity, 
       unitPrice: i.unitPrice 
-    })))
+    })) || [])
     setIsAdding(true)
   }
 
@@ -161,14 +161,14 @@ export default function QuotationsPage() {
           </div>
         </div>
 
-        <div className="bg-white p-0 shadow-2xl mx-auto print-container max-w-[21cm] min-h-[29.7cm] flex flex-col relative overflow-hidden text-slate-900 border border-slate-200" id="quotation-print-area">
+        <div className="bg-white p-0 shadow-2xl mx-auto print-container w-[210mm] h-[297mm] flex flex-col relative overflow-hidden text-slate-900 border border-slate-200" id="quotation-print-area">
           
           {/* HEADER DINÁMICO */}
           <div className="pt-8 px-10 pb-4">
             <div className="flex justify-between items-start">
               <div className="relative h-28 w-80 shrink-0">
                 <Image 
-                  src={headerSrc} 
+                  src={headerSrc || defaultLogo} 
                   alt="Cabecera Corporativa" 
                   fill 
                   className="object-contain"
@@ -223,7 +223,7 @@ export default function QuotationsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {viewingQuotation.items.map((item: any, idx: number) => (
+                  {viewingQuotation.items?.map((item: any, idx: number) => (
                     <TableRow key={idx} className="border-b border-slate-100 last:border-none hover:bg-slate-50/50">
                       <TableCell className="font-bold uppercase text-[11px] py-5 pl-6 text-slate-700">
                         <div className="flex items-center gap-3">
@@ -234,11 +234,6 @@ export default function QuotationsPage() {
                       <TableCell className="text-center font-black text-[11px] py-5">{item.quantity}</TableCell>
                       <TableCell className="text-right font-bold text-[11px] py-5">{(Number(item.unitPrice) || 0).toFixed(2)}</TableCell>
                       <TableCell className="text-right font-black text-[11px] py-5 text-red-600 pr-6">{(Number(item.total) || 0).toFixed(2)}</TableCell>
-                    </TableRow>
-                  ))}
-                  {Array.from({ length: Math.max(0, 8 - (viewingQuotation.items?.length || 0)) }).map((_, i) => (
-                    <TableRow key={`empty-${i}`} className="border-b border-slate-50 border-none h-12">
-                      <TableCell colSpan={4}></TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -291,8 +286,8 @@ export default function QuotationsPage() {
             </div>
           </div>
 
-          {/* PIE DE PÁGINA DINÁMICO */}
-          <div className={cn("mt-auto print-footer", footerSrc ? "p-0" : "bg-[#ffdd00] py-10 px-10 border-t-[6px] border-red-600")}>
+          {/* PIE DE PÁGINA DINÁMICO PINNED AT BOTTOM */}
+          <div className={cn("mt-auto print-footer w-full", footerSrc ? "p-0" : "bg-[#ffdd00] py-10 px-10 border-t-[6px] border-red-600")}>
             {footerSrc ? (
               <div className="relative h-40 w-full">
                 <Image src={footerSrc} alt="Footer Membrete" fill className="object-cover" unoptimized />
@@ -327,7 +322,7 @@ export default function QuotationsPage() {
               body * {
                 visibility: hidden;
               }
-              header, aside, .no-print, nav {
+              header, aside, .no-print, nav, [role="dialog"], .toaster {
                 display: none !important;
               }
               #quotation-print-area, #quotation-print-area * {
@@ -348,11 +343,15 @@ export default function QuotationsPage() {
                 print-color-adjust: exact;
                 display: flex;
                 flex-direction: column;
+                z-index: 9999;
               }
               .print-footer {
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
                 background-color: #ffdd00 !important;
+                position: absolute;
+                bottom: 0;
+                left: 0;
               }
               @page {
                 size: A4;
@@ -576,3 +575,4 @@ export default function QuotationsPage() {
     </div>
   )
 }
+    
