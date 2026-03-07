@@ -65,7 +65,7 @@ export default function CompaniesPage() {
   const [isSwitching, setIsSwitching] = useState<string | null>(null)
   const [isStatusChanging, setIsStatusChanging] = useState<string | null>(null)
 
-  // Super Admin Check
+  // Declarar todos los hooks al inicio para evitar errores de orden
   const userProfileQuery = useMemoFirebase(() => 
     user?.email ? query(collection(db, "company_users"), where("email", "==", user.email), limit(1)) : null,
   [db, user?.email])
@@ -236,6 +236,7 @@ export default function CompaniesPage() {
                         <SelectValue placeholder="Seleccione Plan" />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="Demo">Plan Demo</SelectItem>
                         <SelectItem value="Básico">Plan Básico</SelectItem>
                         <SelectItem value="Profesional">Plan Profesional</SelectItem>
                         <SelectItem value="Empresarial">Plan Empresarial</SelectItem>

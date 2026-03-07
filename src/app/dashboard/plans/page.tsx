@@ -5,13 +5,29 @@ import { useState } from "react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Check, ShieldCheck, Zap, Crown, Building2, Star, Loader2, ArrowRight } from "lucide-react"
+import { Check, ShieldCheck, Zap, Crown, Building2, Star, Loader2, ArrowRight, Info } from "lucide-react"
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase"
 import { collection, query, where, limit, doc, updateDoc } from "firebase/firestore"
 import { cn } from "@/lib/utils"
 import { toast } from "@/hooks/use-toast"
 
 const PLANS = [
+  {
+    id: "Demo",
+    name: "Demo",
+    price: "S/ 0",
+    description: "Ideal para conocer la plataforma y sus funciones básicas sin costo.",
+    features: [
+      "Hasta 10 Clientes",
+      "1 Usuario",
+      "Gestión de Extintores",
+      "Reportes Limitados",
+      "Vigencia por 15 días"
+    ],
+    icon: Info,
+    color: "text-slate-400",
+    bgColor: "bg-slate-50"
+  },
   {
     id: "Básico",
     name: "Básico",
@@ -130,7 +146,7 @@ export default function PlansPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto px-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto px-4">
         {PLANS.map((plan) => {
           const isCurrent = plan.id === currentPlan
           const updatingThis = isUpdating === plan.id
