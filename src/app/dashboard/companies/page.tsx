@@ -23,7 +23,8 @@ import {
   Ban,
   Activity,
   Check,
-  AlertTriangle
+  AlertTriangle,
+  Globe
 } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, useUser, useDoc } from "@/firebase"
 import { collection, doc, query, where, getDocs, updateDoc, limit, writeBatch } from "firebase/firestore"
@@ -64,7 +65,7 @@ export default function CompaniesPage() {
   const [isSwitching, setIsSwitching] = useState<string | null>(null)
   const [isStatusChanging, setIsStatusChanging] = useState<string | null>(null)
 
-  // Verificación de Super Admin
+  // Super Admin Check
   const userProfileQuery = useMemoFirebase(() => 
     user?.email ? query(collection(db, "company_users"), where("email", "==", user.email), limit(1)) : null,
   [db, user?.email])
@@ -74,16 +75,14 @@ export default function CompaniesPage() {
   const roleRef = useMemoFirebase(() => profile?.roleId ? doc(db, "system_roles", profile.roleId) : null, [db, profile?.roleId])
   const { data: roleData, isLoading: loadingRole } = useDoc(roleRef)
 
-  // Cargar todas las empresas
-  const companiesRef = useMemoFirebase(() => collection(db, "companies"), [db])
-  const { data: companies, isLoading } = useCollection(companiesRef)
+  const isSuperAdmin = roleData?.title === "Super Administrador" || roleData?.permissions?.manage_saas === true
 
   useEffect(() => {
-    if (!loadingProfile && !loadingRole && roleData && roleData.title !== "Administrador") {
-      toast({ variant: "destructive", title: "Acceso denegado" })
+    if (!loadingProfile && !loadingRole && roleData && !isSuperAdmin) {
+      toast({ variant: "destructive", title: "Acceso denegado", description: "Requiere perfil Super Administrador." })
       router.push("/dashboard")
     }
-  }, [roleData, loadingProfile, loadingRole, router])
+  }, [roleData, loadingProfile, loadingRole, router, isSuperAdmin])
 
   if (loadingProfile || loadingRole || !roleData) {
     return (
@@ -116,7 +115,7 @@ export default function CompaniesPage() {
       toast({ title: "Organización actualizada" })
     } else {
       const newId = crypto.randomUUID()
-      addDocumentNonBlocking(companiesRef, { ...companyData, id: newId, createdAt: new Date().toISOString() })
+      addDocumentNonBlocking(collection(db, "companies"), { ...companyData, id: newId, createdAt: new Date().toISOString() })
       toast({ title: "Empresa SaaS creada" })
     }
 
@@ -144,16 +143,11 @@ export default function CompaniesPage() {
     setIsStatusChanging(companyId)
     try {
       const batch = writeBatch(db)
-      
-      // 1. Activar Empresa
       batch.update(doc(db, "companies", companyId), { status: "Active" })
-      
-      // 2. Activar todos los usuarios de esa empresa
       const usersSnapshot = await getDocs(query(collection(db, "company_users"), where("companyId", "==", companyId)))
       usersSnapshot.docs.forEach((userDoc) => {
         batch.update(userDoc.ref, { status: "Active" })
       })
-
       await batch.commit()
       toast({ title: "Organización Aprobada", description: "La empresa y sus usuarios ya pueden acceder." })
     } catch (error) {
@@ -165,7 +159,7 @@ export default function CompaniesPage() {
 
   const handleDeleteCompany = (id: string) => {
     deleteDocumentNonBlocking(doc(db, "companies", id))
-    toast({ variant: "destructive", title: "Organización eliminada", description: "Se ha removido el registro de la plataforma." })
+    toast({ variant: "destructive", title: "Organización eliminada" })
   }
 
   const handleSwitchCompany = async (companyId: string) => {
@@ -190,6 +184,9 @@ export default function CompaniesPage() {
     setIsAdding(true)
   }
 
+  const companiesRef = useMemoFirebase(() => collection(db, "companies"), [db])
+  const { data: companies } = useCollection(companiesRef)
+
   const filteredCompanies = companies?.filter(c => 
     c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.taxId?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -198,27 +195,32 @@ export default function CompaniesPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase">Suscripciones y Planes Maestro</h2>
-          <p className="text-muted-foreground text-sm">Control total sobre las organizaciones en la red Servifumiga Pro.</p>
+        <div className="flex items-center gap-3">
+          <div className="h-12 w-12 bg-accent rounded-2xl flex items-center justify-center text-white shadow-lg">
+            <Globe className="h-7 w-7" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase">Suscripciones y Planes SaaS</h2>
+            <p className="text-muted-foreground text-sm">Control centralizado de organizaciones y despliegue multi-instancia.</p>
+          </div>
         </div>
         
         <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) setEditingCompany(null); }}>
           <DialogTrigger asChild>
-            <Button className="bg-primary text-white h-9">
+            <Button className="bg-accent text-white h-10 font-black uppercase text-xs tracking-widest shadow-xl">
               <Plus className="mr-2 h-4 w-4" /> Nueva Organización
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <form onSubmit={handleSaveCompany}>
               <DialogHeader>
-                <DialogTitle>Configuración de Organización</DialogTitle>
-                <DialogDescription>Defina el plan y los parámetros operativos de la nueva empresa.</DialogDescription>
+                <DialogTitle className="uppercase font-black text-accent">Configuración SaaS</DialogTitle>
+                <DialogDescription className="text-xs uppercase font-bold">Defina el plan y los parámetros operativos de la nueva empresa.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="name" className="text-xs font-bold uppercase">Nombre</Label>
+                    <Label htmlFor="name" className="text-xs font-bold uppercase">Nombre Comercial</Label>
                     <Input id="name" name="name" defaultValue={editingCompany?.name} required />
                   </div>
                   <div className="grid gap-2">
@@ -260,7 +262,7 @@ export default function CompaniesPage() {
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit" className="w-full uppercase font-bold text-xs">{editingCompany ? "Actualizar Datos" : "Crear Empresa SaaS"}</Button>
+                <Button type="submit" className="w-full uppercase font-bold text-xs bg-accent text-white h-12 shadow-lg">{editingCompany ? "Actualizar Datos" : "Desplegar Empresa SaaS"}</Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -273,7 +275,7 @@ export default function CompaniesPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
               placeholder="Buscar por nombre o RUC..." 
-              className="pl-9 h-9 text-xs" 
+              className="pl-9 h-9 text-xs font-bold uppercase" 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -281,12 +283,12 @@ export default function CompaniesPage() {
         </CardHeader>
         <CardContent className="p-0">
           <Table className="dense-table">
-            <TableHeader className="bg-primary">
+            <TableHeader className="bg-[#1c1c1c]">
               <TableRow>
-                <TableHead className="text-white">Empresa</TableHead>
-                <TableHead className="text-white">Plan</TableHead>
-                <TableHead className="text-white">Estado</TableHead>
-                <TableHead className="text-white text-right pr-6">Acciones Maestras</TableHead>
+                <TableHead className="text-white font-black uppercase text-[10px]">Organización</TableHead>
+                <TableHead className="text-white font-black uppercase text-[10px]">Suscripción</TableHead>
+                <TableHead className="text-white font-black uppercase text-[10px]">Estado Red</TableHead>
+                <TableHead className="text-white text-right pr-6 font-black uppercase text-[10px]">Control Maestro</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -308,7 +310,7 @@ export default function CompaniesPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="text-[9px] font-bold uppercase border-blue-200 text-blue-700 bg-blue-50">
+                    <Badge variant="outline" className="text-[9px] font-bold uppercase border-blue-200 text-blue-700 bg-blue-50 px-2 py-0">
                       <CreditCard className="mr-1 h-2.5 w-2.5" />
                       {comp.plan || "Básico"}
                     </Badge>
@@ -317,7 +319,7 @@ export default function CompaniesPage() {
                     <Badge 
                       variant="outline" 
                       className={cn(
-                        "text-[9px] uppercase font-bold px-2 py-0.5",
+                        "text-[9px] uppercase font-bold px-2 py-0",
                         comp.status === "Active" && "border-status-success text-status-success bg-status-success/5",
                         comp.status === "Pending" && "border-status-warning text-status-warning bg-status-warning/5",
                         comp.status === "Suspended" && "border-status-error text-status-error bg-status-error/5 animate-pulse",
@@ -333,7 +335,7 @@ export default function CompaniesPage() {
                         <Button 
                           variant="secondary" 
                           size="sm" 
-                          className="h-7 text-[9px] font-bold uppercase bg-status-success text-white hover:bg-status-success/90"
+                          className="h-7 text-[9px] font-bold uppercase bg-status-success text-white hover:bg-status-success/90 px-3"
                           onClick={() => handleApproveCompany(comp.id)}
                           disabled={isStatusChanging === comp.id}
                         >
@@ -347,7 +349,7 @@ export default function CompaniesPage() {
                           variant="secondary" 
                           size="sm" 
                           className={cn(
-                            "h-7 text-[9px] font-bold uppercase",
+                            "h-7 text-[9px] font-bold uppercase px-3",
                             comp.status === "Active" ? "hover:bg-status-error/10 hover:text-status-error" : "hover:bg-status-success/10 hover:text-status-success"
                           )}
                           onClick={() => toggleStatus(comp.id, comp.status)}
@@ -360,7 +362,7 @@ export default function CompaniesPage() {
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        className="h-7 text-[9px] font-bold uppercase"
+                        className="h-7 text-[9px] font-bold uppercase bg-primary text-white hover:bg-primary/90 border-none px-3"
                         onClick={() => handleSwitchCompany(comp.id)}
                         disabled={isSwitching === comp.id}
                       >
@@ -380,16 +382,16 @@ export default function CompaniesPage() {
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle className="uppercase font-bold text-primary">¿Eliminar Organización?</AlertDialogTitle>
-                            <AlertDialogDescription className="text-xs">
-                              Esta acción es irreversible. Se eliminará el registro de <strong>{comp.name}</strong> y sus configuraciones de planes. Los datos de clientes e inventario podrían quedar huérfanos.
+                            <AlertDialogTitle className="uppercase font-black text-accent">¿Eliminar Organización?</AlertDialogTitle>
+                            <AlertDialogDescription className="text-xs uppercase font-bold">
+                              Esta acción es irreversible. Se eliminará el registro de <strong>{comp.name}</strong> y sus configuraciones de planes.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel className="text-[11px] font-bold uppercase">Cancelar</AlertDialogCancel>
                             <AlertDialogAction 
                               onClick={() => handleDeleteCompany(comp.id)}
-                              className="bg-destructive text-white hover:bg-destructive/90 text-[11px] font-bold uppercase"
+                              className="bg-destructive text-white hover:bg-destructive/90 text-[11px] font-bold uppercase h-10 px-6"
                             >
                               Confirmar Eliminación
                             </AlertDialogAction>
@@ -400,13 +402,6 @@ export default function CompaniesPage() {
                   </TableCell>
                 </TableRow>
               ))}
-              {filteredCompanies?.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center py-20 text-muted-foreground uppercase text-[10px] font-bold">
-                    No se encontraron organizaciones registradas.
-                  </TableCell>
-                </TableRow>
-              )}
             </TableBody>
           </Table>
         </CardContent>

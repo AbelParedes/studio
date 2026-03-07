@@ -45,9 +45,10 @@ interface DashboardNavProps {
   companyName?: string
   logoUrl?: string | null
   userRole?: string
+  isSuperAdmin?: boolean
 }
 
-export function DashboardNav({ onNavItemClick, companyName, logoUrl, userRole }: DashboardNavProps) {
+export function DashboardNav({ onNavItemClick, companyName, logoUrl, userRole, isSuperAdmin }: DashboardNavProps) {
   const pathname = usePathname()
   const auth = useAuth()
   const router = useRouter()
@@ -58,8 +59,8 @@ export function DashboardNav({ onNavItemClick, companyName, logoUrl, userRole }:
   }
 
   const filteredItems = navItems.filter(item => {
-    if (item.superAdminOnly && userRole !== "Administrador") return false
-    if (item.adminOnly && userRole !== "Administrador" && userRole !== "Coordinador de Servicios") return false
+    if (item.superAdminOnly && !isSuperAdmin) return false
+    if (item.adminOnly && !isSuperAdmin && userRole !== "Administrador" && userRole !== "Coordinador de Servicios") return false
     return true
   })
 
@@ -80,7 +81,7 @@ export function DashboardNav({ onNavItemClick, companyName, logoUrl, userRole }:
             {companyName || "SERVIFUMIGA PRO"}
           </h1>
           <span className="text-[9px] font-bold uppercase text-accent tracking-tighter opacity-80">
-            SISTEMA DE GESTIÓN
+            {isSuperAdmin ? "SAAS MASTER CONTROL" : "SISTEMA DE GESTIÓN"}
           </span>
         </div>
       </div>

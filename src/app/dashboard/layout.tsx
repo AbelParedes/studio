@@ -43,7 +43,8 @@ export default function DashboardLayout({
   [db, profile?.roleId])
   const { data: roleData } = useDoc(roleRef)
 
-  const isMasterAdmin = roleData?.title === "Administrador"
+  // Super Admin check: Title or explicit manage_saas permission
+  const isMasterAdmin = roleData?.title === "Super Administrador" || roleData?.permissions?.manage_saas === true
 
   // Dynamic theme and colors
   useEffect(() => {
@@ -147,6 +148,7 @@ export default function DashboardLayout({
           companyName={companyName} 
           logoUrl={companyLogo} 
           userRole={displayRole}
+          isSuperAdmin={isMasterAdmin}
         />
       </aside>
 
@@ -165,6 +167,7 @@ export default function DashboardLayout({
                   companyName={companyName} 
                   logoUrl={companyLogo} 
                   userRole={displayRole}
+                  isSuperAdmin={isMasterAdmin}
                 />
               </SheetContent>
             </Sheet>
@@ -182,6 +185,9 @@ export default function DashboardLayout({
               <span className="text-xs font-bold uppercase hidden sm:block truncate max-w-[300px] tracking-tight text-primary">
                 {companyName}
               </span>
+              {isMasterAdmin && (
+                <Badge className="bg-accent text-white border-none text-[8px] uppercase h-4 px-1 ml-1 animate-pulse">SAAS MASTER</Badge>
+              )}
             </div>
           </div>
           
