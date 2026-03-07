@@ -300,7 +300,7 @@ export default function QuotationsPage() {
             </div>
           </div>
 
-          {/* PIE DE PÁGINA DINÁMICO */}
+          {/* PIE DE PÁGINA DINÁMICO COMPACTO */}
           <div 
             className="mt-auto shrink-0 flex flex-col items-center justify-center relative overflow-hidden py-6"
             style={{ 
