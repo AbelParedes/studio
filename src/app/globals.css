@@ -159,5 +159,15 @@
     margin: 0 !important;
     padding: 0 !important;
     border: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .print-footer {
+    position: relative !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 }

@@ -186,8 +186,8 @@ export default function QuotationsPage() {
           </div>
         </div>
 
-        {/* Contenedor Proforma con clase específica para impresión */}
-        <div className="proforma-container bg-white p-0 shadow-2xl mx-auto w-[210mm] min-h-[297mm] flex flex-col relative overflow-hidden text-[#1c1c1c] border print:shadow-none print:border-none print:m-0 print:w-full print:min-h-screen">
+        {/* Contenedor Proforma optimizado para impresión A4 */}
+        <div className="proforma-container bg-white p-0 shadow-2xl mx-auto w-[210mm] min-h-[297mm] flex flex-col relative overflow-hidden text-[#1c1c1c] border print:shadow-none print:border-none print:m-0 print:w-full print:min-h-[297mm]">
           <div className="pt-12 px-12 pb-8 shrink-0 flex items-center justify-between border-b-[3px] border-[#d9534f]">
             <div className="relative h-20 w-64">
               {(company?.headerUrl || company?.logoUrl) ? (
@@ -293,14 +293,14 @@ export default function QuotationsPage() {
             </div>
           </div>
 
-          {/* Pie de página con estilos optimizados para impresión */}
+          {/* Pie de página con forzado de color para impresión */}
           <div 
-            className="mt-auto shrink-0 flex flex-col items-center justify-center py-6 print:block"
+            className="mt-auto shrink-0 flex flex-col items-center justify-center py-6 print-footer"
             style={{ 
               backgroundColor: company?.footerBgColor || 'rgb(255, 215, 0)',
               WebkitPrintColorAdjust: 'exact',
               printColorAdjust: 'exact'
-            }}
+            } as any}
           >
             <div className="px-12 w-full flex flex-col items-center text-center gap-2">
               <div className="flex flex-wrap justify-center gap-x-10 gap-y-1 text-[10px] font-black text-[#1c1c1c] uppercase">
