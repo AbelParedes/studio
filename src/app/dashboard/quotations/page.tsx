@@ -14,7 +14,6 @@ import {
   Edit2, 
   Loader2, 
   ArrowLeft,
-  CheckCircle2,
   Download,
   MapPin,
   Phone,
@@ -39,8 +38,6 @@ import { toast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
-import { format } from "date-fns"
-import { es } from "date-fns/locale"
 
 export default function QuotationsPage() {
   const db = useFirestore()
@@ -51,6 +48,7 @@ export default function QuotationsPage() {
   const [editingQuotation, setEditingQuotation] = useState<any | null>(null)
   const [items, setItems] = useState<{description: string, quantity: number, unitPrice: number}[]>([])
 
+  // 1. Perfil y Empresa
   const userProfileQuery = useMemoFirebase(() => 
     user?.email ? query(collection(db, "company_users"), where("email", "==", user.email)) : null,
   [db, user?.email])
@@ -62,6 +60,7 @@ export default function QuotationsPage() {
   [db, companyId])
   const { data: company } = useDoc(companyRef)
 
+  // 2. Datos de Cotizaciones y Clientes
   const quotationsRef = useMemoFirebase(() => 
     companyId ? query(collection(db, "quotations"), where("companyId", "==", companyId)) : null,
   [db, companyId])
@@ -72,6 +71,7 @@ export default function QuotationsPage() {
   [db, companyId])
   const { data: clients } = useCollection(clientsRef)
 
+  // 3. Lógica de Numeración Correlativa Anual
   const suggestedQuotationNumber = useMemo(() => {
     const currentYear = new Date().getFullYear()
     if (!quotations) return `COT-0001-${currentYear}`
@@ -83,6 +83,7 @@ export default function QuotationsPage() {
     return `COT-${nextCount.toString().padStart(4, '0')}-${currentYear}`
   }, [quotations])
 
+  // 4. Handlers de Items
   const handleAddItem = () => {
     setItems([...items, { description: "", quantity: 1, unitPrice: 0 }])
   }
@@ -93,6 +94,7 @@ export default function QuotationsPage() {
     setItems(newItems)
   }
 
+  // 5. Guardar Cotización
   const handleSaveQuotation = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!companyId) return
@@ -147,12 +149,13 @@ export default function QuotationsPage() {
     setEditingQuotation(q)
     setItems(q.items?.map((i: any) => ({ 
       description: i.description, 
-      quantity: i.quantity || 1, 
-      unitPrice: i.unitPrice || 0 
+      quantity: Number(i.quantity || 1), 
+      unitPrice: Number(i.unitPrice || 0) 
     })) || [])
     setIsAdding(true)
   }
 
+  // VISTA DE IMPRESIÓN / DETALLE
   if (viewingQuotation) {
     const client = clients?.find(c => c.id === viewingQuotation.clientId)
     const currentYear = new Date().getFullYear()
@@ -168,24 +171,25 @@ export default function QuotationsPage() {
               <Printer className="mr-2 h-3 w-3" /> Imprimir
             </Button>
             <Button onClick={handlePrint} className="bg-primary text-white font-bold uppercase text-[10px] h-8 shadow-md">
-              <Download className="mr-2 h-3 w-3" /> Exportar PDF
+              <Download className="mr-2 h-3 w-3" /> Guardar PDF
             </Button>
           </div>
         </div>
 
+        {/* CONTENEDOR A4 */}
         <div className="bg-white p-0 shadow-2xl mx-auto print-page w-[210mm] min-h-[297mm] flex flex-col relative overflow-hidden text-slate-900 border" id="quotation-print-area">
           
-          {/* Cabecera Personalizada de Ajustes */}
+          {/* CABECERA: PRIORIZA IMAGEN DE AJUSTES */}
           {company?.headerUrl ? (
-            <div className="relative w-full h-40">
-              <Image src={company.headerUrl} alt="Header" fill className="object-contain" unoptimized />
+            <div className="relative w-full h-[180px] shrink-0">
+              <Image src={company.headerUrl} alt="Header Membrete" fill className="object-cover" unoptimized />
             </div>
           ) : (
-            <div className="pt-8 px-10 pb-4">
+            <div className="pt-8 px-10 pb-4 shrink-0">
               <div className="flex justify-between items-center mb-6">
                 <div className="relative h-20 w-44 shrink-0">
                   {company?.logoUrl ? (
-                    <Image src={company.logoUrl} alt="Logo" fill className="object-contain object-left" unoptimized />
+                    <Image src={company.logoUrl} alt="Logo Corporativo" fill className="object-contain object-left" unoptimized />
                   ) : (
                     <div className="h-full w-full bg-slate-100 flex items-center justify-center border-2 border-dashed border-slate-300 rounded">
                       <Building2 className="h-8 w-8 text-slate-300" />
@@ -194,7 +198,7 @@ export default function QuotationsPage() {
                 </div>
                 <div className="text-right">
                   <h1 className="text-2xl font-black text-primary uppercase tracking-tighter">PROFORMA COMERCIAL</h1>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">EXTINTORES APEVA SAAS</p>
+                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{company?.name || "EXTINTORES APEVA SAAS"}</p>
                   <div className="mt-2 bg-primary text-white px-3 py-1 rounded font-bold text-xs inline-block">
                     N° {viewingQuotation.quotationNumber}
                   </div>
@@ -203,45 +207,56 @@ export default function QuotationsPage() {
             </div>
           )}
 
+          {/* CUERPO DEL DOCUMENTO */}
           <div className="px-10 py-6 space-y-6 flex-1">
             <div className="grid grid-cols-2 gap-8 border-b pb-6">
               <div className="space-y-2">
-                <h3 className="text-[10px] font-black text-primary uppercase border-b pb-1">CLIENTE</h3>
-                <div className="text-[11px] space-y-1">
+                <h3 className="text-[9px] font-black text-primary uppercase border-b pb-1">DATOS DEL CLIENTE</h3>
+                <div className="text-[10px] space-y-1">
                   <p className="font-bold uppercase">{client?.name || "---"}</p>
-                  <p className="text-slate-600 font-mono">{client?.taxId || "---"}</p>
-                  <p className="text-slate-600">{client?.address || "---"}</p>
+                  <p className="text-slate-600 font-mono">ID FISCAL: {client?.taxId || "---"}</p>
+                  <p className="text-slate-600">DIRECCIÓN: {client?.address || "---"}</p>
                 </div>
               </div>
               <div className="space-y-2 text-right">
-                <h3 className="text-[10px] font-black text-primary uppercase border-b pb-1">EMISIÓN</h3>
-                <div className="text-[11px] space-y-1">
+                <h3 className="text-[9px] font-black text-primary uppercase border-b pb-1">DETALLE DE EMISIÓN</h3>
+                <div className="text-[10px] space-y-1">
                   <p className="font-bold">FECHA: {viewingQuotation.date || "---"}</p>
-                  <p className="text-slate-600 uppercase">VALIDEZ: 15 DÍAS CALENDARIO</p>
+                  <p className="text-slate-600 uppercase">VALIDEZ: 15 DÍAS</p>
                   <p className="text-slate-600 uppercase">MONEDA: SOLES (S/.)</p>
                 </div>
               </div>
             </div>
 
+            {/* TABLA DE PRODUCTOS / SERVICIOS */}
             <div className="space-y-2">
-              <h3 className="text-[10px] font-black text-primary uppercase">DETALLE DE SERVICIOS Y EQUIPOS</h3>
-              <div className="border rounded overflow-hidden">
+              <h3 className="text-[9px] font-black text-primary uppercase">SERVICIOS Y EQUIPOS</h3>
+              <div className="border rounded-sm overflow-hidden">
                 <table className="w-full text-[10px] border-collapse">
                   <thead className="bg-slate-900 text-white">
                     <tr>
-                      <th className="p-2 text-left font-bold uppercase w-12">CANT.</th>
-                      <th className="p-2 text-left font-bold uppercase">DESCRIPCIÓN</th>
-                      <th className="p-2 text-right font-bold uppercase w-24">UNIT.</th>
-                      <th className="p-2 text-right font-bold uppercase w-24">TOTAL</th>
+                      <th className="p-2 text-left font-bold uppercase w-12 border-r border-slate-700">CANT.</th>
+                      <th className="p-2 text-left font-bold uppercase">DESCRIPCIÓN DEL SERVICIO</th>
+                      <th className="p-2 text-right font-bold uppercase w-24 border-l border-slate-700">UNIT. (S/.)</th>
+                      <th className="p-2 text-right font-bold uppercase w-24 border-l border-slate-700">TOTAL (S/.)</th>
                     </tr>
                   </thead>
                   <tbody>
                     {viewingQuotation.items?.map((item: any, idx: number) => (
                       <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                        <td className="p-2 text-center font-bold">{item.quantity || 0}</td>
+                        <td className="p-2 text-center font-bold border-r border-slate-100">{item.quantity || 0}</td>
                         <td className="p-2 font-medium uppercase">{item.description || "---"}</td>
-                        <td className="p-2 text-right">S/. {(Number(item.unitPrice || 0)).toFixed(2)}</td>
-                        <td className="p-2 text-right font-bold">S/. {(Number(item.total || 0)).toFixed(2)}</td>
+                        <td className="p-2 text-right border-l border-slate-100">{(Number(item.unitPrice || 0)).toFixed(2)}</td>
+                        <td className="p-2 text-right font-bold border-l border-slate-100">{(Number(item.total || 0)).toFixed(2)}</td>
+                      </tr>
+                    ))}
+                    {/* FILAS VACÍAS PARA RELLENAR */}
+                    {Array.from({ length: Math.max(0, 8 - (viewingQuotation.items?.length || 0)) }).map((_, i) => (
+                      <tr key={`empty-${i}`} className="h-8 border-b border-slate-50">
+                        <td className="border-r border-slate-50"></td>
+                        <td></td>
+                        <td className="border-l border-slate-50"></td>
+                        <td className="border-l border-slate-50"></td>
                       </tr>
                     ))}
                   </tbody>
@@ -249,48 +264,48 @@ export default function QuotationsPage() {
               </div>
             </div>
 
+            {/* TOTALES */}
             <div className="flex justify-end pt-4">
-              <div className="w-64 space-y-2 border-t-2 border-primary pt-4">
-                <div className="flex justify-between text-[11px]">
+              <div className="w-64 space-y-1.5 pt-2">
+                <div className="flex justify-between text-[10px] px-2">
                   <span className="font-bold uppercase text-slate-500">SUBTOTAL</span>
                   <span className="font-bold">S/. {(Number(viewingQuotation.subtotal || 0)).toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-[11px]">
+                <div className="flex justify-between text-[10px] px-2">
                   <span className="font-bold uppercase text-slate-500">I.G.V. (18%)</span>
                   <span className="font-bold">S/. {(Number(viewingQuotation.tax || 0)).toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-sm bg-primary text-white p-2 rounded">
-                  <span className="font-black uppercase">TOTAL NETO</span>
-                  <span className="font-black">S/. {(Number(viewingQuotation.total || 0)).toFixed(2)}</span>
+                <div className="flex justify-between text-[11px] bg-primary text-white p-2 rounded-sm font-black mt-2">
+                  <span className="uppercase">TOTAL NETO</span>
+                  <span>S/. {(Number(viewingQuotation.total || 0)).toFixed(2)}</span>
                 </div>
               </div>
             </div>
 
-            <div className="space-y-4 pt-10">
-              <h3 className="text-[10px] font-black text-primary uppercase">TÉRMINOS Y CONDICIONES</h3>
+            <div className="space-y-4 pt-6">
+              <h3 className="text-[9px] font-black text-primary uppercase border-b w-fit pb-0.5">CONDICIONES COMERCIALES</h3>
               <ul className="text-[9px] text-slate-500 space-y-1 uppercase font-bold leading-tight">
                 <li>• LOS EQUIPOS CUMPLEN CON LAS NORMAS TÉCNICAS PERUANAS (NTP).</li>
                 <li>• GARANTÍA DE FÁBRICA POR 01 AÑO CONTRA DEFECTOS DE CARGA.</li>
-                <li>• TIEMPO DE ENTREGA: 24 A 48 HORAS PREVIA ORDEN DE COMPRA.</li>
                 <li>• FORMA DE PAGO: CONTADO / TRANSFERENCIA BANCARIA.</li>
               </ul>
             </div>
           </div>
 
-          {/* Pie de Página Personalizado de Ajustes */}
+          {/* PIE DE PÁGINA: PRIORIZA IMAGEN DE AJUSTES */}
           {company?.footerUrl ? (
-            <div className="relative w-full h-24 mt-auto">
-              <Image src={company.footerUrl} alt="Footer" fill className="object-contain" unoptimized />
+            <div className="relative w-full h-[120px] shrink-0 mt-auto">
+              <Image src={company.footerUrl} alt="Footer Membrete" fill className="object-cover" unoptimized />
             </div>
           ) : (
-            <div className="mt-auto p-10 bg-slate-50 border-t flex justify-between items-center">
-              <div className="space-y-1 text-[9px] font-bold text-slate-400 uppercase">
+            <div className="mt-auto p-10 bg-slate-50 border-t flex justify-between items-center shrink-0">
+              <div className="space-y-1 text-[8px] font-bold text-slate-400 uppercase">
                 <p className="flex items-center gap-2"><MapPin className="h-3 w-3 text-primary" /> {company?.address || "LIMA, PERÚ"}</p>
-                <p className="flex items-center gap-2"><Phone className="h-3 w-3 text-primary" /> {company?.phone || "CENTRAL TELEFÓNICA"}</p>
+                <p className="flex items-center gap-2"><Phone className="h-3 w-3 text-primary" /> {company?.phone || "CENTRAL DE SERVICIOS"}</p>
                 <p className="flex items-center gap-2"><Mail className="h-3 w-3 text-primary" /> {company?.email || "EMAIL DE CONTACTO"}</p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] font-black text-primary uppercase opacity-50 tracking-widest">APEVA SAAS MASTER SYNC © {currentYear}</p>
+                <p className="text-[9px] font-black text-primary uppercase opacity-50 tracking-widest">SISTEMA SAAS MASTER SYNC © {currentYear}</p>
               </div>
             </div>
           )}
@@ -320,6 +335,7 @@ export default function QuotationsPage() {
     )
   }
 
+  // LISTADO PRINCIPAL
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -338,7 +354,7 @@ export default function QuotationsPage() {
             <form onSubmit={handleSaveQuotation}>
               <DialogHeader>
                 <DialogTitle className="uppercase font-black text-primary text-xl tracking-tight">Emisión de Proforma</DialogTitle>
-                <DialogDescription className="text-xs font-bold text-slate-500 uppercase">Ajuste automático de correlativo anual e IGV 18%.</DialogDescription>
+                <DialogDescription className="text-xs font-bold text-slate-500 uppercase">Reinicia correlativo anual automáticamente.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-6 py-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -501,7 +517,7 @@ export default function QuotationsPage() {
                       <TableCell className="text-right pr-6">
                         <div className="flex items-center justify-end gap-2">
                           <Button variant="ghost" size="icon" className="h-9 w-9 text-primary hover:bg-primary/5" onClick={() => setViewingQuotation(q)}>
-                            <Printer className="h-4 w-4" />
+                            <FileText className="h-4 w-4" />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-600 hover:bg-slate-100" onClick={() => openEdit(q)}>
                             <Edit2 className="h-4 w-4" />
