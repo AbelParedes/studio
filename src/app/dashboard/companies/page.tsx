@@ -22,7 +22,8 @@ import {
   CreditCard,
   Ban,
   Activity,
-  Check
+  Check,
+  AlertTriangle
 } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, useUser, useDoc } from "@/firebase"
 import { collection, doc, query, where, getDocs, updateDoc, limit, writeBatch } from "firebase/firestore"
@@ -35,6 +36,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "@/hooks/use-toast"
@@ -77,7 +89,7 @@ export default function CompaniesPage() {
     return (
       <div className="flex flex-col items-center justify-center p-20 gap-4">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Cargando Centro de Mando...</p>
+        <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Cargando Centro de Mando Maestro...</p>
       </div>
     )
   }
@@ -151,6 +163,11 @@ export default function CompaniesPage() {
     }
   }
 
+  const handleDeleteCompany = (id: string) => {
+    deleteDocumentNonBlocking(doc(db, "companies", id))
+    toast({ variant: "destructive", title: "Organización eliminada", description: "Se ha removido el registro de la plataforma." })
+  }
+
   const handleSwitchCompany = async (companyId: string) => {
     if (!user?.email) return
     setIsSwitching(companyId)
@@ -158,7 +175,7 @@ export default function CompaniesPage() {
       const snapshot = await getDocs(query(collection(db, "company_users"), where("email", "==", user.email)))
       if (!snapshot.empty) {
         await updateDoc(doc(db, "company_users", snapshot.docs[0].id), { companyId })
-        toast({ title: "Cambiando de contexto..." })
+        toast({ title: "Cambiando de contexto SaaS..." })
         setTimeout(() => window.location.reload(), 800)
       }
     } catch (error) {
@@ -182,8 +199,8 @@ export default function CompaniesPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase">Suscripciones y Planes SaaS</h2>
-          <p className="text-muted-foreground text-sm">Controle el acceso, planes de facturación y estados de sus clientes.</p>
+          <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase">Suscripciones y Planes Maestro</h2>
+          <p className="text-muted-foreground text-sm">Control total sobre las organizaciones en la red Servifumiga Pro.</p>
         </div>
         
         <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) setEditingCompany(null); }}>
@@ -196,7 +213,7 @@ export default function CompaniesPage() {
             <form onSubmit={handleSaveCompany}>
               <DialogHeader>
                 <DialogTitle>Configuración de Organización</DialogTitle>
-                <DialogDescription>Asigne planes y estados operativos.</DialogDescription>
+                <DialogDescription>Defina el plan y los parámetros operativos de la nueva empresa.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -238,12 +255,12 @@ export default function CompaniesPage() {
                   </div>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="email" className="text-xs font-bold uppercase">Email Admin</Label>
+                  <Label htmlFor="email" className="text-xs font-bold uppercase">Email Administrador</Label>
                   <Input id="email" name="email" type="email" defaultValue={editingCompany?.email} required />
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit" className="w-full uppercase font-bold text-xs">{editingCompany ? "Actualizar" : "Crear Empresa SaaS"}</Button>
+                <Button type="submit" className="w-full uppercase font-bold text-xs">{editingCompany ? "Actualizar Datos" : "Crear Empresa SaaS"}</Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -269,7 +286,7 @@ export default function CompaniesPage() {
                 <TableHead className="text-white">Empresa</TableHead>
                 <TableHead className="text-white">Plan</TableHead>
                 <TableHead className="text-white">Estado</TableHead>
-                <TableHead className="text-white text-right pr-6">Acciones</TableHead>
+                <TableHead className="text-white text-right pr-6">Acciones Maestras</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -350,13 +367,46 @@ export default function CompaniesPage() {
                         {isSwitching === comp.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <LogIn className="mr-1 h-3.5 w-3.5" />}
                         Gestionar
                       </Button>
+                      
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(comp)}>
                         <Edit2 className="h-3.5 w-3.5" />
                       </Button>
+
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 hover:text-destructive">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle className="uppercase font-bold text-primary">¿Eliminar Organización?</AlertDialogTitle>
+                            <AlertDialogDescription className="text-xs">
+                              Esta acción es irreversible. Se eliminará el registro de <strong>{comp.name}</strong> y sus configuraciones de planes. Los datos de clientes e inventario podrían quedar huérfanos.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel className="text-[11px] font-bold uppercase">Cancelar</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => handleDeleteCompany(comp.id)}
+                              className="bg-destructive text-white hover:bg-destructive/90 text-[11px] font-bold uppercase"
+                            >
+                              Confirmar Eliminación
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </TableCell>
                 </TableRow>
               ))}
+              {filteredCompanies?.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-20 text-muted-foreground uppercase text-[10px] font-bold">
+                    No se encontraron organizaciones registradas.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>
