@@ -41,6 +41,8 @@ import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
+import { format, parseISO } from "date-fns"
+import { es } from "date-fns/locale"
 
 export default function QuotationsPage() {
   const db = useFirestore()
@@ -169,6 +171,9 @@ export default function QuotationsPage() {
   if (viewingQuotation) {
     const client = clients?.find(c => c.id === viewingQuotation.clientId)
     const conditions = viewingQuotation.conditions || "• Validez de la oferta: 15 días.\n• Forma de pago: Contado / Transferencia.\n• Tiempo de ejecución: A coordinar.\n• Garantía de servicio: 12 meses."
+    const formattedDate = viewingQuotation.date 
+      ? format(parseISO(viewingQuotation.date), "dd/MM/yyyy") 
+      : "---"
 
     return (
       <div className="space-y-4 animate-in fade-in duration-300">
@@ -231,7 +236,7 @@ export default function QuotationsPage() {
                   <div className="h-[2px] bg-[#1c1c1c] w-full"></div>
                 </div>
                 <div className="text-[11px] space-y-2 pt-1 text-right">
-                  <p className="font-black text-[#1c1c1c] uppercase"><span className="text-slate-400 font-normal">FECHA:</span> {viewingQuotation.date || "---"}</p>
+                  <p className="font-black text-[#1c1c1c] uppercase"><span className="text-slate-400 font-normal">FECHA:</span> {formattedDate}</p>
                   <p className="text-slate-600 uppercase font-bold"><span className="text-slate-400 font-normal">MONEDA:</span> SOLES (S/.)</p>
                 </div>
               </div>
