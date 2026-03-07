@@ -76,7 +76,6 @@ export default function QuotationsPage() {
     const currentYear = new Date().getFullYear()
     if (!quotations || quotations.length === 0) return `COT-0001-${currentYear}`
     
-    // Filtrar cotizaciones que sigan el formato y sean del año actual
     const yearQuotations = quotations.filter(q => {
       const qNum = q.quotationNumber || ""
       return qNum.startsWith("COT-") && qNum.endsWith(`-${currentYear}`)
@@ -84,7 +83,6 @@ export default function QuotationsPage() {
 
     if (yearQuotations.length === 0) return `COT-0001-${currentYear}`
 
-    // Extraer el número máximo actual
     const numbers = yearQuotations.map(q => {
       const parts = q.quotationNumber.split("-")
       return parts.length === 3 ? parseInt(parts[1]) : 0
@@ -301,7 +299,7 @@ export default function QuotationsPage() {
             </div>
           </div>
 
-          {/* PIE DE PÁGINA ORO PROFESIONAL */}
+          {/* PIE DE PÁGINA ORO PROFESIONAL DINÁMICO */}
           <div 
             className="mt-auto shrink-0 flex flex-col items-center justify-center relative overflow-hidden py-6"
             style={{ 
@@ -312,9 +310,15 @@ export default function QuotationsPage() {
           >
             <div className="px-12 w-full flex flex-col items-center text-center gap-2">
               <div className="flex flex-wrap justify-center gap-x-10 gap-y-1 text-[10px] font-black text-[#1c1c1c] uppercase">
-                <p className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5" /> {company?.address || "CENTRO DE OPERACIONES"}</p>
-                <p className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" /> {company?.phone || "SOPORTE TÉCNICO"}</p>
-                <p className="flex items-center gap-2"><Mail className="h-3.5 w-3.5" /> {company?.email || "VENTAS"}</p>
+                {company?.address && (
+                  <p className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5" /> {company.address}</p>
+                )}
+                {company?.phone && (
+                  <p className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" /> {company.phone}</p>
+                )}
+                {company?.email && (
+                  <p className="flex items-center gap-2"><Mail className="h-3.5 w-3.5" /> {company.email}</p>
+                )}
               </div>
               <div className="mt-1">
                 <p className="text-[8px] font-black text-[#1c1c1c] uppercase tracking-[0.3em] opacity-40">
