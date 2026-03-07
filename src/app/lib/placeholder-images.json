@@ -22,7 +22,7 @@
     {
       "id": "apeva-logo",
       "description": "Logo oficial de Extintores Apeva",
-      "imageUrl": "https://picsum.photos/seed/apevalogo/400/200",
+      "imageUrl": "https://res.cloudinary.com/djz39v86m/image/upload/v1711100000/apeva-logo.png",
       "imageHint": "company logo"
     }
   ]
