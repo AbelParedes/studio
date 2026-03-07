@@ -22,7 +22,11 @@ import {
   Gavel,
   Printer,
   Download,
-  PackageSearch
+  PackageSearch,
+  Calculator,
+  Briefcase,
+  CalendarDays,
+  Tag
 } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, useUser, useDoc } from "@/firebase"
 import { collection, doc, query, where } from "firebase/firestore"
@@ -103,6 +107,12 @@ export default function QuotationsPage() {
     return `COT-${(maxNum + 1).toString().padStart(4, '0')}-${currentYear}`
   }, [quotations, currentYear])
 
+  const subtotal = useMemo(() => 
+    items.reduce((acc, item) => acc + (Number(item.quantity || 0) * Number(item.unitPrice || 0)), 0),
+  [items])
+  const tax = subtotal * 0.18
+  const total = subtotal + tax
+
   const handleAddItem = () => {
     setItems([...items, { description: "", quantity: 1, unitPrice: 0 }])
   }
@@ -132,9 +142,6 @@ export default function QuotationsPage() {
     if (!companyId) return
 
     const formData = new FormData(e.currentTarget)
-    const subtotal = items.reduce((acc, item) => acc + (Number(item.quantity || 0) * Number(item.unitPrice || 0)), 0)
-    const tax = subtotal * 0.18
-    const total = subtotal + tax
 
     const quotationData = {
       companyId: companyId,
@@ -359,72 +366,82 @@ export default function QuotationsPage() {
               <Plus className="mr-2 h-4 w-4" /> Nueva Cotización
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-            <form onSubmit={handleSaveQuotation}>
-              <DialogHeader>
-                <DialogTitle className="uppercase font-black text-[#d9534f] text-xl tracking-tight">Registro de Proforma</DialogTitle>
-                <DialogDescription className="text-xs font-bold text-slate-500 uppercase">Numeración automática {suggestedQuotationNumber}</DialogDescription>
+          <DialogContent className="max-w-5xl max-h-[95vh] flex flex-col p-0 overflow-hidden">
+            <form onSubmit={handleSaveQuotation} className="flex flex-col h-full">
+              <DialogHeader className="p-6 border-b bg-slate-50">
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 bg-[#d9534f] rounded-xl flex items-center justify-center text-white shadow-md">
+                    <FileText className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <DialogTitle className="uppercase font-black text-[#d9534f] text-xl tracking-tight leading-none">Nueva Proforma Oficial</DialogTitle>
+                    <DialogDescription className="text-[10px] font-bold text-slate-500 uppercase mt-1">Sugerido: {suggestedQuotationNumber} • Extintores Apeva SaaS</DialogDescription>
+                  </div>
+                </div>
               </DialogHeader>
-              <div className="grid gap-6 py-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="grid gap-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-500">Cliente</Label>
+
+              <div className="flex-1 overflow-y-auto p-6 space-y-8">
+                {/* SECCIÓN 1: DATOS GENERALES */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-1.5">
+                      <Briefcase className="h-3 w-3" /> Cliente Destino
+                    </Label>
                     <Select name="clientId" defaultValue={editingQuotation?.clientId} required>
-                      <SelectTrigger className="h-10">
+                      <SelectTrigger className="h-11 border-2 focus:ring-[#d9534f]/20">
                         <SelectValue placeholder="Seleccione un cliente" />
                       </SelectTrigger>
                       <SelectContent>
                         {clients?.map(c => (
-                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                          <SelectItem key={c.id} value={c.id} className="font-bold">{c.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="grid gap-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-500">Serie y Número</Label>
-                    <Input name="number" defaultValue={editingQuotation?.quotationNumber || suggestedQuotationNumber} className="h-10 uppercase font-mono font-bold" />
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-1.5">
+                      <Tag className="h-3 w-3" /> Número de Serie
+                    </Label>
+                    <Input name="number" defaultValue={editingQuotation?.quotationNumber || suggestedQuotationNumber} className="h-11 uppercase font-mono font-bold border-2" />
                   </div>
-                  <div className="grid gap-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-500">Estado</Label>
-                    <Select name="status" defaultValue={editingQuotation?.status || "Borrador"}>
-                      <SelectTrigger className="h-10">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Borrador">Borrador</SelectItem>
-                        <SelectItem value="Enviado">Enviado</SelectItem>
-                        <SelectItem value="Aceptado">Aceptado</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-1.5">
+                      <CalendarDays className="h-3 w-3" /> Fecha de Emisión
+                    </Label>
+                    <Input type="date" name="date" defaultValue={editingQuotation?.date || new Date().toISOString().split('T')[0]} className="h-11 border-2 font-bold" />
                   </div>
                 </div>
 
+                {/* SECCIÓN 2: CONCEPTOS Y CATÁLOGO */}
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between border-b pb-2">
-                    <Label className="text-[11px] font-black uppercase text-[#d9534f] tracking-wider">Conceptos del Presupuesto</Label>
-                    <Button type="button" variant="secondary" size="sm" onClick={handleAddItem} className="h-8 text-[10px] font-bold uppercase bg-[#1c1c1c] text-white hover:bg-black">
+                  <div className="flex items-center justify-between border-b-2 border-slate-100 pb-2">
+                    <div className="flex items-center gap-2">
+                      <Calculator className="h-4 w-4 text-[#d9534f]" />
+                      <h3 className="text-[11px] font-black uppercase text-[#d9534f] tracking-widest">Conceptos del Presupuesto</h3>
+                    </div>
+                    <Button type="button" variant="outline" size="sm" onClick={handleAddItem} className="h-8 text-[10px] font-bold uppercase border-2 hover:bg-slate-50">
                       <Plus className="h-3 w-3 mr-2" /> Añadir Concepto
                     </Button>
                   </div>
                   
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {items.map((item, idx) => (
-                      <div key={idx} className="grid grid-cols-12 gap-3 items-end border p-4 rounded-xl bg-slate-50/50">
+                      <div key={idx} className="grid grid-cols-12 gap-3 items-end p-5 rounded-2xl bg-white border-2 border-slate-100 shadow-sm relative group">
                         <div className="col-span-12 md:col-span-4 grid gap-1.5">
                           <Label className="text-[9px] font-black uppercase text-slate-500 flex items-center gap-1">
-                            <PackageSearch className="h-3 w-3" /> Cargar del Catálogo
+                            <PackageSearch className="h-3 w-3 text-[#d9534f]" /> Cargar del Catálogo Maestro
                           </Label>
                           <Select 
                             value={item.catalogItemId || ""} 
                             onValueChange={(val) => handleSelectFromCatalog(idx, val)}
                           >
-                            <SelectTrigger className="h-9 text-[10px] font-bold bg-white">
-                              <SelectValue placeholder="Seleccionar producto/servicio..." />
+                            <SelectTrigger className="h-10 text-[10px] font-bold bg-slate-50 border-none">
+                              <SelectValue placeholder="Seleccionar ítem..." />
                             </SelectTrigger>
                             <SelectContent>
                               {catalog?.map(p => (
-                                <SelectItem key={p.id} value={p.id} className="text-[11px]">
-                                  [{p.category}] {p.description} - S/ {p.sellPrice}
+                                <SelectItem key={p.id} value={p.id} className="text-[11px] font-medium">
+                                  [{p.category}] {p.description} • S/ {p.sellPrice}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -435,19 +452,19 @@ export default function QuotationsPage() {
                           <Input 
                             value={item.description} 
                             onChange={(e) => handleItemChange(idx, "description", e.target.value)}
-                            className="h-10 text-xs font-bold"
+                            className="h-10 text-xs font-bold border-2"
                             required
-                            placeholder="Nombre detallado del ítem..."
+                            placeholder="Ej. Recarga de Extintor PQS 6kg ABC"
                           />
                         </div>
-                        <div className="col-span-3 md:col-span-1 grid gap-1.5">
+                        <div className="col-span-4 md:col-span-1 grid gap-1.5">
                           <Label className="text-[9px] font-black uppercase text-slate-500">Cant.</Label>
                           <Input 
                             type="number"
                             min="1"
                             value={item.quantity} 
                             onChange={(e) => handleItemChange(idx, "quantity", Number(e.target.value))}
-                            className="h-10 text-xs text-center font-black"
+                            className="h-10 text-xs text-center font-black border-2"
                             required
                           />
                         </div>
@@ -458,47 +475,85 @@ export default function QuotationsPage() {
                             step="0.01"
                             value={item.unitPrice} 
                             onChange={(e) => handleItemChange(idx, "unitPrice", Number(e.target.value))}
-                            className="h-10 text-xs text-right font-black"
+                            className="h-10 text-xs text-right font-black border-2 text-[#d9534f]"
                             required
                           />
                         </div>
-                        <div className="col-span-3 md:col-span-1 flex justify-center">
-                          <Button type="button" variant="ghost" size="icon" onClick={() => setItems(items.filter((_, i) => i !== idx))} className="h-10 w-10 text-destructive">
+                        <div className="col-span-2 md:col-span-1 flex justify-center">
+                          <Button type="button" variant="ghost" size="icon" onClick={() => setItems(items.filter((_, i) => i !== idx))} className="h-10 w-10 text-destructive hover:bg-destructive/10">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
                     ))}
+                    {items.length === 0 && (
+                      <div className="text-center py-12 border-2 border-dashed rounded-2xl bg-slate-50">
+                        <PackageSearch className="h-12 w-12 text-slate-300 mx-auto mb-3" />
+                        <p className="text-[10px] font-black uppercase text-slate-400">Presione 'Añadir Concepto' para comenzar</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                <div className="grid gap-2">
-                  <Label className="text-[10px] font-black uppercase text-slate-500">Condiciones Comerciales</Label>
-                  <Textarea 
-                    name="conditions" 
-                    defaultValue={editingQuotation?.conditions || "• Validez de la oferta: 15 días.\n• Forma de pago: Contado / Transferencia.\n• Tiempo de ejecución: A coordinar.\n• Garantía de servicio: 12 meses."}
-                    className="min-h-[120px] text-xs font-medium"
-                    placeholder="Ingrese las condiciones de pago..."
-                  />
-                </div>
-
-                <div className="bg-[#1c1c1c] text-white p-6 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4 shadow-xl border-b-4 border-[#d9534f]">
-                  <div className="text-center md:text-left">
-                    <p className="text-[10px] font-black uppercase opacity-60 mb-1">Presupuesto Final</p>
-                    <p className="text-3xl font-black text-white tracking-tighter">
-                      S/. {(items.reduce((acc, i) => acc + (Number(i.quantity || 0) * Number(i.unitPrice || 0)), 0) * 1.18).toFixed(2)}
-                    </p>
+                {/* SECCIÓN 3: CONDICIONES Y RESUMEN */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-1.5">
+                      <Gavel className="h-3 w-3" /> Condiciones Comerciales
+                    </Label>
+                    <Textarea 
+                      name="conditions" 
+                      defaultValue={editingQuotation?.conditions || "• Validez de la oferta: 15 días.\n• Forma de pago: Contado / Transferencia.\n• Tiempo de ejecución: A coordinar.\n• Garantía de servicio: 12 meses."}
+                      className="min-h-[140px] text-xs font-medium border-2 leading-relaxed"
+                      placeholder="Ingrese los términos de la oferta..."
+                    />
                   </div>
-                  <div className="flex flex-col items-center md:items-end text-[10px] font-bold opacity-80 uppercase">
-                    <p>Neto: S/. {items.reduce((acc, i) => acc + (Number(i.quantity || 0) * Number(i.unitPrice || 0)), 0).toFixed(2)}</p>
-                    <p>I.G.V. (18%): S/. {(items.reduce((acc, i) => acc + (Number(i.quantity || 0) * Number(i.unitPrice || 0)), 0) * 0.18).toFixed(2)}</p>
+                  <div className="bg-[#1c1c1c] text-white p-8 rounded-[2rem] flex flex-col justify-between shadow-2xl border-b-[6px] border-[#d9534f] animate-in zoom-in-95 duration-300">
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center text-[10px] font-bold opacity-60 uppercase tracking-widest">
+                        <span>Estado del Documento</span>
+                        <Select name="status" defaultValue={editingQuotation?.status || "Borrador"}>
+                          <SelectTrigger className="h-7 w-32 bg-white/10 border-none text-[9px] font-black">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Borrador">Borrador</SelectItem>
+                            <SelectItem value="Enviado">Enviado</SelectItem>
+                            <SelectItem value="Aceptado">Aceptado</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="h-px bg-white/10"></div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-[11px] font-bold opacity-80 uppercase">
+                          <span>Subtotal</span>
+                          <span>S/. {subtotal.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-[11px] font-bold opacity-80 uppercase">
+                          <span>I.G.V. (18%)</span>
+                          <span>S/. {tax.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="pt-8">
+                      <p className="text-[10px] font-black uppercase text-accent mb-1 tracking-widest">Inversión Total Estimada</p>
+                      <p className="text-4xl font-black text-white tracking-tighter leading-none">
+                        S/. {total.toFixed(2)}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
-              <DialogFooter className="border-t pt-6">
-                <Button type="submit" className="w-full h-12 uppercase font-black text-xs tracking-widest bg-[#1c1c1c] hover:bg-black text-white">
-                  {editingQuotation ? "Actualizar Proforma" : "Generar Documento"}
-                </Button>
+
+              <DialogFooter className="p-6 border-t bg-slate-50">
+                <div className="flex gap-4 w-full">
+                  <Button type="button" variant="ghost" onClick={() => setIsAdding(false)} className="flex-1 h-12 uppercase font-black text-[10px] tracking-widest">
+                    Cancelar
+                  </Button>
+                  <Button type="submit" className="flex-[2] h-12 uppercase font-black text-xs tracking-widest bg-[#d9534f] hover:bg-[#c9302c] text-white shadow-xl">
+                    {editingQuotation ? "Actualizar Proforma" : "Generar Documento Maestro"}
+                  </Button>
+                </div>
               </DialogFooter>
             </form>
           </DialogContent>
