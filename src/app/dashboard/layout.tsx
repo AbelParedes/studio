@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { DashboardNav } from "@/components/dashboard-nav"
-import { Search, Bell, Loader2, Menu, Building2, Palette } from "lucide-react"
+import { Bell, Loader2, Menu, Building2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection } from "@/firebase"
 import { doc, collection, query, where, limit } from "firebase/firestore"
@@ -44,14 +44,12 @@ export default function DashboardLayout({
   // Aplicar Tema y Colores dinámicamente
   useEffect(() => {
     if (company) {
-      // Aplicar Clase Dark Mode al documento
       if (company.themeMode === 'dark') {
         document.documentElement.classList.add('dark')
       } else {
         document.documentElement.classList.remove('dark')
       }
 
-      // Inyectar variables de color HSL
       if (company.primaryColor) {
         document.documentElement.style.setProperty('--primary', hexToHsl(company.primaryColor))
       }
@@ -59,7 +57,6 @@ export default function DashboardLayout({
         document.documentElement.style.setProperty('--accent', hexToHsl(company.accentColor))
       }
     } else {
-      // Valores por defecto si no hay empresa cargada
       document.documentElement.classList.remove('dark')
     }
   }, [company])
@@ -74,7 +71,7 @@ export default function DashboardLayout({
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-background gap-4">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        <p className="text-sm font-bold text-primary uppercase tracking-widest">Iniciando sesión segura...</p>
+        <p className="text-sm font-bold text-primary uppercase tracking-widest">Sincronizando Entorno SaaS...</p>
       </div>
     )
   }
@@ -85,7 +82,6 @@ export default function DashboardLayout({
 
   return (
     <div className="flex h-screen bg-background dark:bg-slate-950 overflow-hidden text-foreground">
-      {/* Sidebar Desktop */}
       <aside className="w-64 bg-sidebar shrink-0 hidden lg:block border-r border-sidebar-border shadow-xl">
         <DashboardNav 
           companyName={company?.name || "SERVIFUMIGA"} 
@@ -94,7 +90,6 @@ export default function DashboardLayout({
         />
       </aside>
 
-      {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         <header className="h-16 bg-white dark:bg-slate-900 border-b border-border flex items-center justify-between px-4 sm:px-6 shrink-0 z-10 shadow-sm">
           <div className="flex items-center gap-4 flex-1">
@@ -144,7 +139,7 @@ export default function DashboardLayout({
                 </p>
               </div>
               <div className="h-8 w-8 sm:h-9 sm:w-9 bg-primary rounded-full flex items-center justify-center text-white shadow-md uppercase font-bold text-xs border-2 border-accent/20">
-                {displayName[0]}
+                {displayName[0] || "U"}
               </div>
             </div>
           </div>
@@ -160,9 +155,6 @@ export default function DashboardLayout({
   )
 }
 
-/**
- * Convierte un color HEX a una cadena HSL compatible con las variables de Tailwind (H S L).
- */
 function hexToHsl(hex: string): string {
   let r = 0, g = 0, b = 0;
   hex = hex.replace('#', '');

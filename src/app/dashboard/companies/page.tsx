@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Search, Building2, Globe, Palette, Trash2, Edit2, Loader2, LogIn, ShieldAlert } from "lucide-react"
+import { Plus, Search, Building2, Trash2, Edit2, Loader2, LogIn, ShieldAlert } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, useUser, useDoc } from "@/firebase"
 import { collection, doc, query, where, getDocs, updateDoc, limit } from "firebase/firestore"
 import {
@@ -47,10 +47,9 @@ export default function CompaniesPage() {
   const companiesRef = useMemoFirebase(() => collection(db, "companies"), [db])
   const { data: companies, isLoading } = useCollection(companiesRef)
 
-  // Guardia de ruta: Solo el rol "Administrador" puede ver esta página
   useEffect(() => {
     if (!loadingProfile && !loadingRole && roleData && roleData.title !== "Administrador") {
-      toast({ variant: "destructive", title: "Acceso denegado", description: "No tienes permisos para gestionar empresas." })
+      toast({ variant: "destructive", title: "Acceso denegado", description: "Solo el administrador maestro gestiona empresas." })
       router.push("/dashboard")
     }
   }, [roleData, loadingProfile, loadingRole, router])
@@ -62,22 +61,6 @@ export default function CompaniesPage() {
       </div>
     )
   }
-
-  if (roleData.title !== "Administrador") {
-    return (
-      <div className="flex flex-col items-center justify-center p-20 space-y-4">
-        <ShieldAlert className="h-12 w-12 text-destructive" />
-        <h2 className="text-xl font-bold uppercase">Área Restringida</h2>
-        <p className="text-muted-foreground">Solo el administrador del sistema puede acceder aquí.</p>
-        <Button onClick={() => router.push("/dashboard")}>Volver al Inicio</Button>
-      </div>
-    )
-  }
-
-  const filteredCompanies = companies?.filter(c => 
-    c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.taxId?.toLowerCase().includes(searchTerm.toLowerCase())
-  )
 
   const handleSaveCompany = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -118,7 +101,7 @@ export default function CompaniesPage() {
       const snapshot = await getDocs(query(collection(db, "company_users"), where("email", "==", user.email)))
       if (!snapshot.empty) {
         await updateDoc(doc(db, "company_users", snapshot.docs[0].id), { companyId })
-        toast({ title: "Cambiando de organización..." })
+        toast({ title: "Accediendo a la organización..." })
         window.location.reload()
       }
     } catch (error) {
@@ -133,75 +116,67 @@ export default function CompaniesPage() {
     toast({ variant: "destructive", title: "Empresa eliminada" })
   }
 
-  const openEdit = (company: any) => {
-    setEditingCompany(company)
-    setIsAdding(true)
-  }
+  const filteredCompanies = companies?.filter(c => 
+    c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.taxId?.toLowerCase().includes(searchTerm.toLowerCase())
+  )
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight mb-1">GESTIÓN DE EMPRESAS</h2>
-          <p className="text-muted-foreground text-sm">Administre las organizaciones registradas y acceda a sus paneles exclusivos.</p>
+          <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase">Maestro de Empresas</h2>
+          <p className="text-muted-foreground text-sm">Panel exclusivo de gestión SaaS para el Super Administrador.</p>
         </div>
         
         <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) setEditingCompany(null); }}>
           <DialogTrigger asChild>
             <Button className="bg-primary text-white h-9">
-              <Plus className="mr-2 h-4 w-4" /> Nueva Empresa
+              <Plus className="mr-2 h-4 w-4" /> Registrar Nueva Organización
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <form onSubmit={handleSaveCompany}>
               <DialogHeader>
-                <DialogTitle>{editingCompany ? "Editar Organización" : "Registrar Nueva Organización"}</DialogTitle>
-                <DialogDescription>Defina la identidad y datos fiscales de la nueva empresa.</DialogDescription>
+                <DialogTitle>{editingCompany ? "Editar Organización" : "Nueva Organización SaaS"}</DialogTitle>
+                <DialogDescription>Defina la identidad y datos fiscales de la nueva empresa cliente.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="name">Nombre Comercial</Label>
-                    <Input id="name" name="name" defaultValue={editingCompany?.name} required placeholder="Ej. Servifumiga Sur SAC" />
+                    <Input id="name" name="name" defaultValue={editingCompany?.name} required placeholder="Ej. Servifumiga Perú" />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="taxId">RUC / DNI</Label>
-                    <Input id="taxId" name="taxId" defaultValue={editingCompany?.taxId} required placeholder="Ej. 20XXXXXXXXX" />
+                    <Input id="taxId" name="taxId" defaultValue={editingCompany?.taxId} required placeholder="Identificación Fiscal" />
                   </div>
                 </div>
-
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="email">Email Corporativo</Label>
-                    <Input id="email" name="email" type="email" defaultValue={editingCompany?.email} required placeholder="admin@empresa.com" />
+                    <Input id="email" name="email" type="email" defaultValue={editingCompany?.email} required />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="phone">Teléfono</Label>
-                    <Input id="phone" name="phone" defaultValue={editingCompany?.phone} placeholder="+51 987..." />
+                    <Input id="phone" name="phone" defaultValue={editingCompany?.phone} />
                   </div>
                 </div>
-
                 <div className="grid gap-2">
-                  <Label htmlFor="address">Dirección Fiscal</Label>
-                  <Input id="address" name="address" defaultValue={editingCompany?.address} placeholder="Lima, Perú" />
+                  <Label htmlFor="logoUrl">URL Logo Empresa</Label>
+                  <Input id="logoUrl" name="logoUrl" defaultValue={editingCompany?.logoUrl} placeholder="https://..." />
                 </div>
-
-                <div className="grid gap-2">
-                  <Label htmlFor="logoUrl">URL del Logo (PNG/SVG)</Label>
-                  <Input id="logoUrl" name="logoUrl" defaultValue={editingCompany?.logoUrl} placeholder="https://dominio.com/logo.png" />
-                </div>
-
                 <div className="grid grid-cols-3 gap-4 border-t pt-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="primaryColor">Color Primario</Label>
+                    <Label htmlFor="primaryColor">Primario</Label>
                     <Input id="primaryColor" name="primaryColor" type="color" defaultValue={editingCompany?.primaryColor || "#1a2b3c"} />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="accentColor">Color Acento</Label>
+                    <Label htmlFor="accentColor">Acento</Label>
                     <Input id="accentColor" name="accentColor" type="color" defaultValue={editingCompany?.accentColor || "#d9534f"} />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="themeMode">Tema inicial</Label>
+                    <Label htmlFor="themeMode">Modo Tema</Label>
                     <Select name="themeMode" defaultValue={editingCompany?.themeMode || "light"}>
                       <SelectTrigger>
                         <SelectValue placeholder="Tema" />
@@ -215,7 +190,7 @@ export default function CompaniesPage() {
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit" className="w-full uppercase font-bold text-xs">{editingCompany ? "Actualizar" : "Crear Empresa"}</Button>
+                <Button type="submit" className="w-full uppercase font-bold text-xs">{editingCompany ? "Actualizar" : "Habilitar Empresa"}</Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -243,10 +218,9 @@ export default function CompaniesPage() {
             <Table className="dense-table">
               <TableHeader className="bg-primary">
                 <TableRow>
-                  <TableHead className="text-white">Empresa</TableHead>
-                  <TableHead className="text-white">Identificación</TableHead>
-                  <TableHead className="text-white">Contacto</TableHead>
-                  <TableHead className="text-white">Personalización</TableHead>
+                  <TableHead className="text-white">Organización</TableHead>
+                  <TableHead className="text-white">Identidad Fiscal</TableHead>
+                  <TableHead className="text-white">Configuración</TableHead>
                   <TableHead className="text-white w-[150px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -255,39 +229,28 @@ export default function CompaniesPage() {
                   <TableRow key={comp.id} className="hover:bg-muted/30">
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 relative bg-white border rounded overflow-hidden shrink-0">
+                        <div className="h-10 w-10 relative bg-white border rounded overflow-hidden shadow-sm">
                           {comp.logoUrl ? (
                             <Image src={comp.logoUrl} alt="Logo" fill className="object-contain p-1" unoptimized />
                           ) : (
                             <div className="h-full w-full flex items-center justify-center bg-muted">
-                              <Building2 className="h-5 w-5 text-muted-foreground" />
+                              <Building2 className="h-4 w-4 text-muted-foreground" />
                             </div>
                           )}
                         </div>
                         <div className="flex flex-col">
-                          <span className="font-bold text-primary uppercase">{comp.name}</span>
-                          <span className="text-[10px] text-muted-foreground truncate max-w-[120px]">{comp.id}</span>
+                          <span className="font-bold text-primary uppercase truncate max-w-[150px]">{comp.name}</span>
+                          <span className="text-[10px] text-muted-foreground truncate">{comp.email}</span>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="text-[11px] font-mono bg-muted/50 px-2 py-1 rounded w-fit">
-                        {comp.taxId}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col text-[11px]">
-                        <span className="font-medium">{comp.email}</span>
-                        <span className="text-muted-foreground">{comp.phone || "Sin teléfono"}</span>
-                      </div>
+                      <Badge variant="outline" className="text-[10px] font-mono">{comp.taxId}</Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <div className="h-4 w-4 rounded shadow-sm border" style={{ backgroundColor: comp.primaryColor }}></div>
-                        <div className="h-4 w-4 rounded shadow-sm border" style={{ backgroundColor: comp.accentColor }}></div>
-                        <Badge variant="outline" className="text-[8px] uppercase font-bold">
-                          {comp.themeMode}
-                        </Badge>
+                        <Badge variant="outline" className="text-[8px] uppercase font-bold">{comp.themeMode}</Badge>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -295,7 +258,7 @@ export default function CompaniesPage() {
                         <Button 
                           variant="secondary" 
                           size="sm" 
-                          className="h-8 text-[10px] font-bold uppercase bg-primary/10 text-primary hover:bg-primary/20"
+                          className="h-8 text-[10px] font-bold uppercase"
                           onClick={() => handleSwitchCompany(comp.id)}
                           disabled={isSwitching === comp.id}
                         >
