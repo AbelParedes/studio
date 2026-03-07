@@ -73,14 +73,14 @@ export default function QuotationsPage() {
   const { data: clients } = useCollection(clientsRef)
 
   const suggestedQuotationNumber = useMemo(() => {
-    if (!quotations) return ""
     const currentYear = new Date().getFullYear()
+    if (!quotations) return `COT-0001-${currentYear}`
     const yearQuotations = quotations.filter(q => {
       const qDate = q.date ? new Date(q.date) : new Date()
       return qDate.getFullYear() === currentYear
     })
     const nextCount = yearQuotations.length + 1
-    return nextCount.toString().padStart(6, '0')
+    return `COT-${nextCount.toString().padStart(4, '0')}-${currentYear}`
   }, [quotations])
 
   const handleAddItem = () => {
@@ -107,7 +107,12 @@ export default function QuotationsPage() {
       clientId: formData.get("clientId") as string,
       quotationNumber: formData.get("number") as string || suggestedQuotationNumber,
       date: formData.get("date") as string || new Date().toISOString().split('T')[0],
-      items: items.map(i => ({ ...i, total: Number(i.quantity || 0) * Number(i.unitPrice || 0) })),
+      items: items.map(i => ({ 
+        description: i.description, 
+        quantity: Number(i.quantity || 0), 
+        unitPrice: Number(i.unitPrice || 0),
+        total: Number(i.quantity || 0) * Number(i.unitPrice || 0) 
+      })),
       subtotal,
       tax,
       total,
@@ -142,15 +147,15 @@ export default function QuotationsPage() {
     setEditingQuotation(q)
     setItems(q.items?.map((i: any) => ({ 
       description: i.description, 
-      quantity: i.quantity, 
-      unitPrice: i.unitPrice 
+      quantity: i.quantity || 1, 
+      unitPrice: i.unitPrice || 0 
     })) || [])
     setIsAdding(true)
   }
 
   if (viewingQuotation) {
     const client = clients?.find(c => c.id === viewingQuotation.clientId)
-    const defaultLogo = PlaceHolderImages.find(img => img.id === 'apeva-logo')?.imageUrl || ""
+    const defaultLogo = PlaceHolderImages.find(img => img.id === 'apeva-logo')?.imageUrl || "https://picsum.photos/seed/apeva/200/100"
     const currentYear = new Date().getFullYear()
 
     return (
@@ -169,10 +174,8 @@ export default function QuotationsPage() {
           </div>
         </div>
 
-        {/* FORMATO TIPO SIEXT */}
         <div className="bg-white p-0 shadow-2xl mx-auto print-page w-[210mm] min-h-[297mm] flex flex-col relative overflow-hidden text-slate-900 border" id="quotation-print-area">
           
-          {/* HEADER MODELO SIEXT */}
           <div className="pt-8 px-10 pb-4">
             <div className="flex justify-between items-center mb-6">
               <div className="relative h-20 w-44 shrink-0">
@@ -204,12 +207,11 @@ export default function QuotationsPage() {
             </div>
 
             <div className="text-right text-[10px] font-bold text-slate-700 uppercase pr-4">
-              LIMA, {format(new Date(viewingQuotation.date), "dd 'de' MMMM 'de' yyyy", { locale: es })}
+              LIMA, {viewingQuotation.date ? format(new Date(viewingQuotation.date), "dd 'de' MMMM 'de' yyyy", { locale: es }) : "---"}
             </div>
           </div>
 
           <div className="px-10 space-y-6 flex-1">
-            {/* DATOS DEL CLIENTE */}
             <div className="space-y-2">
               <h3 className="text-[11px] font-black text-red-600 uppercase tracking-widest">DATOS DE CLIENTE</h3>
               <div className="border border-slate-300 rounded overflow-hidden">
@@ -240,7 +242,6 @@ export default function QuotationsPage() {
               </div>
             </div>
 
-            {/* EXTINTORES OPCIONES */}
             <div className="space-y-2">
               <h3 className="text-[11px] font-black text-red-600 uppercase tracking-widest">EXTINTORES</h3>
               <div className="flex gap-20 pl-4">
@@ -255,7 +256,6 @@ export default function QuotationsPage() {
               </div>
             </div>
 
-            {/* DETALLE DE SERVICIO */}
             <div className="space-y-2">
               <h3 className="text-[11px] font-black text-red-600 uppercase tracking-widest">DETALLE DE SERVICIO</h3>
               <div className="border border-slate-300 rounded overflow-hidden">
@@ -271,23 +271,22 @@ export default function QuotationsPage() {
                   <tbody>
                     {viewingQuotation.items?.map((item: any, idx: number) => (
                       <tr key={idx} className="border-b border-slate-200">
-                        <td className="p-2 font-bold text-center border-r border-slate-200">{item.quantity}</td>
-                        <td className="p-2 font-bold uppercase border-r border-slate-200">{item.description}</td>
-                        <td className="p-2 text-right font-bold border-r border-slate-200">S/. {item.unitPrice.toFixed(2)}</td>
-                        <td className="p-2 text-right font-black">S/. {item.total.toFixed(2)}</td>
+                        <td className="p-2 font-bold text-center border-r border-slate-200">{item.quantity || 0}</td>
+                        <td className="p-2 font-bold uppercase border-r border-slate-200">{item.description || "---"}</td>
+                        <td className="p-2 text-right font-bold border-r border-slate-200">S/. {(Number(item.unitPrice || 0)).toFixed(2)}</td>
+                        <td className="p-2 text-right font-black">S/. {(Number(item.total || 0)).toFixed(2)}</td>
                       </tr>
                     ))}
                     <tr>
                       <td colSpan={2} className="p-2 font-black uppercase bg-slate-50 italic border-r border-slate-300">El servicio será pagado al CONTADO.</td>
                       <td className="p-2 text-right font-black uppercase bg-slate-50 border-r border-slate-300">COSTO TOTAL</td>
-                      <td className="p-2 text-right font-black text-red-600 bg-slate-50">S/. {viewingQuotation.total.toFixed(2)}</td>
+                      <td className="p-2 text-right font-black text-red-600 bg-slate-50">S/. {(Number(viewingQuotation.total || 0)).toFixed(2)}</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
             </div>
 
-            {/* OBSERVACIÓN Y ENTREGA */}
             <div className="border border-slate-300 rounded overflow-hidden">
               <div className="flex border-b border-slate-300">
                 <div className="w-40 bg-slate-50 p-2 font-black uppercase text-[10px] border-r border-slate-300">OBSERVACIÓN:</div>
@@ -296,7 +295,7 @@ export default function QuotationsPage() {
               <div className="grid grid-cols-2">
                 <div className="flex border-r border-slate-300">
                   <div className="w-40 bg-slate-50 p-2 font-black uppercase text-[10px] border-r border-slate-300">FECHA ENTREGA:</div>
-                  <div className="flex-1 p-2 text-center font-bold text-[10px]">{viewingQuotation.date}</div>
+                  <div className="flex-1 p-2 text-center font-bold text-[10px]">{viewingQuotation.date || "---"}</div>
                 </div>
                 <div className="flex">
                   <div className="w-40 bg-slate-50 p-2 font-black uppercase text-[10px] border-r border-slate-300">HORA ENTREGA:</div>
@@ -306,7 +305,6 @@ export default function QuotationsPage() {
             </div>
           </div>
 
-          {/* FIRMAS Y PIE DE PAGINA */}
           <div className="mt-auto p-10 pt-20">
             <div className="grid grid-cols-2 gap-20 mb-12">
               <div className="flex flex-col items-center">
@@ -323,7 +321,6 @@ export default function QuotationsPage() {
 
             <div className="flex justify-between items-end">
               <div className="h-16 w-16 border bg-slate-50 flex items-center justify-center p-1 rounded">
-                {/* QR PLACEHOLDER */}
                 <div className="w-full h-full bg-slate-200 flex items-center justify-center text-[8px] font-black uppercase text-slate-400 text-center">QR VALIDACIÓN</div>
               </div>
               <p className="text-[8px] font-black uppercase text-slate-400 tracking-widest opacity-40">EXTINTORES APEVA SAAS © {currentYear}</p>
@@ -335,9 +332,9 @@ export default function QuotationsPage() {
               body * { visibility: hidden; }
               #quotation-print-area, #quotation-print-area * { visibility: visible; }
               #quotation-print-area {
-                position: absolute;
-                left: 0;
-                top: 0;
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
                 width: 210mm !important;
                 height: 297mm !important;
                 margin: 0 !important;
@@ -522,8 +519,8 @@ export default function QuotationsPage() {
                   return (
                     <TableRow key={q.id} className="hover:bg-red-50/30 border-slate-100 transition-colors">
                       <TableCell className="font-black text-red-600 uppercase tracking-tight">{q.quotationNumber}</TableCell>
-                      <TableCell className="font-bold uppercase text-[11px] text-slate-700">{client?.name || "CARGA..."}</TableCell>
-                      <TableCell className="text-right pr-6 font-black text-slate-900">S/. {(q.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
+                      <TableCell className="font-bold uppercase text-[11px] text-slate-700">{client?.name || "---"}</TableCell>
+                      <TableCell className="text-right pr-6 font-black text-slate-900">S/. {(Number(q.total || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className={cn(
                           "text-[9px] font-black uppercase px-2 py-0.5",
