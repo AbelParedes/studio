@@ -25,7 +25,9 @@ import {
   Info,
   ImageIcon,
   Save,
-  Paintbrush
+  Paintbrush,
+  Zap,
+  CreditCard
 } from "lucide-react"
 import { useUser, useFirestore, useDoc, useMemoFirebase, useAuth, useCollection } from "@/firebase"
 import { doc, setDoc, collection, query, where, limit } from "firebase/firestore"
@@ -34,8 +36,9 @@ import { signOut } from "firebase/auth"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
+import Link from "next/link"
 
-type SettingsTab = "profile" | "company" | "notifications" | "security"
+type SettingsTab = "profile" | "company" | "notifications" | "security" | "subscription"
 
 export default function SettingsPage() {
   const { user } = useUser()
@@ -166,7 +169,7 @@ export default function SettingsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase">Ajustes del Sistema</h2>
-          <p className="text-muted-foreground text-sm">Configure su perfil y la identidad visual de su organización.</p>
+          <p className="text-muted-foreground text-sm font-bold uppercase tracking-tight text-[10px]">Configure su perfil y la identidad visual de su organización.</p>
         </div>
       </div>
 
@@ -178,6 +181,9 @@ export default function SettingsPage() {
             </Button>
             <Button variant="ghost" className={cn("justify-start font-bold uppercase text-[11px]", activeTab === "company" && "bg-primary/5 text-primary border-l-4 border-primary rounded-none")} onClick={() => setActiveTab("company")}>
               <Palette className="mr-3 h-4 w-4" /> Personalización Marca
+            </Button>
+            <Button variant="ghost" className={cn("justify-start font-bold uppercase text-[11px]", activeTab === "subscription" && "bg-primary/5 text-primary border-l-4 border-primary rounded-none")} onClick={() => setActiveTab("subscription")}>
+              <CreditCard className="mr-3 h-4 w-4" /> Suscripción
             </Button>
             <Button variant="ghost" className={cn("justify-start font-bold uppercase text-[11px]", activeTab === "notifications" && "bg-primary/5 text-primary border-l-4 border-primary rounded-none")} onClick={() => setActiveTab("notifications")}>
               <Bell className="mr-3 h-4 w-4" /> Notificaciones
@@ -197,20 +203,20 @@ export default function SettingsPage() {
             <Card className="shadow-sm border-none">
               <CardHeader>
                 <CardTitle className="text-sm font-bold uppercase tracking-wider">Información Personal</CardTitle>
-                <CardDescription>Datos básicos del administrador en sesión.</CardDescription>
+                <CardDescription className="text-[10px] font-bold uppercase">Datos básicos del administrador en sesión.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-xs font-bold uppercase">Nombre Completo</Label>
-                    <Input value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
+                    <Input value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="h-11 font-bold text-xs" />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold uppercase">Email Institucional</Label>
-                    <Input value={formData.email} disabled className="bg-muted" />
+                    <Input value={formData.email} disabled className="bg-muted h-11 font-bold text-xs" />
                   </div>
                 </div>
-                <Button className="bg-primary text-white font-bold uppercase text-[11px]" onClick={handleUpdateProfile} disabled={isSaving}>
+                <Button className="bg-primary text-white font-black uppercase text-[11px] h-10 shadow-lg px-8" onClick={handleUpdateProfile} disabled={isSaving}>
                   {isSaving ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <Save className="mr-2 h-3 w-3" />} Guardar Mi Perfil
                 </Button>
               </CardContent>
@@ -222,7 +228,7 @@ export default function SettingsPage() {
               <Card className="shadow-sm border-none">
                 <CardHeader>
                   <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary">Identidad Visual y Colores</CardTitle>
-                  <CardDescription>Configure los elementos gráficos y la paleta de colores oficial de su organización.</CardDescription>
+                  <CardDescription className="text-[10px] font-bold uppercase">Configure los elementos gráficos y la paleta de colores oficial de su organización.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-8">
                   {/* COLORES CORPORATIVOS */}
@@ -235,21 +241,21 @@ export default function SettingsPage() {
                         <Label className="text-[10px] font-bold uppercase text-muted-foreground">Color Principal</Label>
                         <div className="flex gap-2">
                           <Input type="color" className="w-12 h-10 p-1" value={companyData.primaryColor} onChange={(e) => setCompanyData({...companyData, primaryColor: e.target.value})} />
-                          <Input value={companyData.primaryColor} onChange={(e) => setCompanyData({...companyData, primaryColor: e.target.value})} className="font-mono text-xs" />
+                          <Input value={companyData.primaryColor} onChange={(e) => setCompanyData({...companyData, primaryColor: e.target.value})} className="font-mono text-xs font-bold" />
                         </div>
                       </div>
                       <div className="space-y-2">
                         <Label className="text-[10px] font-bold uppercase text-muted-foreground">Color de Acento</Label>
                         <div className="flex gap-2">
                           <Input type="color" className="w-12 h-10 p-1" value={companyData.accentColor} onChange={(e) => setCompanyData({...companyData, accentColor: e.target.value})} />
-                          <Input value={companyData.accentColor} onChange={(e) => setCompanyData({...companyData, accentColor: e.target.value})} className="font-mono text-xs" />
+                          <Input value={companyData.accentColor} onChange={(e) => setCompanyData({...companyData, accentColor: e.target.value})} className="font-mono text-xs font-bold" />
                         </div>
                       </div>
                       <div className="space-y-2">
                         <Label className="text-[10px] font-bold uppercase text-muted-foreground">Fondo Pie de Página</Label>
                         <div className="flex gap-2">
                           <Input type="color" className="w-12 h-10 p-1" value={companyData.footerBgColor} onChange={(e) => setCompanyData({...companyData, footerBgColor: e.target.value})} />
-                          <Input value={companyData.footerBgColor} onChange={(e) => setCompanyData({...companyData, footerBgColor: e.target.value})} className="font-mono text-xs" />
+                          <Input value={companyData.footerBgColor} onChange={(e) => setCompanyData({...companyData, footerBgColor: e.target.value})} className="font-mono text-xs font-bold" />
                         </div>
                       </div>
                     </div>
@@ -276,6 +282,7 @@ export default function SettingsPage() {
                           placeholder="https://ejemplo.com/mi-logo.png" 
                           value={companyData.logoUrl} 
                           onChange={(e) => setCompanyData({...companyData, logoUrl: e.target.value})} 
+                          className="h-11 font-bold text-xs"
                         />
                       </div>
                     </div>
@@ -301,6 +308,7 @@ export default function SettingsPage() {
                           placeholder="URL de la Cabecera" 
                           value={companyData.headerUrl} 
                           onChange={(e) => setCompanyData({...companyData, headerUrl: e.target.value})} 
+                          className="h-11 font-bold text-xs"
                         />
                       </div>
                     </div>
@@ -321,6 +329,7 @@ export default function SettingsPage() {
                           placeholder="URL del Pie de Página" 
                           value={companyData.footerUrl} 
                           onChange={(e) => setCompanyData({...companyData, footerUrl: e.target.value})} 
+                          className="h-11 font-bold text-xs"
                         />
                       </div>
                     </div>
@@ -331,27 +340,27 @@ export default function SettingsPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase text-muted-foreground">Nombre de la Organización</Label>
-                      <Input value={companyData.name} onChange={(e) => setCompanyData({...companyData, name: e.target.value})} />
+                      <Input value={companyData.name} onChange={(e) => setCompanyData({...companyData, name: e.target.value})} className="h-11 font-bold text-xs" />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase text-muted-foreground">RUC / Identificación Fiscal</Label>
-                      <Input value={companyData.taxId} onChange={(e) => setCompanyData({...companyData, taxId: e.target.value})} />
+                      <Input value={companyData.taxId} onChange={(e) => setCompanyData({...companyData, taxId: e.target.value})} className="h-11 font-bold text-xs" />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase text-muted-foreground">Central Telefónica</Label>
-                      <Input value={companyData.phone} onChange={(e) => setCompanyData({...companyData, phone: e.target.value})} />
+                      <Input value={companyData.phone} onChange={(e) => setCompanyData({...companyData, phone: e.target.value})} className="h-11 font-bold text-xs" />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase text-muted-foreground">Email de Contacto</Label>
-                      <Input value={companyData.email} onChange={(e) => setCompanyData({...companyData, email: e.target.value})} />
+                      <Input value={companyData.email} onChange={(e) => setCompanyData({...companyData, email: e.target.value})} className="h-11 font-bold text-xs" />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase text-muted-foreground">Sitio Web</Label>
-                      <Input placeholder="www.tuempresa.com" value={companyData.website} onChange={(e) => setCompanyData({...companyData, website: e.target.value})} />
+                      <Input placeholder="www.tuempresa.com" value={companyData.website} onChange={(e) => setCompanyData({...companyData, website: e.target.value})} className="h-11 font-bold text-xs" />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase text-muted-foreground">Dirección Fiscal / Sede</Label>
-                      <Input value={companyData.address} onChange={(e) => setCompanyData({...companyData, address: e.target.value})} />
+                      <Input value={companyData.address} onChange={(e) => setCompanyData({...companyData, address: e.target.value})} className="h-11 font-bold text-xs" />
                     </div>
                   </div>
                 </CardContent>
@@ -365,11 +374,59 @@ export default function SettingsPage() {
             </div>
           )}
 
+          {activeTab === "subscription" && (
+            <Card className="shadow-sm border-none overflow-hidden">
+              <CardHeader className="bg-primary text-white pb-8">
+                <CardTitle className="text-sm font-bold uppercase tracking-widest flex items-center gap-2">
+                  <Zap className="h-4 w-4 text-accent" /> Estado de Suscripción SaaS
+                </CardTitle>
+                <CardDescription className="text-white/70 text-[10px] font-bold uppercase">Gestione su plan y facturación recurrente.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-6 space-y-8">
+                <div className="flex flex-col md:flex-row items-center justify-between p-6 border-2 border-primary/10 rounded-2xl bg-slate-50 gap-6">
+                  <div className="space-y-1 text-center md:text-left">
+                    <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Plan Actual Activo</p>
+                    <h3 className="text-3xl font-black text-primary uppercase">{company?.plan || "Básico"}</h3>
+                  </div>
+                  <div className="flex flex-col gap-2 w-full md:w-auto">
+                    <Link href="/dashboard/plans" className="w-full">
+                      <Button className="w-full bg-accent text-white font-black uppercase text-[10px] h-10 shadow-lg px-8">
+                        Mejorar Plan (Upgrade)
+                      </Button>
+                    </Link>
+                    <Button variant="outline" className="w-full font-bold uppercase text-[10px] h-10">Ver Facturas</Button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 border rounded-xl flex items-center gap-4">
+                    <div className="h-10 w-10 rounded-full bg-status-success/10 flex items-center justify-center">
+                      <CheckCircle2 className="h-5 w-5 text-status-success" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black uppercase text-muted-foreground">Próximo Cobro</p>
+                      <p className="text-sm font-bold">15 de Marzo, 2024</p>
+                    </div>
+                  </div>
+                  <div className="p-4 border rounded-xl flex items-center gap-4">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Building2 className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black uppercase text-muted-foreground">Ciclo de Facturación</p>
+                      <p className="text-sm font-bold uppercase">Mensual</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {activeTab === "notifications" && (
             <Card className="shadow-sm border-none">
               <CardHeader>
-                <CardTitle className="text-sm font-bold uppercase">Alertas y Notificaciones</CardTitle>
-                <CardDescription>Configure cómo desea recibir las alertas de vencimiento.</CardDescription>
+                <CardTitle className="text-sm font-bold uppercase tracking-wider">Alertas y Notificaciones</CardTitle>
+                <CardDescription className="text-[10px] font-bold uppercase">Configure cómo desea recibir las alertas de vencimiento.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between p-4 border rounded-xl bg-white shadow-sm">
@@ -386,15 +443,15 @@ export default function SettingsPage() {
           {activeTab === "security" && (
             <Card className="shadow-sm border-none">
               <CardHeader>
-                <CardTitle className="text-sm font-bold uppercase">Seguridad del Entorno</CardTitle>
-                <CardDescription>Protocolos de acceso y cifrado de datos SaaS.</CardDescription>
+                <CardTitle className="text-sm font-bold uppercase tracking-wider">Seguridad del Entorno</CardTitle>
+                <CardDescription className="text-[10px] font-bold uppercase">Protocolos de acceso y cifrado de datos SaaS.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="p-6 bg-primary/5 border border-primary/20 rounded-xl flex items-center gap-4">
                   <ShieldCheck className="h-8 w-8 text-primary" />
                   <div>
                     <span className="text-xs font-black text-primary uppercase block mb-1">Cifrado de Alta Seguridad SSL</span>
-                    <span className="text-[11px] text-muted-foreground font-medium leading-tight block">Sus bases de datos de clientes, inventario y documentos están aislados y encriptados en nuestro silo de datos industrial.</span>
+                    <span className="text-[11px] text-muted-foreground font-bold uppercase leading-tight block">Sus bases de datos de clientes, inventario y documentos están aislados y encriptados en nuestro silo de datos industrial.</span>
                   </div>
                 </div>
               </CardContent>

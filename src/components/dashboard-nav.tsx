@@ -18,7 +18,8 @@ import {
   ShieldCheck,
   Building2,
   FileText,
-  Package
+  Package,
+  Zap
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/firebase"
@@ -33,6 +34,7 @@ const navItems = [
   { name: "Usuarios", href: "/dashboard/users", icon: UserCheck },
   { name: "Roles y Permisos", href: "/dashboard/roles", icon: ShieldCheck, adminOnly: true },
   { name: "Productos y Servicios", href: "/dashboard/inventory", icon: Package },
+  { name: "Planes", href: "/dashboard/plans", icon: Zap },
   { name: "Calendario", href: "/dashboard/calendar", icon: Calendar },
   { name: "Fumigación", href: "/dashboard/fumigation", icon: Bug },
   { name: "Recordatorios IA", href: "/dashboard/reminders", icon: Bell },
