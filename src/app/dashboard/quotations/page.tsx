@@ -13,17 +13,13 @@ import {
   Trash2, 
   Edit2, 
   Loader2, 
-  Mail, 
-  Phone, 
-  Globe, 
-  MapPin, 
   ArrowLeft,
-  MousePointer2,
-  Flame,
   CheckCircle2,
   Download,
-  FileText,
-  Info
+  MapPin,
+  Phone,
+  Mail,
+  Globe
 } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, useUser, useDoc } from "@/firebase"
 import { collection, doc, query, where } from "firebase/firestore"
@@ -43,6 +39,8 @@ import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
 import { PlaceHolderImages } from "@/lib/placeholder-images"
 import { cn } from "@/lib/utils"
+import { format } from "date-fns"
+import { es } from "date-fns/locale"
 
 export default function QuotationsPage() {
   const db = useFirestore()
@@ -53,7 +51,6 @@ export default function QuotationsPage() {
   const [editingQuotation, setEditingQuotation] = useState<any | null>(null)
   const [items, setItems] = useState<{description: string, quantity: number, unitPrice: number}[]>([])
 
-  // 1. Contexto de usuario y empresa
   const userProfileQuery = useMemoFirebase(() => 
     user?.email ? query(collection(db, "company_users"), where("email", "==", user.email)) : null,
   [db, user?.email])
@@ -65,7 +62,6 @@ export default function QuotationsPage() {
   [db, companyId])
   const { data: company } = useDoc(companyRef)
 
-  // 2. Cargar datos de negocio
   const quotationsRef = useMemoFirebase(() => 
     companyId ? query(collection(db, "quotations"), where("companyId", "==", companyId)) : null,
   [db, companyId])
@@ -76,24 +72,17 @@ export default function QuotationsPage() {
   [db, companyId])
   const { data: clients } = useCollection(clientsRef)
 
-  // 3. Generación automática de número de cotización (Serie-Año)
   const suggestedQuotationNumber = useMemo(() => {
     if (!quotations) return ""
     const currentYear = new Date().getFullYear()
-    
-    // Filtrar cotizaciones del año actual para esta empresa
     const yearQuotations = quotations.filter(q => {
       const qDate = q.date ? new Date(q.date) : new Date()
       return qDate.getFullYear() === currentYear
     })
-
-    // El conteo empieza de 0 (0001)
     const nextCount = yearQuotations.length + 1
-    const sequence = nextCount.toString().padStart(4, '0')
-    return `COT-${sequence}-${currentYear}`
+    return nextCount.toString().padStart(6, '0')
   }, [quotations])
 
-  // 4. Lógica de gestión de items
   const handleAddItem = () => {
     setItems([...items, { description: "", quantity: 1, unitPrice: 0 }])
   }
@@ -159,22 +148,19 @@ export default function QuotationsPage() {
     setIsAdding(true)
   }
 
-  // 5. Vista de Impresión / PDF
   if (viewingQuotation) {
     const client = clients?.find(c => c.id === viewingQuotation.clientId)
     const defaultLogo = PlaceHolderImages.find(img => img.id === 'apeva-logo')?.imageUrl || ""
-    
-    const headerSrc = company?.headerUrl || company?.logoUrl || defaultLogo
-    const footerSrc = company?.footerUrl || null
+    const currentYear = new Date().getFullYear()
 
     return (
       <div className="space-y-4 animate-in fade-in duration-300">
         <div className="flex items-center justify-between no-print mb-4">
-          <Button variant="ghost" onClick={() => setViewingQuotation(null)} className="font-bold uppercase text-[10px] text-primary hover:bg-primary/5">
+          <Button variant="ghost" onClick={() => setViewingQuotation(null)} className="font-bold uppercase text-[10px] text-primary">
             <ArrowLeft className="mr-2 h-3 w-3" /> Volver al Listado
           </Button>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={handlePrint} className="font-bold uppercase text-[10px] border-primary text-primary h-8">
+            <Button variant="outline" onClick={handlePrint} className="font-bold uppercase text-[10px] h-8 border-primary text-primary">
               <Printer className="mr-2 h-3 w-3" /> Imprimir
             </Button>
             <Button onClick={handlePrint} className="bg-primary text-white font-bold uppercase text-[10px] h-8 shadow-md">
@@ -183,151 +169,165 @@ export default function QuotationsPage() {
           </div>
         </div>
 
-        <div className="bg-white p-0 shadow-xl mx-auto print-page w-[210mm] min-h-[297mm] flex flex-col relative overflow-hidden text-slate-800 border border-slate-100" id="quotation-print-area">
-          <div className="pt-6 px-10 pb-3">
-            <div className="flex justify-between items-start">
-              <div className="relative h-20 w-64 shrink-0">
-                {headerSrc && (
-                  <Image 
-                    src={headerSrc} 
-                    alt="Cabecera Corporativa" 
-                    fill 
-                    className="object-contain object-left"
-                    unoptimized
-                  />
-                )}
+        {/* FORMATO TIPO SIEXT */}
+        <div className="bg-white p-0 shadow-2xl mx-auto print-page w-[210mm] min-h-[297mm] flex flex-col relative overflow-hidden text-slate-900 border" id="quotation-print-area">
+          
+          {/* HEADER MODELO SIEXT */}
+          <div className="pt-8 px-10 pb-4">
+            <div className="flex justify-between items-center mb-6">
+              <div className="relative h-20 w-44 shrink-0">
+                <Image 
+                  src={company?.logoUrl || defaultLogo} 
+                  alt="Logo" 
+                  fill 
+                  className="object-contain object-left"
+                  unoptimized
+                />
               </div>
-              <div className="text-right flex flex-col items-end pt-2">
-                <div className="border-2 border-red-600 p-3 rounded-lg bg-slate-50 min-w-[200px]">
-                  <p className="text-[9px] font-bold uppercase text-slate-500 tracking-wider mb-0.5">R.U.C. {company?.taxId || "---"}</p>
-                  <p className="text-[11px] font-black uppercase text-red-600 mb-0.5 tracking-tight">PROFORMA / COTIZACIÓN</p>
-                  <p className="text-lg font-black text-slate-900 tracking-tighter">{viewingQuotation.quotationNumber}</p>
+              <div className="text-center flex-1">
+                <h1 className="text-3xl font-black text-red-600 tracking-tighter uppercase leading-none">SISTEMA DE EXTINTORES</h1>
+                <p className="text-[10px] font-bold text-slate-500 tracking-[0.2em] mt-1 uppercase">EQUIPOS CONTRA INCENDIO - SANEAMIENTO AMBIENTAL</p>
+              </div>
+            </div>
+
+            <div className="bg-slate-100 py-2 px-4 rounded border flex flex-wrap justify-center gap-x-6 gap-y-1 text-[8px] font-bold text-slate-600 uppercase mb-6">
+              <div className="flex items-center gap-1"><MapPin className="h-2.5 w-2.5 text-red-600" /> {company?.address || "DIRECCIÓN DE LA EMPRESA"}</div>
+              <div className="flex items-center gap-1"><Phone className="h-2.5 w-2.5 text-red-600" /> {company?.phone || "TELÉFONOS"}</div>
+              <div className="flex items-center gap-1"><Mail className="h-2.5 w-2.5 text-red-600" /> {company?.email || "EMAIL"}</div>
+              <div className="flex items-center gap-1"><Globe className="h-2.5 w-2.5 text-red-600" /> {company?.website || "WWW.SISTEMADEEXTINTORES.COM"}</div>
+            </div>
+
+            <div className="bg-red-600 py-3 rounded-full text-center shadow-md mb-4">
+              <h2 className="text-xl font-black text-white uppercase tracking-widest">
+                PROFORMA N° {viewingQuotation.quotationNumber}
+              </h2>
+            </div>
+
+            <div className="text-right text-[10px] font-bold text-slate-700 uppercase pr-4">
+              LIMA, {format(new Date(viewingQuotation.date), "dd 'de' MMMM 'de' yyyy", { locale: es })}
+            </div>
+          </div>
+
+          <div className="px-10 space-y-6 flex-1">
+            {/* DATOS DEL CLIENTE */}
+            <div className="space-y-2">
+              <h3 className="text-[11px] font-black text-red-600 uppercase tracking-widest">DATOS DE CLIENTE</h3>
+              <div className="border border-slate-300 rounded overflow-hidden">
+                <table className="w-full text-[10px] border-collapse">
+                  <tbody>
+                    <tr className="border-b border-slate-200">
+                      <td className="bg-slate-50 p-2 font-black uppercase w-40 border-r border-slate-200">N° DOCUMENTO:</td>
+                      <td className="p-2 font-bold uppercase">{client?.taxId || "---"}</td>
+                    </tr>
+                    <tr className="border-b border-slate-200">
+                      <td className="bg-slate-50 p-2 font-black uppercase border-r border-slate-200">CLIENTE:</td>
+                      <td className="p-2 font-bold uppercase">{client?.name || "---"}</td>
+                    </tr>
+                    <tr className="border-b border-slate-200">
+                      <td className="bg-slate-50 p-2 font-black uppercase border-r border-slate-200">DIRECCIÓN:</td>
+                      <td className="p-2 font-bold uppercase">{client?.address || "---"}</td>
+                    </tr>
+                    <tr className="border-b border-slate-200">
+                      <td className="bg-slate-50 p-2 font-black uppercase border-r border-slate-200">CELULAR:</td>
+                      <td className="p-2 font-bold uppercase">{client?.phone || "---"}</td>
+                    </tr>
+                    <tr className="">
+                      <td className="bg-slate-50 p-2 font-black uppercase border-r border-slate-200">NOMBRE COMERCIAL:</td>
+                      <td className="p-2 font-bold uppercase">{client?.legalName || client?.name || "---"}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* EXTINTORES OPCIONES */}
+            <div className="space-y-2">
+              <h3 className="text-[11px] font-black text-red-600 uppercase tracking-widest">EXTINTORES</h3>
+              <div className="flex gap-20 pl-4">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-red-600" />
+                  <span className="text-[11px] font-black uppercase text-slate-700">VENTA</span>
                 </div>
-                <p className="text-[9px] mt-2 font-bold text-slate-500 uppercase">FECHA: {viewingQuotation.date}</p>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-red-600" />
+                  <span className="text-[11px] font-black uppercase text-slate-700">RECARGA</span>
+                </div>
+              </div>
+            </div>
+
+            {/* DETALLE DE SERVICIO */}
+            <div className="space-y-2">
+              <h3 className="text-[11px] font-black text-red-600 uppercase tracking-widest">DETALLE DE SERVICIO</h3>
+              <div className="border border-slate-300 rounded overflow-hidden">
+                <table className="w-full text-[10px] border-collapse">
+                  <thead className="bg-slate-50 border-b border-slate-300">
+                    <tr>
+                      <th className="p-2 text-left font-black uppercase border-r border-slate-300 w-16">CANT.</th>
+                      <th className="p-2 text-left font-black uppercase border-r border-slate-300">DESCRIPCIÓN</th>
+                      <th className="p-2 text-right font-black uppercase border-r border-slate-300 w-28">P. UNIT.</th>
+                      <th className="p-2 text-right font-black uppercase w-28">SUB TOTAL</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {viewingQuotation.items?.map((item: any, idx: number) => (
+                      <tr key={idx} className="border-b border-slate-200">
+                        <td className="p-2 font-bold text-center border-r border-slate-200">{item.quantity}</td>
+                        <td className="p-2 font-bold uppercase border-r border-slate-200">{item.description}</td>
+                        <td className="p-2 text-right font-bold border-r border-slate-200">S/. {item.unitPrice.toFixed(2)}</td>
+                        <td className="p-2 text-right font-black">S/. {item.total.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                    <tr>
+                      <td colSpan={2} className="p-2 font-black uppercase bg-slate-50 italic border-r border-slate-300">El servicio será pagado al CONTADO.</td>
+                      <td className="p-2 text-right font-black uppercase bg-slate-50 border-r border-slate-300">COSTO TOTAL</td>
+                      <td className="p-2 text-right font-black text-red-600 bg-slate-50">S/. {viewingQuotation.total.toFixed(2)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* OBSERVACIÓN Y ENTREGA */}
+            <div className="border border-slate-300 rounded overflow-hidden">
+              <div className="flex border-b border-slate-300">
+                <div className="w-40 bg-slate-50 p-2 font-black uppercase text-[10px] border-r border-slate-300">OBSERVACIÓN:</div>
+                <div className="flex-1 p-2"></div>
+              </div>
+              <div className="grid grid-cols-2">
+                <div className="flex border-r border-slate-300">
+                  <div className="w-40 bg-slate-50 p-2 font-black uppercase text-[10px] border-r border-slate-300">FECHA ENTREGA:</div>
+                  <div className="flex-1 p-2 text-center font-bold text-[10px]">{viewingQuotation.date}</div>
+                </div>
+                <div className="flex">
+                  <div className="w-40 bg-slate-50 p-2 font-black uppercase text-[10px] border-r border-slate-300">HORA ENTREGA:</div>
+                  <div className="flex-1 p-2 text-center font-bold text-[10px]">09:00 AM</div>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="px-10">
-            <div className="h-[2px] bg-red-600 w-full mb-[1px]"></div>
-            <div className="h-[1px] bg-slate-900 w-full opacity-10"></div>
-          </div>
-
-          <div className="p-10 flex-1 flex flex-col">
-            <div className="mb-6">
-              <div className="p-4 border border-slate-100 border-l-4 border-l-red-600 bg-slate-50/30 rounded-r-lg">
-                <p className="font-bold uppercase text-slate-400 text-[8px] tracking-widest mb-1.5 flex items-center">
-                   <MousePointer2 className="h-2.5 w-2.5 mr-1 text-red-600" />
-                   CLIENTE:
-                </p>
-                <p className="font-black text-sm uppercase text-slate-900 leading-tight">{client?.name || "CLIENTE GENERAL"}</p>
-                <div className="h-[1px] bg-slate-200 w-full my-1.5"></div>
-                <div className="grid grid-cols-2 gap-4 text-[9px] font-bold">
-                  <p className="text-slate-700">RUC / DNI: <span className="ml-1 text-slate-900">{client?.taxId || "---"}</span></p>
-                  <p className="text-slate-700">CIUDAD: <span className="ml-1 text-slate-900">LIMA</span></p>
-                </div>
-                <div className="flex items-start gap-1 text-[9px] text-slate-600 mt-1">
-                  <MapPin className="h-2.5 w-2.5 mt-0.5 shrink-0 text-red-600" />
-                  <span className="font-medium">{client?.address || "DIRECCIÓN NO REGISTRADA"}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex-1">
-              <Table className="border border-slate-200 w-full rounded-sm overflow-hidden">
-                <TableHeader className="bg-slate-900 hover:bg-slate-900">
-                  <TableRow className="hover:bg-transparent border-none">
-                    <TableHead className="text-white font-bold uppercase text-[8px] py-3 pl-4">DESCRIPCIÓN DEL SERVICIO</TableHead>
-                    <TableHead className="text-center text-white font-bold uppercase text-[8px] py-3 w-16">CANT.</TableHead>
-                    <TableHead className="text-right text-white font-bold uppercase text-[8px] py-3 w-24">P. UNIT</TableHead>
-                    <TableHead className="text-right text-white font-bold uppercase text-[8px] py-3 w-24 pr-4">TOTAL (S/)</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {viewingQuotation.items?.map((item: any, idx: number) => (
-                    <TableRow key={idx} className="border-b border-slate-100 last:border-none hover:bg-transparent">
-                      <TableCell className="font-bold uppercase text-[9px] py-2 pl-4 text-slate-800">
-                        {item.description}
-                      </TableCell>
-                      <TableCell className="text-center font-bold text-[9px] py-2">{item.quantity}</TableCell>
-                      <TableCell className="text-right font-medium text-[9px] py-2">{(Number(item.unitPrice) || 0).toFixed(2)}</TableCell>
-                      <TableCell className="text-right font-black text-[9px] py-2 text-red-600 pr-4">{(Number(item.total) || 0).toFixed(2)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-
-            <div className="mt-6 flex flex-col md:flex-row justify-between items-end gap-6">
-              <div className="flex-1 space-y-2 w-full max-w-sm">
-                <div className="p-3 bg-slate-50 border border-slate-100 rounded-lg">
-                  <p className="text-[8px] font-black uppercase text-red-600 tracking-widest flex items-center mb-1">
-                    <Flame className="h-2.5 w-2.5 mr-1" />
-                    CONDICIONES TÉCNICAS
-                  </p>
-                  <ul className="text-[7px] text-slate-600 space-y-0.5 font-bold uppercase leading-tight">
-                    <li>• CUMPLIMIENTO NORMATIVO NTP 350.043 E INDECI.</li>
-                    <li>• GARANTÍA DE FÁBRICA DE 01 AÑO.</li>
-                    <li>• INCLUYE PRECINTO Y TARJETA DE CONTROL.</li>
-                    <li>• ENTREGA A DOMICILIO SIN COSTO (LIMA METROPOLITANA).</li>
-                  </ul>
-                </div>
-              </div>
-              
-              <div className="w-full md:w-56 space-y-1 bg-slate-900 p-3 rounded-xl shadow-lg">
-                <div className="flex justify-between text-[9px]">
-                  <span className="font-bold uppercase text-slate-400">SUBTOTAL</span>
-                  <span className="font-black text-white">S/ {(Number(viewingQuotation.subtotal) || 0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-[9px]">
-                  <span className="font-bold uppercase text-slate-400">I.G.V. (18%)</span>
-                  <span className="font-black text-white">S/ {(Number(viewingQuotation.tax) || 0).toFixed(2)}</span>
-                </div>
-                <div className="h-[1px] bg-slate-700 my-1"></div>
-                <div className="flex justify-between items-center pt-0.5">
-                  <span className="font-black uppercase text-red-500 text-[9px] tracking-widest">TOTAL NETO</span>
-                  <span className="font-black text-white text-lg tracking-tighter">S/ {(Number(viewingQuotation.total) || 0).toFixed(2)}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-12 grid grid-cols-2 gap-20">
+          {/* FIRMAS Y PIE DE PAGINA */}
+          <div className="mt-auto p-10 pt-20">
+            <div className="grid grid-cols-2 gap-20 mb-12">
               <div className="flex flex-col items-center">
-                <div className="w-32 h-[1px] bg-slate-300 mb-1"></div>
-                <p className="text-[7px] font-black uppercase text-slate-400">RECIBIDO POR</p>
+                <div className="w-full border-t border-dashed border-slate-400 mb-2"></div>
+                <p className="text-[9px] font-black uppercase text-slate-500">AGENTE</p>
+                <p className="text-[10px] font-black uppercase">{profiles?.[0]?.name || "ADMINISTRADOR"}</p>
               </div>
               <div className="flex flex-col items-center">
-                <div className="w-32 h-[1px] bg-red-600 mb-1"></div>
-                <p className="text-[7px] font-black uppercase text-red-600">DEPARTAMENTO TÉCNICO</p>
-                <p className="text-[6px] font-bold text-slate-500 uppercase">{company?.name || "EXTINTORES APEVA"}</p>
+                <div className="w-full border-t border-dashed border-slate-400 mb-2"></div>
+                <p className="text-[9px] font-black uppercase text-slate-500">CLIENTE</p>
+                <p className="text-[10px] font-black uppercase">{client?.name || "CLIENTE GENERAL"}</p>
               </div>
             </div>
-          </div>
 
-          <div className={cn("mt-auto print-footer w-full relative", footerSrc ? "p-0" : "bg-[#ffdd00] py-3 px-10 border-t-[2px] border-red-600")}>
-            {footerSrc ? (
-              <div className="relative h-20 w-full">
-                <Image src={footerSrc} alt="Pie de Página Oficial" fill className="object-cover" unoptimized />
+            <div className="flex justify-between items-end">
+              <div className="h-16 w-16 border bg-slate-50 flex items-center justify-center p-1 rounded">
+                {/* QR PLACEHOLDER */}
+                <div className="w-full h-full bg-slate-200 flex items-center justify-center text-[8px] font-black uppercase text-slate-400 text-center">QR VALIDACIÓN</div>
               </div>
-            ) : (
-              <div className="flex flex-col items-center gap-1">
-                <div className="flex flex-wrap justify-center gap-x-6 gap-y-0.5 w-full text-slate-900 font-black text-[7px] uppercase">
-                  <div className="flex items-center gap-1">
-                    <MapPin className="h-2 w-2 text-red-600" />
-                    <span>{company?.address || "LIMA, PERÚ"}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Phone className="h-2 w-2 text-red-600" />
-                    <span>{company?.phone || "CENTRAL APEVA"}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Mail className="h-2 w-2 text-red-600" />
-                    <span className="lowercase">{company?.email || "contacto@apeva.com"}</span>
-                  </div>
-                </div>
-                <p className="text-[6px] font-black text-red-800 tracking-[0.2em] opacity-60 uppercase">SEGURIDAD • GARANTÍA • CONFIANZA</p>
-              </div>
-            )}
+              <p className="text-[8px] font-black uppercase text-slate-400 tracking-widest opacity-40">EXTINTORES APEVA SAAS © {currentYear}</p>
+            </div>
           </div>
 
           <style jsx global>{`
@@ -347,11 +347,6 @@ export default function QuotationsPage() {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
               }
-              .print-footer {
-                position: absolute !important;
-                bottom: 0 !important;
-                width: 100% !important;
-              }
               @page { size: A4; margin: 0; }
             }
           `}</style>
@@ -365,131 +360,129 @@ export default function QuotationsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase text-primary">Gestión de Ventas</h2>
-          <p className="text-muted-foreground text-sm">Emita proformas oficiales con el respaldo de seguridad Apeva.</p>
+          <p className="text-muted-foreground text-sm italic font-medium">Genere proformas oficiales tipo SIEXT de alta seguridad.</p>
         </div>
         
-        <div className="flex gap-2">
-          <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) { setEditingQuotation(null); setItems([]); } }}>
-            <DialogTrigger asChild>
-              <Button className="bg-primary text-white h-10 font-bold uppercase text-xs px-6 shadow-lg">
-                <Plus className="mr-2 h-4 w-4" /> Nueva Proforma
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <form onSubmit={handleSaveQuotation}>
-                <DialogHeader>
-                  <DialogTitle className="uppercase font-black text-primary">Generador de Presupuesto</DialogTitle>
-                  <DialogDescription className="text-xs font-bold text-slate-500 uppercase">Cálculos con I.G.V. 18% automático.</DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-6 py-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="grid gap-2">
-                      <Label className="text-[10px] font-black uppercase text-slate-500">Cliente / Organización</Label>
-                      <Select name="clientId" defaultValue={editingQuotation?.clientId} required>
-                        <SelectTrigger className="h-10">
-                          <SelectValue placeholder="Seleccione un cliente" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {clients?.map(c => (
-                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="grid gap-2">
-                      <Label className="text-[10px] font-black uppercase text-slate-500">N° de Cotización</Label>
-                      <Input name="number" defaultValue={editingQuotation?.quotationNumber || suggestedQuotationNumber} placeholder="COT-XXXX-2025" className="h-10 uppercase font-mono font-bold" />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label className="text-[10px] font-black uppercase text-slate-500">Estado</Label>
-                      <Select name="status" defaultValue={editingQuotation?.status || "Borrador"}>
-                        <SelectTrigger className="h-10">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Borrador">Borrador</SelectItem>
-                          <SelectItem value="Enviado">Enviado</SelectItem>
-                          <SelectItem value="Aceptado">Aceptado</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+        <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) { setEditingQuotation(null); setItems([]); } }}>
+          <DialogTrigger asChild>
+            <Button className="bg-red-600 hover:bg-red-700 text-white h-10 font-bold uppercase text-xs px-6 shadow-lg">
+              <Plus className="mr-2 h-4 w-4" /> Nueva Proforma
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <form onSubmit={handleSaveQuotation}>
+              <DialogHeader>
+                <DialogTitle className="uppercase font-black text-red-600 text-xl tracking-tight">Emisión de Proforma Oficial</DialogTitle>
+                <DialogDescription className="text-xs font-bold text-slate-500 uppercase">Ajuste automático de correlativo e IGV 18%.</DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-6 py-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid gap-2">
+                    <Label className="text-[10px] font-black uppercase text-slate-500">Cliente Receptante</Label>
+                    <Select name="clientId" defaultValue={editingQuotation?.clientId} required>
+                      <SelectTrigger className="h-10 border-red-100 focus:ring-red-500">
+                        <SelectValue placeholder="Seleccione un cliente" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {clients?.map(c => (
+                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                      <Label className="text-[11px] font-black uppercase text-primary">Ítems de Servicio / Productos</Label>
-                      <Button type="button" variant="secondary" size="sm" onClick={handleAddItem} className="h-8 text-[10px] font-bold uppercase bg-accent text-white">
-                        <Plus className="h-3 w-3 mr-2" /> Agregar Línea
-                      </Button>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      {items.map((item, idx) => (
-                        <div key={idx} className="grid grid-cols-12 gap-3 items-end border p-4 rounded-xl bg-slate-50 shadow-sm border-slate-200">
-                          <div className="col-span-12 md:col-span-6 grid gap-1.5">
-                            <Label className="text-[9px] font-black uppercase text-slate-500">Descripción del Equipo o Servicio</Label>
-                            <Input 
-                              value={item.description} 
-                              onChange={(e) => handleItemChange(idx, "description", e.target.value)}
-                              placeholder="Ej. Recarga Extintor PQS 10 Lbs..."
-                              className="h-10 text-xs font-bold"
-                              required
-                            />
-                          </div>
-                          <div className="col-span-4 md:col-span-2 grid gap-1.5">
-                            <Label className="text-[9px] font-black uppercase text-slate-500">Cant.</Label>
-                            <Input 
-                              type="number"
-                              min="1"
-                              value={item.quantity} 
-                              onChange={(e) => handleItemChange(idx, "quantity", Number(e.target.value))}
-                              className="h-10 text-xs text-center font-black"
-                              required
-                            />
-                          </div>
-                          <div className="col-span-6 md:col-span-3 grid gap-1.5">
-                            <Label className="text-[9px] font-black uppercase text-slate-500">Unit. (S/)</Label>
-                            <Input 
-                              type="number"
-                              step="0.01"
-                              value={item.unitPrice} 
-                              onChange={(e) => handleItemChange(idx, "unitPrice", Number(e.target.value))}
-                              className="h-10 text-xs text-right font-black"
-                              required
-                            />
-                          </div>
-                          <div className="col-span-2 md:col-span-1 flex justify-center">
-                            <Button type="button" variant="ghost" size="icon" onClick={() => setItems(items.filter((_, i) => i !== idx))} className="h-10 w-10 text-destructive hover:bg-destructive/10">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                  <div className="grid gap-2">
+                    <Label className="text-[10px] font-black uppercase text-slate-500">N° Proforma (Correlativo)</Label>
+                    <Input name="number" defaultValue={editingQuotation?.quotationNumber || suggestedQuotationNumber} placeholder="000466" className="h-10 uppercase font-mono font-bold border-red-100" />
                   </div>
-
-                  <div className="bg-slate-900 text-white p-6 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4 shadow-xl">
-                    <div className="text-center md:text-left">
-                      <p className="text-[10px] font-black uppercase text-slate-400 mb-1">Total Neto (con IGV)</p>
-                      <p className="text-3xl font-black text-red-500 tracking-tighter">
-                        S/ {(items.reduce((acc, i) => acc + (Number(i.quantity || 0) * Number(i.unitPrice || 0)), 0) * 1.18).toFixed(2)}
-                      </p>
-                    </div>
-                    <div className="flex flex-col items-center md:items-end text-[10px] font-bold opacity-70">
-                      <p>Subtotal: S/ {items.reduce((acc, i) => acc + (Number(i.quantity || 0) * Number(i.unitPrice || 0)), 0).toFixed(2)}</p>
-                      <p>I.G.V. (18%): S/ {(items.reduce((acc, i) => acc + (Number(i.quantity || 0) * Number(i.unitPrice || 0)), 0) * 0.18).toFixed(2)}</p>
-                    </div>
+                  <div className="grid gap-2">
+                    <Label className="text-[10px] font-black uppercase text-slate-500">Estado Operativo</Label>
+                    <Select name="status" defaultValue={editingQuotation?.status || "Borrador"}>
+                      <SelectTrigger className="h-10 border-red-100">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Borrador">Borrador</SelectItem>
+                        <SelectItem value="Enviado">Enviado</SelectItem>
+                        <SelectItem value="Aceptado">Aceptado</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
-                <DialogFooter className="border-t border-slate-200 pt-6">
-                  <Button type="submit" className="w-full h-12 uppercase font-black text-xs tracking-widest bg-primary hover:bg-primary/90">
-                    {editingQuotation ? "Actualizar Proforma" : "Generar Proforma"}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between border-b border-red-100 pb-2">
+                    <Label className="text-[11px] font-black uppercase text-red-600 tracking-wider">Detalle de Equipos / Servicios</Label>
+                    <Button type="button" variant="secondary" size="sm" onClick={handleAddItem} className="h-8 text-[10px] font-bold uppercase bg-slate-900 text-white hover:bg-slate-800">
+                      <Plus className="h-3 w-3 mr-2" /> Agregar Item
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {items.map((item, idx) => (
+                      <div key={idx} className="grid grid-cols-12 gap-3 items-end border p-4 rounded-xl bg-slate-50/50 shadow-sm border-slate-200">
+                        <div className="col-span-12 md:col-span-6 grid gap-1.5">
+                          <Label className="text-[9px] font-black uppercase text-slate-500">Descripción Técnica</Label>
+                          <Input 
+                            value={item.description} 
+                            onChange={(e) => handleItemChange(idx, "description", e.target.value)}
+                            placeholder="Ej. EXTINTOR PQS ABC 10 LBS..."
+                            className="h-10 text-xs font-bold"
+                            required
+                          />
+                        </div>
+                        <div className="col-span-4 md:col-span-2 grid gap-1.5">
+                          <Label className="text-[9px] font-black uppercase text-slate-500">Cantidad</Label>
+                          <Input 
+                            type="number"
+                            min="1"
+                            value={item.quantity} 
+                            onChange={(e) => handleItemChange(idx, "quantity", Number(e.target.value))}
+                            className="h-10 text-xs text-center font-black"
+                            required
+                          />
+                        </div>
+                        <div className="col-span-6 md:col-span-3 grid gap-1.5">
+                          <Label className="text-[9px] font-black uppercase text-slate-500">P. Unitario (S/)</Label>
+                          <Input 
+                            type="number"
+                            step="0.01"
+                            value={item.unitPrice} 
+                            onChange={(e) => handleItemChange(idx, "unitPrice", Number(e.target.value))}
+                            className="h-10 text-xs text-right font-black"
+                            required
+                          />
+                        </div>
+                        <div className="col-span-2 md:col-span-1 flex justify-center">
+                          <Button type="button" variant="ghost" size="icon" onClick={() => setItems(items.filter((_, i) => i !== idx))} className="h-10 w-10 text-red-600 hover:bg-red-50">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-red-600 text-white p-6 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4 shadow-xl">
+                  <div className="text-center md:text-left">
+                    <p className="text-[10px] font-black uppercase text-red-200 mb-1">Costo Total Neto</p>
+                    <p className="text-3xl font-black text-white tracking-tighter">
+                      S/. {(items.reduce((acc, i) => acc + (Number(i.quantity || 0) * Number(i.unitPrice || 0)), 0) * 1.18).toFixed(2)}
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-center md:items-end text-[10px] font-bold text-red-100">
+                    <p>Subtotal: S/. {items.reduce((acc, i) => acc + (Number(i.quantity || 0) * Number(i.unitPrice || 0)), 0).toFixed(2)}</p>
+                    <p>I.G.V. (18%): S/. {(items.reduce((acc, i) => acc + (Number(i.quantity || 0) * Number(i.unitPrice || 0)), 0) * 0.18).toFixed(2)}</p>
+                  </div>
+                </div>
+              </div>
+              <DialogFooter className="border-t pt-6">
+                <Button type="submit" className="w-full h-12 uppercase font-black text-xs tracking-widest bg-slate-900 hover:bg-black">
+                  {editingQuotation ? "Actualizar Proforma" : "Emitir Proforma SIEXT"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Card className="shadow-sm border-none overflow-hidden">
@@ -507,17 +500,17 @@ export default function QuotationsPage() {
         <CardContent className="p-0">
           {isLoading ? (
             <div className="flex items-center justify-center p-24">
-              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+              <Loader2 className="h-10 w-10 animate-spin text-red-600" />
             </div>
           ) : (
             <Table className="dense-table">
-              <TableHeader className="bg-primary hover:bg-primary">
+              <TableHeader className="bg-slate-900 hover:bg-slate-900">
                 <TableRow className="border-none">
-                  <TableHead className="text-white h-12 font-black">N° PROFORMA</TableHead>
-                  <TableHead className="text-white h-12 font-black">CLIENTE</TableHead>
-                  <TableHead className="text-white h-12 font-black text-right pr-6">TOTAL (S/)</TableHead>
-                  <TableHead className="text-white h-12 font-black">ESTADO</TableHead>
-                  <TableHead className="text-white h-12 text-right pr-6 font-black">ACCIONES</TableHead>
+                  <TableHead className="text-white h-12 font-black uppercase text-[10px]">N° PROFORMA</TableHead>
+                  <TableHead className="text-white h-12 font-black uppercase text-[10px]">CLIENTE</TableHead>
+                  <TableHead className="text-white h-12 font-black uppercase text-[10px] text-right pr-6">TOTAL (S/.)</TableHead>
+                  <TableHead className="text-white h-12 font-black uppercase text-[10px]">ESTADO</TableHead>
+                  <TableHead className="text-white h-12 text-right pr-6 font-black uppercase text-[10px]">ACCIONES</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -527,10 +520,10 @@ export default function QuotationsPage() {
                 ).map((q) => {
                   const client = clients?.find(c => c.id === q.clientId)
                   return (
-                    <TableRow key={q.id} className="hover:bg-slate-50 border-slate-100">
-                      <TableCell className="font-black text-primary uppercase tracking-tighter">{q.quotationNumber}</TableCell>
+                    <TableRow key={q.id} className="hover:bg-red-50/30 border-slate-100 transition-colors">
+                      <TableCell className="font-black text-red-600 uppercase tracking-tight">{q.quotationNumber}</TableCell>
                       <TableCell className="font-bold uppercase text-[11px] text-slate-700">{client?.name || "CARGA..."}</TableCell>
-                      <TableCell className="text-right pr-6 font-black text-slate-900">S/ {(q.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
+                      <TableCell className="text-right pr-6 font-black text-slate-900">S/. {(q.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className={cn(
                           "text-[9px] font-black uppercase px-2 py-0.5",
@@ -542,13 +535,13 @@ export default function QuotationsPage() {
                       </TableCell>
                       <TableCell className="text-right pr-6">
                         <div className="flex items-center justify-end gap-2">
-                          <Button variant="ghost" size="icon" className="h-9 w-9 text-primary hover:bg-primary/10" onClick={() => setViewingQuotation(q)}>
+                          <Button variant="ghost" size="icon" className="h-9 w-9 text-red-600 hover:bg-red-50" onClick={() => setViewingQuotation(q)}>
                             <Printer className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-9 w-9 text-blue-600 hover:bg-blue-50" onClick={() => openEdit(q)}>
+                          <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-600 hover:bg-slate-100" onClick={() => openEdit(q)}>
                             <Edit2 className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:bg-destructive/10" onClick={() => handleDelete(q.id)}>
+                          <Button variant="ghost" size="icon" className="h-9 w-9 text-red-400 hover:text-red-600 hover:bg-red-50" onClick={() => handleDelete(q.id)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
