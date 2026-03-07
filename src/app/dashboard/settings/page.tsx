@@ -22,7 +22,8 @@ import {
   Sun,
   AlertCircle,
   CheckCircle2,
-  Info
+  Info,
+  Image as ImageIcon
 } from "lucide-react"
 import { useUser, useFirestore, useDoc, useMemoFirebase, useAuth, useCollection } from "@/firebase"
 import { doc, setDoc, collection, query, where, limit } from "firebase/firestore"
@@ -49,13 +50,14 @@ export default function SettingsPage() {
     taxId: "",
     address: "",
     logoUrl: "",
+    headerUrl: "",
+    footerUrl: "",
     phone: "",
     primaryColor: "#1a2b3c",
     accentColor: "#d9534f",
     themeMode: "light" as "light" | "dark"
   })
 
-  // Obtener perfil del usuario actual
   const userProfileQuery = useMemoFirebase(() => 
     user?.email ? query(collection(db, "company_users"), where("email", "==", user.email), limit(1)) : null,
   [db, user?.email])
@@ -63,23 +65,16 @@ export default function SettingsPage() {
   const { data: profiles, isLoading: loadingProfile } = useCollection(userProfileQuery)
   const profile = profiles?.[0] || null
 
-  // Obtener datos de la empresa vinculada
   const companyRef = useMemoFirebase(() => 
     profile?.companyId ? doc(db, "companies", profile.companyId) : null,
   [db, profile?.companyId])
   const { data: company, isLoading: loadingCompany } = useDoc(companyRef)
 
-  // Cargar datos en el formulario cuando estén listos
   useEffect(() => {
     if (profile) {
       setFormData({ 
         name: profile.name || "", 
         email: profile.email || user?.email || "" 
-      })
-    } else if (user) {
-      setFormData({
-        name: user.displayName || "",
-        email: user.email || ""
       })
     }
     
@@ -89,6 +84,8 @@ export default function SettingsPage() {
         taxId: company.taxId || "",
         address: company.address || "",
         logoUrl: company.logoUrl || "",
+        headerUrl: company.headerUrl || "",
+        footerUrl: company.footerUrl || "",
         phone: company.phone || "",
         primaryColor: company.primaryColor || "#1a2b3c",
         accentColor: company.accentColor || "#d9534f",
@@ -107,7 +104,7 @@ export default function SettingsPage() {
         email: user?.email,
         updatedAt: new Date().toISOString()
       }, { merge: true })
-      toast({ title: "Perfil actualizado", description: "Tus datos personales se han guardado." })
+      toast({ title: "Perfil actualizado" })
     } catch (error) {
       toast({ variant: "destructive", title: "Error", description: "No se pudo actualizar el perfil." })
     } finally {
@@ -120,20 +117,9 @@ export default function SettingsPage() {
     try {
       let targetCompanyId = profile?.companyId
 
-      // Si no hay empresa vinculada, creamos una nueva y vinculamos al usuario actual como admin
       if (!targetCompanyId) {
-        targetCompanyId = crypto.randomUUID()
-        const profileId = profile?.id || crypto.randomUUID()
-        
-        await setDoc(doc(db, "company_users", profileId), {
-          id: profileId,
-          email: user?.email,
-          name: formData.name || user?.email?.split('@')[0] || "Administrador",
-          companyId: targetCompanyId,
-          roleId: "admin",
-          status: "Active",
-          createdAt: new Date().toISOString()
-        }, { merge: true })
+        toast({ variant: "destructive", title: "Error", description: "No tienes una empresa vinculada." })
+        return
       }
 
       await setDoc(doc(db, "companies", targetCompanyId), { 
@@ -144,11 +130,11 @@ export default function SettingsPage() {
 
       toast({ 
         title: "Organización Actualizada", 
-        description: "La marca y los datos corporativos se han sincronizado con éxito." 
+        description: "Los recursos gráficos y datos corporativos se han guardado." 
       })
     } catch (error) {
       console.error(error)
-      toast({ variant: "destructive", title: "Error de Guardado", description: "No se pudo actualizar la información de la empresa." })
+      toast({ variant: "destructive", title: "Error de Guardado", description: "No se pudo actualizar la información." })
     } finally {
       setIsSaving(false)
     }
@@ -176,16 +162,6 @@ export default function SettingsPage() {
           <p className="text-muted-foreground text-sm">Configure la identidad visual y operativa de su organización.</p>
         </div>
       </div>
-
-      {!profile?.companyId && (
-        <Alert className="bg-amber-50 border-amber-200">
-          <AlertCircle className="h-4 w-4 text-amber-600" />
-          <AlertTitle className="text-amber-800 font-bold text-xs uppercase tracking-tight">Organización no inicializada</AlertTitle>
-          <AlertDescription className="text-amber-700 text-[11px] leading-tight">
-            Parece que aún no tienes una empresa vinculada. Complete los datos en la pestaña <strong>"Personalización Marca"</strong> para crear y vincular su empresa automáticamente.
-          </AlertDescription>
-        </Alert>
-      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-1">
@@ -238,81 +214,74 @@ export default function SettingsPage() {
             <div className="space-y-6">
               <Card className="shadow-sm border-none">
                 <CardHeader>
-                  <CardTitle className="text-sm font-bold uppercase tracking-wider">Identidad Corporativa</CardTitle>
-                  <CardDescription>Configure como su empresa es percibida por clientes y empleados.</CardDescription>
+                  <CardTitle className="text-sm font-bold uppercase tracking-wider">Identidad Corporativa y Documentos</CardTitle>
+                  <CardDescription>Configure las imágenes que aparecerán en sus hojas membretadas (Cotizaciones, Contratos, etc).</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="flex flex-col sm:flex-row items-center gap-6 p-4 border rounded-lg bg-muted/20 border-dashed">
-                    <div className="relative h-24 w-24 rounded border bg-white flex items-center justify-center overflow-hidden shadow-inner">
-                      {companyData.logoUrl ? (
-                        <div className="relative h-full w-full">
-                          <Image 
-                            src={companyData.logoUrl} 
-                            alt="Vista previa del Logo" 
-                            fill 
-                            className="object-contain p-2"
-                            unoptimized
-                          />
-                        </div>
-                      ) : (
-                        <Building2 className="h-10 w-10 text-muted-foreground" />
-                      )}
+                  {/* LOGOTIPO */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-[10px] font-black uppercase text-primary tracking-widest">
+                      <ImageIcon className="h-3 w-3" /> Logotipo Principal
                     </div>
-                    <div className="flex-1 space-y-2 w-full">
-                      <Label className="text-xs font-bold uppercase flex items-center gap-2">
-                        URL del Logotipo (PNG/SVG) <Info className="h-3 w-3 text-muted-foreground" />
-                      </Label>
-                      <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row items-center gap-6 p-4 border rounded-lg bg-muted/20 border-dashed">
+                      <div className="relative h-20 w-20 rounded border bg-white flex items-center justify-center overflow-hidden">
+                        {companyData.logoUrl ? (
+                          <Image src={companyData.logoUrl} alt="Logo" fill className="object-contain p-2" unoptimized />
+                        ) : (
+                          <Building2 className="h-8 w-8 text-muted-foreground" />
+                        )}
+                      </div>
+                      <div className="flex-1 w-full space-y-2">
                         <Input 
-                          placeholder="https://ejemplo.com/logo.png" 
+                          placeholder="URL del Logotipo (Ej. https://servifumiga.com/logo.png)" 
                           value={companyData.logoUrl} 
                           onChange={(e) => setCompanyData({...companyData, logoUrl: e.target.value})} 
                         />
-                        <Button variant="outline" size="icon" title="Verificar URL"><Globe className="h-4 w-4" /></Button>
+                        <p className="text-[9px] text-muted-foreground uppercase font-bold">Usado en el Navbar y encabezados de proformas.</p>
                       </div>
-                      <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">
-                        Pega aquí la dirección web de tu logo. Asegúrate que termine en .png, .jpg o .svg.
-                      </p>
                     </div>
                   </div>
 
                   <Separator />
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                  {/* CABECERA Y PIE DE PÁGINA */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-4">
-                      <h4 className="text-[10px] font-bold uppercase text-primary tracking-widest flex items-center">
-                        <Palette className="h-3 w-3 mr-2" /> Colores Institucionales
-                      </h4>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-bold uppercase">Primario</Label>
-                          <div className="flex items-center gap-2">
-                            <Input type="color" value={companyData.primaryColor} className="w-12 h-10 p-1 border-none cursor-pointer" onChange={(e) => setCompanyData({...companyData, primaryColor: e.target.value})} />
-                            <Input value={companyData.primaryColor} className="font-mono text-xs uppercase" onChange={(e) => setCompanyData({...companyData, primaryColor: e.target.value})} />
-                          </div>
+                      <div className="flex items-center gap-2 text-[10px] font-black uppercase text-primary tracking-widest">
+                        <ImageIcon className="h-3 w-3" /> Cabecera Membrete (Opcional)
+                      </div>
+                      <div className="space-y-2">
+                        <div className="relative h-24 w-full border rounded bg-white overflow-hidden flex items-center justify-center">
+                          {companyData.headerUrl ? (
+                            <Image src={companyData.headerUrl} alt="Header Preview" fill className="object-contain" unoptimized />
+                          ) : (
+                            <span className="text-[10px] uppercase font-bold text-muted-foreground">Vista previa cabecera</span>
+                          )}
                         </div>
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-bold uppercase">Acento</Label>
-                          <div className="flex items-center gap-2">
-                            <Input type="color" value={companyData.accentColor} className="w-12 h-10 p-1 border-none cursor-pointer" onChange={(e) => setCompanyData({...companyData, accentColor: e.target.value})} />
-                            <Input value={companyData.accentColor} className="font-mono text-xs uppercase" onChange={(e) => setCompanyData({...companyData, accentColor: e.target.value})} />
-                          </div>
-                        </div>
+                        <Input 
+                          placeholder="URL de la Cabecera" 
+                          value={companyData.headerUrl} 
+                          onChange={(e) => setCompanyData({...companyData, headerUrl: e.target.value})} 
+                        />
                       </div>
                     </div>
 
                     <div className="space-y-4">
-                      <h4 className="text-[10px] font-bold uppercase text-primary tracking-widest flex items-center">
-                        <Moon className="h-3 w-3 mr-2" /> Modo de Interfaz
-                      </h4>
-                      <div className="flex items-center justify-between p-4 border rounded bg-white dark:bg-slate-900 shadow-sm transition-colors">
-                        <div className="flex items-center gap-3">
-                          {companyData.themeMode === 'dark' ? <Moon className="h-4 w-4 text-blue-400" /> : <Sun className="h-4 w-4 text-orange-400" />}
-                          <span className="text-xs font-bold uppercase">Modo {companyData.themeMode === 'dark' ? 'Oscuro' : 'Claro'}</span>
+                      <div className="flex items-center gap-2 text-[10px] font-black uppercase text-primary tracking-widest">
+                        <ImageIcon className="h-3 w-3" /> Pie de Página Membrete (Opcional)
+                      </div>
+                      <div className="space-y-2">
+                        <div className="relative h-24 w-full border rounded bg-white overflow-hidden flex items-center justify-center">
+                          {companyData.footerUrl ? (
+                            <Image src={companyData.footerUrl} alt="Footer Preview" fill className="object-contain" unoptimized />
+                          ) : (
+                            <span className="text-[10px] uppercase font-bold text-muted-foreground">Vista previa pie de página</span>
+                          )}
                         </div>
-                        <Switch 
-                          checked={companyData.themeMode === 'dark'} 
-                          onCheckedChange={(checked) => setCompanyData({...companyData, themeMode: checked ? 'dark' : 'light'})} 
+                        <Input 
+                          placeholder="URL del Pie de Página (Barra Amarilla)" 
+                          value={companyData.footerUrl} 
+                          onChange={(e) => setCompanyData({...companyData, footerUrl: e.target.value})} 
                         />
                       </div>
                     </div>
@@ -323,26 +292,26 @@ export default function SettingsPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label className="text-[10px] font-bold uppercase">Nombre Comercial</Label>
-                      <Input value={companyData.name} onChange={(e) => setCompanyData({...companyData, name: e.target.value})} placeholder="Ej. Servifumiga SAC" />
+                      <Input value={companyData.name} onChange={(e) => setCompanyData({...companyData, name: e.target.value})} />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[10px] font-bold uppercase">RUC / DNI Corporativo</Label>
-                      <Input value={companyData.taxId} onChange={(e) => setCompanyData({...companyData, taxId: e.target.value})} placeholder="Ej. 20123456789" />
+                      <Input value={companyData.taxId} onChange={(e) => setCompanyData({...companyData, taxId: e.target.value})} />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[10px] font-bold uppercase">Teléfono de Contacto</Label>
-                      <Input value={companyData.phone} onChange={(e) => setCompanyData({...companyData, phone: e.target.value})} placeholder="+51 987 654 321" />
+                      <Input value={companyData.phone} onChange={(e) => setCompanyData({...companyData, phone: e.target.value})} />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[10px] font-bold uppercase">Dirección Fiscal</Label>
-                      <Input value={companyData.address} onChange={(e) => setCompanyData({...companyData, address: e.target.value})} placeholder="Lima, Perú" />
+                      <Input value={companyData.address} onChange={(e) => setCompanyData({...companyData, address: e.target.value})} />
                     </div>
                   </div>
                 </CardContent>
                 <CardFooter className="bg-muted/30 border-t flex justify-end p-4">
-                  <Button className="bg-primary text-white font-bold uppercase text-[11px] h-9 shadow-md" onClick={handleUpdateCompany} disabled={isSaving}>
+                  <Button className="bg-primary text-white font-bold uppercase text-[11px] h-9" onClick={handleUpdateCompany} disabled={isSaving}>
                     {isSaving ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />} 
-                    Guardar y Vincular Empresa
+                    Guardar Cambios Corporativos
                   </Button>
                 </CardFooter>
               </Card>
@@ -363,13 +332,6 @@ export default function SettingsPage() {
                   </div>
                   <Switch checked />
                 </div>
-                <div className="flex items-center justify-between p-4 border rounded bg-white dark:bg-slate-900">
-                  <div className="space-y-1">
-                    <Label className="text-xs font-bold uppercase">Confirmación de Citas</Label>
-                    <p className="text-[10px] text-muted-foreground uppercase">Avisar a clientes sobre la ruta del técnico.</p>
-                  </div>
-                  <Switch checked />
-                </div>
               </CardContent>
             </Card>
           )}
@@ -385,7 +347,7 @@ export default function SettingsPage() {
                   <ShieldCheck className="h-6 w-6 text-status-success" />
                   <div>
                     <span className="text-xs font-bold text-status-success uppercase block">Conexión Segura Firebase SSL</span>
-                    <span className="text-[10px] opacity-70">Los datos de su empresa están aislados y encriptados en tiempo real.</span>
+                    <span className="text-[10px] opacity-70">Los datos de su empresa están aislados y encriptados.</span>
                   </div>
                 </div>
               </CardContent>

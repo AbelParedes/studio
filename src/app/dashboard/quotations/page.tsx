@@ -52,7 +52,6 @@ export default function QuotationsPage() {
   const [editingQuotation, setEditingQuotation] = useState<any | null>(null)
   const [items, setItems] = useState<{description: string, quantity: number, unitPrice: number}[]>([])
 
-  // 1. Contexto de Empresa
   const userProfileQuery = useMemoFirebase(() => 
     user?.email ? query(collection(db, "company_users"), where("email", "==", user.email)) : null,
   [db, user?.email])
@@ -64,7 +63,6 @@ export default function QuotationsPage() {
   [db, companyId])
   const { data: company } = useDoc(companyRef)
 
-  // 2. Datos de Cotizaciones y Clientes
   const quotationsRef = useMemoFirebase(() => 
     companyId ? query(collection(db, "quotations"), where("companyId", "==", companyId)) : null,
   [db, companyId])
@@ -75,7 +73,6 @@ export default function QuotationsPage() {
   [db, companyId])
   const { data: clients } = useCollection(clientsRef)
 
-  // 3. Lógica de Formulario
   const handleAddItem = () => {
     setItems([...items, { description: "", quantity: 1, unitPrice: 0 }])
   }
@@ -92,7 +89,7 @@ export default function QuotationsPage() {
 
     const formData = new FormData(e.currentTarget)
     const subtotal = items.reduce((acc, item) => acc + (Number(item.quantity || 0) * Number(item.unitPrice || 0)), 0)
-    const tax = subtotal * 0.18 // IGV 18%
+    const tax = subtotal * 0.18
     const total = subtotal + tax
 
     const quotationData = {
@@ -141,11 +138,14 @@ export default function QuotationsPage() {
     setIsAdding(true)
   }
 
-  // 4. Renderizado de Vista de Impresión (Membretada Oficial Apeva)
   if (viewingQuotation) {
     const client = clients?.find(c => c.id === viewingQuotation.clientId)
-    const defaultLogoUrl = PlaceHolderImages.find(img => img.id === 'apeva-logo')?.imageUrl || "https://res.cloudinary.com/djz39v86m/image/upload/v1711100000/apeva-logo.png"
-    const finalLogoSrc = company?.logoUrl || defaultLogoUrl
+    const defaultLogo = PlaceHolderImages.find(img => img.id === 'apeva-logo')?.imageUrl || "https://res.cloudinary.com/djz39v86m/image/upload/v1711100000/apeva-logo.png"
+    
+    // Priorizamos Cabecera de Ajustes, luego Logo de Ajustes, luego Logo de Apeva
+    const headerSrc = company?.headerUrl || company?.logoUrl || defaultLogo
+    // Priorizamos Pie de Página de Ajustes, de lo contrario usamos el estilo Apeva
+    const footerSrc = company?.footerUrl || null
 
     return (
       <div className="space-y-6 animate-in fade-in duration-500">
@@ -163,22 +163,19 @@ export default function QuotationsPage() {
           </div>
         </div>
 
-        {/* CONTENEDOR A4 OFICIAL APEVA */}
         <div className="bg-white p-0 shadow-2xl mx-auto print-container max-w-[21cm] min-h-[29.7cm] flex flex-col relative overflow-hidden text-slate-900 border border-slate-200">
           
-          {/* HEADER MEMBRETADO */}
+          {/* HEADER DINÁMICO */}
           <div className="pt-8 px-10 pb-4">
             <div className="flex justify-between items-start">
               <div className="relative h-28 w-80 shrink-0">
-                {finalLogoSrc && (
-                  <Image 
-                    src={finalLogoSrc} 
-                    alt="Logotipo Extintores Apeva" 
-                    fill 
-                    className="object-contain"
-                    unoptimized={!!company?.logoUrl}
-                  />
-                )}
+                <Image 
+                  src={headerSrc} 
+                  alt="Cabecera Corporativa" 
+                  fill 
+                  className="object-contain"
+                  unoptimized
+                />
               </div>
 
               <div className="text-right flex flex-col items-end pt-4">
@@ -197,7 +194,6 @@ export default function QuotationsPage() {
             <div className="h-[1px] bg-orange-500 w-full opacity-50"></div>
           </div>
 
-          {/* DATOS DEL CLIENTE */}
           <div className="p-10 flex-1 flex flex-col">
             <div className="grid grid-cols-1 mb-8">
               <div className="space-y-1.5 p-5 border border-slate-200 border-l-[6px] border-l-red-600 bg-slate-50/50 rounded-r-xl">
@@ -218,7 +214,6 @@ export default function QuotationsPage() {
               </div>
             </div>
 
-            {/* TABLA DE SERVICIOS */}
             <div className="flex-1">
               <Table className="border rounded-xl overflow-hidden border-slate-200 shadow-sm w-full">
                 <TableHeader className="bg-slate-800 hover:bg-slate-800">
@@ -243,7 +238,6 @@ export default function QuotationsPage() {
                       <TableCell className="text-right font-black text-[11px] py-5 text-red-600 pr-6">{(Number(item.total) || 0).toFixed(2)}</TableCell>
                     </TableRow>
                   ))}
-                  {/* Espacio para que la tabla siempre tenga una altura mínima y se vea bien en A4 */}
                   {Array.from({ length: Math.max(0, 8 - (viewingQuotation.items?.length || 0)) }).map((_, i) => (
                     <TableRow key={`empty-${i}`} className="border-b border-slate-50 border-none h-12">
                       <TableCell colSpan={4}></TableCell>
@@ -253,7 +247,6 @@ export default function QuotationsPage() {
               </Table>
             </div>
 
-            {/* RESUMEN DE TOTALES */}
             <div className="mt-8 flex justify-between items-end gap-10">
               <div className="flex-1 space-y-4">
                 <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
@@ -262,10 +255,10 @@ export default function QuotationsPage() {
                     NOTAS Y CONDICIONES COMERCIALES
                   </p>
                   <ul className="text-[9px] text-slate-600 space-y-1 font-bold">
-                    <li className="flex items-center gap-2"><CheckCircle2 className="h-2.5 w-2.5 text-green-600" /> Los extintores cumplen con la norma técnica peruana NTP 350.043.</li>
-                    <li className="flex items-center gap-2"><CheckCircle2 className="h-2.5 w-2.5 text-green-600" /> Garantía de 01 año contra defectos de fabricación.</li>
-                    <li className="flex items-center gap-2"><CheckCircle2 className="h-2.5 w-2.5 text-green-600" /> Instalación y capacitación de uso básico gratuita en Lima.</li>
-                    <li className="flex items-center gap-2"><CheckCircle2 className="h-2.5 w-2.5 text-green-600" /> Tiempo de entrega: Inmediato / A convenir.</li>
+                    <li>• Cumplimiento estricto de la norma técnica peruana NTP 350.043.</li>
+                    <li>• Garantía de 01 año contra defectos de fabricación o recarga.</li>
+                    <li>• Instalación y capacitación de uso básico gratuita.</li>
+                    <li>• Entrega inmediata o según programación de ruta.</li>
                   </ul>
                 </div>
               </div>
@@ -287,43 +280,48 @@ export default function QuotationsPage() {
               </div>
             </div>
 
-            {/* FIRMAS */}
             <div className="mt-20 grid grid-cols-2 gap-20">
               <div className="flex flex-col items-center">
                 <div className="w-56 h-px bg-slate-400 mb-2"></div>
-                <p className="text-[10px] font-black uppercase text-slate-400">ACEPTACIÓN DEL CLIENTE</p>
+                <p className="text-[10px] font-black uppercase text-slate-400 text-center">ACEPTACIÓN DEL CLIENTE</p>
               </div>
               <div className="flex flex-col items-center">
                 <div className="w-56 h-px bg-red-600 mb-2"></div>
-                <p className="text-[10px] font-black uppercase text-red-600">DEPARTAMENTO DE VENTAS</p>
-                <p className="text-[9px] font-bold text-slate-500 italic uppercase">Extintores Apeva SAC</p>
+                <p className="text-[10px] font-black uppercase text-red-600 text-center">DEPARTAMENTO DE VENTAS</p>
+                <p className="text-[9px] font-bold text-slate-500 italic uppercase text-center">{company?.name || "Extintores Apeva SAC"}</p>
               </div>
             </div>
           </div>
 
-          {/* FOOTER AMARILLO OFICIAL APEVA */}
-          <div className="bg-[#ffdd00] py-10 px-10 no-print-bg mt-auto border-t-[6px] border-red-600 footer-apeva">
-            <div className="flex flex-col items-center gap-6">
-              <div className="grid grid-cols-2 gap-x-20 gap-y-4 w-full max-w-2xl mx-auto text-black">
-                <div className="flex items-center gap-3 text-[10px] font-black uppercase">
-                  <MapPin className="h-4 w-4 text-red-600 shrink-0" />
-                  <span>{company?.address || "Av. Naranjal 215 int A 06 Independencia - Lima"}</span>
-                </div>
-                <div className="flex items-center gap-3 text-[10px] font-black uppercase">
-                  <Phone className="h-4 w-4 text-red-600 shrink-0" />
-                  <span>{company?.phone || "933 261 752 / 918 790 212"}</span>
-                </div>
-                <div className="flex items-center gap-3 text-[10px] font-black uppercase">
-                  <Mail className="h-4 w-4 text-red-600 shrink-0" />
-                  <span className="lowercase">{company?.email || "extintoresapeva@hotmail.com"}</span>
-                </div>
-                <div className="flex items-center gap-3 text-[10px] font-black uppercase">
-                  <Globe className="h-4 w-4 text-red-600 shrink-0" />
-                  <span className="lowercase">www.extintoresapeva.com</span>
-                </div>
+          {/* PIE DE PÁGINA DINÁMICO */}
+          <div className={cn("mt-auto", footerSrc ? "p-0" : "bg-[#ffdd00] py-10 px-10 border-t-[6px] border-red-600")}>
+            {footerSrc ? (
+              <div className="relative h-40 w-full">
+                <Image src={footerSrc} alt="Footer Membrete" fill className="object-cover" unoptimized />
               </div>
-              <p className="text-[10px] font-black text-red-700 tracking-[0.5em] mt-4 opacity-80 uppercase">SEGURIDAD • GARANTÍA • CONFIANZA</p>
-            </div>
+            ) : (
+              <div className="flex flex-col items-center gap-6">
+                <div className="grid grid-cols-2 gap-x-20 gap-y-4 w-full max-w-2xl mx-auto text-black">
+                  <div className="flex items-center gap-3 text-[10px] font-black uppercase">
+                    <MapPin className="h-4 w-4 text-red-600 shrink-0" />
+                    <span>{company?.address || "Av. Naranjal 215 int A 06 Independencia - Lima"}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-[10px] font-black uppercase">
+                    <Phone className="h-4 w-4 text-red-600 shrink-0" />
+                    <span>{company?.phone || "933 261 752 / 918 790 212"}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-[10px] font-black uppercase">
+                    <Mail className="h-4 w-4 text-red-600 shrink-0" />
+                    <span className="lowercase">{company?.email || "extintoresapeva@hotmail.com"}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-[10px] font-black uppercase">
+                    <Globe className="h-4 w-4 text-red-600 shrink-0" />
+                    <span className="lowercase">www.extintoresapeva.com</span>
+                  </div>
+                </div>
+                <p className="text-[10px] font-black text-red-700 tracking-[0.5em] mt-4 opacity-80 uppercase text-center">SEGURIDAD • GARANTÍA • CONFIANZA</p>
+              </div>
+            )}
           </div>
 
           <style jsx global>{`
@@ -351,11 +349,6 @@ export default function QuotationsPage() {
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
               }
-              .footer-apeva {
-                background-color: #ffdd00 !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-              }
               @page {
                 size: A4;
                 margin: 0;
@@ -367,13 +360,12 @@ export default function QuotationsPage() {
     )
   }
 
-  // 5. Listado Principal
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase text-primary">Ventas y Proformas</h2>
-          <p className="text-muted-foreground text-sm">Emita presupuestos oficiales con el formato corporativo de Apeva.</p>
+          <p className="text-muted-foreground text-sm">Emita presupuestos oficiales con el formato corporativo configurado.</p>
         </div>
         
         <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) { setEditingQuotation(null); setItems([]); } }}>
@@ -426,13 +418,13 @@ export default function QuotationsPage() {
                   <div className="flex items-center justify-between border-b pb-2">
                     <Label className="text-[11px] font-black uppercase text-primary">Items del Presupuesto</Label>
                     <Button type="button" variant="secondary" size="sm" onClick={handleAddItem} className="h-8 text-[10px] font-bold uppercase bg-accent text-white hover:bg-accent/90">
-                      <Plus className="h-3 w-3 mr-2" /> Agregar Servicio / Equipo
+                      <Plus className="h-3 w-3 mr-2" /> Agregar Item
                     </Button>
                   </div>
                   
                   <div className="space-y-3">
                     {items.map((item, idx) => (
-                      <div key={idx} className="grid grid-cols-12 gap-3 items-end border p-4 rounded-xl bg-slate-50 shadow-sm animate-in slide-in-from-right-2">
+                      <div key={idx} className="grid grid-cols-12 gap-3 items-end border p-4 rounded-xl bg-slate-50 shadow-sm">
                         <div className="col-span-12 md:col-span-6 grid gap-1.5">
                           <Label className="text-[9px] font-black uppercase text-slate-500">Descripción Técnica</Label>
                           <Input 
@@ -472,13 +464,6 @@ export default function QuotationsPage() {
                         </div>
                       </div>
                     ))}
-                    
-                    {items.length === 0 && (
-                      <div className="text-center py-10 border-2 border-dashed rounded-xl text-slate-400">
-                        <FileText className="h-8 w-8 mx-auto mb-2 opacity-20" />
-                        <p className="text-[10px] font-black uppercase">No has añadido items a la proforma</p>
-                      </div>
-                    )}
                   </div>
                 </div>
 
@@ -544,7 +529,7 @@ export default function QuotationsPage() {
                       <TableCell className="font-bold text-primary uppercase tracking-tighter">{q.quotationNumber}</TableCell>
                       <TableCell className="font-black uppercase text-[11px]">{client?.name || "Desconocido"}</TableCell>
                       <TableCell className="text-[11px] font-bold text-slate-500">{q.date}</TableCell>
-                      <TableCell className="font-black text-slate-900">S/ {(Number(q.total) || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
+                      <TableCell className="font-black text-slate-900">S/ {(q.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className={cn(
                           "text-[9px] font-black uppercase px-2",
