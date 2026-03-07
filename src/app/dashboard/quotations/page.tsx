@@ -19,7 +19,8 @@ import {
   Phone,
   Globe,
   MapPin,
-  ArrowLeft
+  ArrowLeft,
+  MousePointer2
 } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, useUser } from "@/firebase"
 import { collection, doc, query, where } from "firebase/firestore"
@@ -38,6 +39,7 @@ import { toast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
+import Image from "next/image"
 
 export default function QuotationsPage() {
   const db = useFirestore()
@@ -134,106 +136,145 @@ export default function QuotationsPage() {
           </Button>
         </div>
 
-        {/* Formato Membretado Extintores Apeva */}
-        <div className="bg-white p-0 shadow-lg mx-auto print-container max-w-[21cm] min-h-[29.7cm] flex flex-col relative overflow-hidden">
-          {/* Header */}
-          <div className="p-8 pb-4 border-b-[3px] border-double border-gray-400">
+        {/* Formato Membretado A4 Extintores Apeva */}
+        <div className="bg-white p-0 shadow-2xl mx-auto print-container max-w-[21cm] min-h-[29.7cm] flex flex-col relative overflow-hidden text-slate-900">
+          
+          {/* Fondo Membretado (Header) */}
+          <div className="pt-10 px-10 pb-4">
             <div className="flex justify-between items-start">
-              <div>
-                <div className="flex items-center gap-2">
-                  <div className="h-16 w-16 bg-red-600 rounded-full flex items-center justify-center text-white font-bold text-2xl">A</div>
-                  <div>
+              <div className="flex flex-col">
+                <div className="flex items-center gap-1">
+                  <div className="relative h-14 w-14 overflow-hidden rounded-full border-2 border-red-600 flex items-center justify-center bg-white shadow-sm">
+                    <span className="text-red-600 font-black text-2xl italic">EA</span>
+                  </div>
+                  <div className="flex flex-col">
                     <h1 className="text-2xl font-black text-red-600 tracking-tighter leading-none italic uppercase">EXTINTORES APEVA</h1>
-                    <p className="text-[10px] font-bold text-gray-600 uppercase italic">Su seguridad por encima de todo</p>
+                    <p className="text-[10px] font-bold text-gray-600 uppercase italic mt-0.5">Su seguridad por encima de todo</p>
                   </div>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="border-2 border-primary p-3 rounded-lg bg-gray-50">
-                  <p className="text-xs font-bold uppercase text-primary">COTIZACIÓN</p>
-                  <p className="text-lg font-black">{viewingQuotation.quotationNumber}</p>
+              <div className="text-right flex flex-col items-end">
+                <div className="border-[3px] border-primary p-4 rounded-xl bg-slate-50 min-w-[180px] shadow-sm">
+                  <p className="text-[10px] font-black uppercase text-primary tracking-widest mb-1">COTIZACIÓN</p>
+                  <p className="text-xl font-black text-slate-800">{viewingQuotation.quotationNumber}</p>
                 </div>
-                <p className="text-[10px] mt-1 font-bold">Fecha: {viewingQuotation.date}</p>
+                <p className="text-[10px] mt-2 font-bold text-slate-500 uppercase tracking-tighter">Emisión: {viewingQuotation.date}</p>
               </div>
             </div>
           </div>
 
-          {/* Body */}
-          <div className="p-8 flex-1 space-y-6">
-            <div className="grid grid-cols-2 gap-8 text-xs">
-              <div className="space-y-1">
-                <p className="font-black uppercase text-gray-400 text-[10px]">CLIENTE:</p>
-                <p className="font-bold text-sm uppercase">{client?.name || "Desconocido"}</p>
-                <p className="font-bold">RUC/DNI: {client?.taxId}</p>
-                <p className="text-gray-600">{client?.address}</p>
-              </div>
-              <div className="text-right space-y-1">
-                <p className="font-black uppercase text-gray-400 text-[10px]">LUGAR DE ATENCIÓN:</p>
-                <p className="font-bold">Independencia, Lima</p>
-              </div>
-            </div>
+          {/* Línea Divisoria Membretada */}
+          <div className="px-10">
+            <div className="h-[2px] bg-slate-400 w-full mb-[2px]"></div>
+            <div className="h-[2px] bg-slate-400 w-full"></div>
+          </div>
 
-            <Table className="border rounded-md overflow-hidden">
-              <TableHeader className="bg-gray-100">
-                <TableRow>
-                  <TableHead className="font-black uppercase text-[10px]">Descripción</TableHead>
-                  <TableHead className="text-center font-black uppercase text-[10px] w-20">Cant.</TableHead>
-                  <TableHead className="text-right font-black uppercase text-[10px] w-28">P. Unit (S/)</TableHead>
-                  <TableHead className="text-right font-black uppercase text-[10px] w-28">Total (S/)</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {viewingQuotation.items.map((item: any, idx: number) => (
-                  <TableRow key={idx}>
-                    <TableCell className="font-bold uppercase">{item.description}</TableCell>
-                    <TableCell className="text-center font-bold">{item.quantity}</TableCell>
-                    <TableCell className="text-right font-bold">{(item.unitPrice || 0).toFixed(2)}</TableCell>
-                    <TableCell className="text-right font-black">{(item.total || 0).toFixed(2)}</TableCell>
-                  </TableRow>
-                ))}
-                {/* Filas vacías para completar el formato si hay pocos items */}
-                {viewingQuotation.items.length < 5 && Array(5 - viewingQuotation.items.length).fill(0).map((_, i) => (
-                  <TableRow key={`empty-${i}`} className="h-10">
-                    <TableCell colSpan={4}></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-
-            <div className="flex justify-end pt-4">
-              <div className="w-64 space-y-2">
-                <div className="flex justify-between text-xs">
-                  <span className="font-bold uppercase">Subtotal</span>
-                  <span className="font-bold">S/ {(viewingQuotation.subtotal || 0).toFixed(2)}</span>
+          {/* Cuerpo de la Cotización */}
+          <div className="p-10 flex-1 flex flex-col">
+            <div className="grid grid-cols-2 gap-10 mb-8">
+              <div className="space-y-1.5 p-4 border-l-4 border-primary bg-slate-50 rounded-r-lg">
+                <p className="font-black uppercase text-slate-400 text-[9px] tracking-widest">DATOS DEL CLIENTE</p>
+                <p className="font-black text-sm uppercase text-primary">{client?.name || "Desconocido"}</p>
+                <p className="text-[11px] font-bold text-slate-700">RUC / DNI: <span className="font-mono">{client?.taxId}</span></p>
+                <div className="flex items-start gap-1 text-[11px] text-slate-600">
+                  <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+                  <span>{client?.address}</span>
                 </div>
-                <div className="flex justify-between text-xs">
-                  <span className="font-bold uppercase">IGV (18%)</span>
-                  <span className="font-bold">S/ {(viewingQuotation.tax || 0).toFixed(2)}</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between text-sm">
-                  <span className="font-black uppercase text-red-600">Total Neto</span>
-                  <span className="font-black text-red-600">S/ {(viewingQuotation.total || 0).toFixed(2)}</span>
-                </div>
+              </div>
+              <div className="text-right space-y-1.5 p-4 border-r-4 border-red-600 bg-red-50/30 rounded-l-lg">
+                <p className="font-black uppercase text-slate-400 text-[9px] tracking-widest">LUGAR DE SERVICIO</p>
+                <p className="font-bold text-[11px] text-slate-700 uppercase">Sede Independencia - Lima Norte</p>
+                <p className="text-[10px] text-slate-500 italic">Válido para todo Lima Metropolitana</p>
               </div>
             </div>
 
-            <div className="mt-20">
-              <p className="text-[10px] font-bold uppercase text-gray-400 mb-1">Observaciones:</p>
-              <p className="text-[10px] italic text-gray-600">Cotización válida por 15 días. Precios incluyen IGV.</p>
+            <div className="flex-1">
+              <Table className="border rounded-lg overflow-hidden border-slate-200">
+                <TableHeader className="bg-slate-800 hover:bg-slate-800">
+                  <TableRow className="hover:bg-transparent border-none">
+                    <TableHead className="text-white font-black uppercase text-[10px] tracking-wider py-4">DESCRIPCIÓN DEL EQUIPO O SERVICIO</TableHead>
+                    <TableHead className="text-center text-white font-black uppercase text-[10px] tracking-wider py-4 w-20">CANT.</TableHead>
+                    <TableHead className="text-right text-white font-black uppercase text-[10px] tracking-wider py-4 w-28">P. UNIT (S/)</TableHead>
+                    <TableHead className="text-right text-white font-black uppercase text-[10px] tracking-wider py-4 w-28">SUBTOTAL (S/)</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {viewingQuotation.items.map((item: any, idx: number) => (
+                    <TableRow key={idx} className="border-b border-slate-100 last:border-none">
+                      <TableCell className="font-bold uppercase text-[11px] py-4 text-slate-700">{item.description}</TableCell>
+                      <TableCell className="text-center font-bold text-[11px] py-4">{item.quantity}</TableCell>
+                      <TableCell className="text-right font-bold text-[11px] py-4">{(item.unitPrice || 0).toFixed(2)}</TableCell>
+                      <TableCell className="text-right font-black text-[11px] py-4 text-slate-900">{(item.total || 0).toFixed(2)}</TableCell>
+                    </TableRow>
+                  ))}
+                  {/* Filas de relleno para estética A4 */}
+                  {viewingQuotation.items.length < 8 && Array(8 - viewingQuotation.items.length).fill(0).map((_, i) => (
+                    <TableRow key={`empty-${i}`} className="h-10 border-b border-slate-50/50">
+                      <TableCell colSpan={4}></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            <div className="mt-8 flex justify-end">
+              <div className="w-72 space-y-2 bg-slate-50 p-6 rounded-xl border border-slate-200 shadow-sm">
+                <div className="flex justify-between text-[11px]">
+                  <span className="font-bold uppercase text-slate-500">Subtotal Operativo</span>
+                  <span className="font-bold text-slate-700">S/ {(viewingQuotation.subtotal || 0).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-[11px]">
+                  <span className="font-bold uppercase text-slate-500">IGV (18%)</span>
+                  <span className="font-bold text-slate-700">S/ {(viewingQuotation.tax || 0).toFixed(2)}</span>
+                </div>
+                <div className="h-px bg-slate-300 my-2"></div>
+                <div className="flex justify-between items-center pt-1">
+                  <span className="font-black uppercase text-red-600 text-xs tracking-widest">TOTAL NETO</span>
+                  <span className="font-black text-red-600 text-xl tracking-tighter">S/ {(viewingQuotation.total || 0).toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-12 grid grid-cols-2 gap-10">
+              <div className="space-y-2">
+                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">TÉRMINOS Y CONDICIONES</p>
+                <ul className="text-[9px] text-slate-500 space-y-1 font-bold italic">
+                  <li>• Vigencia de la cotización: 15 días calendario.</li>
+                  <li>• Los precios incluyen entrega a domicilio en Lima Metropolitana.</li>
+                  <li>• Forma de pago: Contado / Transferencia bancaria.</li>
+                  <li>• Todos los equipos cuentan con certificación y garantía.</li>
+                </ul>
+              </div>
+              <div className="flex flex-col items-center justify-end">
+                <div className="w-40 h-px bg-slate-400 mb-2"></div>
+                <p className="text-[10px] font-black uppercase text-primary">DPTO. DE VENTAS</p>
+                <p className="text-[9px] font-bold text-slate-400">Extintores Apeva SAC</p>
+              </div>
             </div>
           </div>
 
-          {/* Footer Membretado Amarillo */}
-          <div className="bg-yellow-400 p-4 mt-auto">
-            <div className="flex flex-col items-center gap-1 text-[9px] font-black uppercase text-gray-800">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-1"><MapPin className="h-3 w-3" /> Av. Naranjal 215 int A 06 Independencia Lima</div>
-                <div className="flex items-center gap-1"><Phone className="h-3 w-3" /> 933261752 - 918790212</div>
+          {/* Footer Membretado Amarillo (Full Width) */}
+          <div className="bg-[#ffdd00] py-6 px-10 no-print-bg">
+            <div className="flex flex-col items-center gap-2">
+              <div className="flex items-center justify-center gap-8 w-full max-w-4xl">
+                <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-800">
+                  <MapPin className="h-3.5 w-3.5 text-red-600" />
+                  <span>Av. Naranjal 215 int A 06 Independencia - Lima</span>
+                </div>
+                <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-800">
+                  <Phone className="h-3.5 w-3.5 text-red-600" />
+                  <span>933 261 752 / 918 790 212</span>
+                </div>
               </div>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-1"><Mail className="h-3 w-3" /> Email: Extintoresapeva@hotmail.com</div>
-                <div className="flex items-center gap-1"><Globe className="h-3 w-3" /> Web: www.ExtintoresApeva.com</div>
+              <div className="flex items-center justify-center gap-8 w-full max-w-4xl">
+                <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-800">
+                  <Mail className="h-3.5 w-3.5 text-red-600" />
+                  <span className="lowercase">extintoresapeva@hotmail.com</span>
+                </div>
+                <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-800">
+                  <Globe className="h-3.5 w-3.5 text-red-600" />
+                  <span className="lowercase">www.extintoresapeva.com</span>
+                </div>
               </div>
             </div>
           </div>
@@ -254,11 +295,18 @@ export default function QuotationsPage() {
                 left: 0;
                 top: 0;
                 width: 100%;
+                margin: 0;
+                padding: 0;
                 box-shadow: none;
+                border: none;
               }
               @page {
                 size: A4;
                 margin: 0;
+              }
+              .no-print-bg {
+                background-color: #ffdd00 !important;
+                -webkit-print-color-adjust: exact;
               }
             }
           `}</style>
