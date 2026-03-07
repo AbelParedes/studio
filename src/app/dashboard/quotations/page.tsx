@@ -53,7 +53,7 @@ export default function QuotationsPage() {
   const [editingQuotation, setEditingQuotation] = useState<any | null>(null)
   const [items, setItems] = useState<{description: string, quantity: number, unitPrice: number}[]>([])
 
-  // 1. Obtener contexto de usuario y empresa
+  // 1. Contexto de usuario y empresa
   const userProfileQuery = useMemoFirebase(() => 
     user?.email ? query(collection(db, "company_users"), where("email", "==", user.email)) : null,
   [db, user?.email])
@@ -76,7 +76,24 @@ export default function QuotationsPage() {
   [db, companyId])
   const { data: clients } = useCollection(clientsRef)
 
-  // 3. Lógica de gestión de items
+  // 3. Generación automática de número de cotización (Serie-Año)
+  const suggestedQuotationNumber = useMemo(() => {
+    if (!quotations) return ""
+    const currentYear = new Date().getFullYear()
+    
+    // Filtrar cotizaciones del año actual para esta empresa
+    const yearQuotations = quotations.filter(q => {
+      const qDate = q.date ? new Date(q.date) : new Date()
+      return qDate.getFullYear() === currentYear
+    })
+
+    // El conteo empieza de 0 (0001)
+    const nextCount = yearQuotations.length + 1
+    const sequence = nextCount.toString().padStart(4, '0')
+    return `COT-${sequence}-${currentYear}`
+  }, [quotations])
+
+  // 4. Lógica de gestión de items
   const handleAddItem = () => {
     setItems([...items, { description: "", quantity: 1, unitPrice: 0 }])
   }
@@ -99,7 +116,7 @@ export default function QuotationsPage() {
     const quotationData = {
       companyId: companyId,
       clientId: formData.get("clientId") as string,
-      quotationNumber: formData.get("number") as string || `COT-${Date.now().toString().slice(-6)}`,
+      quotationNumber: formData.get("number") as string || suggestedQuotationNumber,
       date: formData.get("date") as string || new Date().toISOString().split('T')[0],
       items: items.map(i => ({ ...i, total: Number(i.quantity || 0) * Number(i.unitPrice || 0) })),
       subtotal,
@@ -142,10 +159,10 @@ export default function QuotationsPage() {
     setIsAdding(true)
   }
 
-  // 4. Vista de Impresión / PDF (Fidelidad A4 Refinada)
+  // 5. Vista de Impresión / PDF
   if (viewingQuotation) {
     const client = clients?.find(c => c.id === viewingQuotation.clientId)
-    const defaultLogo = PlaceHolderImages.find(img => img.id === 'apeva-logo')?.imageUrl || "https://res.cloudinary.com/djz39v86m/image/upload/v1711100000/apeva-logo.png"
+    const defaultLogo = PlaceHolderImages.find(img => img.id === 'apeva-logo')?.imageUrl || ""
     
     const headerSrc = company?.headerUrl || company?.logoUrl || defaultLogo
     const footerSrc = company?.footerUrl || null
@@ -166,25 +183,23 @@ export default function QuotationsPage() {
           </div>
         </div>
 
-        {/* CONTENEDOR A4 REFINADO */}
         <div className="bg-white p-0 shadow-xl mx-auto print-page w-[210mm] min-h-[297mm] flex flex-col relative overflow-hidden text-slate-800 border border-slate-100" id="quotation-print-area">
-          
-          {/* HEADER SECCIÓN MÁS COMPACTA */}
           <div className="pt-6 px-10 pb-3">
             <div className="flex justify-between items-start">
               <div className="relative h-20 w-64 shrink-0">
-                <Image 
-                  src={headerSrc} 
-                  alt="Cabecera Corporativa" 
-                  fill 
-                  className="object-contain object-left"
-                  unoptimized
-                />
+                {headerSrc && (
+                  <Image 
+                    src={headerSrc} 
+                    alt="Cabecera Corporativa" 
+                    fill 
+                    className="object-contain object-left"
+                    unoptimized
+                  />
+                )}
               </div>
-
               <div className="text-right flex flex-col items-end pt-2">
                 <div className="border-2 border-red-600 p-3 rounded-lg bg-slate-50 min-w-[200px]">
-                  <p className="text-[9px] font-bold uppercase text-slate-500 tracking-wider mb-0.5">R.U.C. {company?.taxId || "20602345678"}</p>
+                  <p className="text-[9px] font-bold uppercase text-slate-500 tracking-wider mb-0.5">R.U.C. {company?.taxId || "---"}</p>
                   <p className="text-[11px] font-black uppercase text-red-600 mb-0.5 tracking-tight">PROFORMA / COTIZACIÓN</p>
                   <p className="text-lg font-black text-slate-900 tracking-tighter">{viewingQuotation.quotationNumber}</p>
                 </div>
@@ -198,7 +213,6 @@ export default function QuotationsPage() {
             <div className="h-[1px] bg-slate-900 w-full opacity-10"></div>
           </div>
 
-          {/* CUERPO REFINADO */}
           <div className="p-10 flex-1 flex flex-col">
             <div className="mb-6">
               <div className="p-4 border border-slate-100 border-l-4 border-l-red-600 bg-slate-50/30 rounded-r-lg">
@@ -206,13 +220,13 @@ export default function QuotationsPage() {
                    <MousePointer2 className="h-2.5 w-2.5 mr-1 text-red-600" />
                    CLIENTE:
                 </p>
-                <p className="font-black text-base uppercase text-slate-900 leading-tight">{client?.name || "CLIENTE GENERAL"}</p>
+                <p className="font-black text-sm uppercase text-slate-900 leading-tight">{client?.name || "CLIENTE GENERAL"}</p>
                 <div className="h-[1px] bg-slate-200 w-full my-1.5"></div>
-                <div className="grid grid-cols-2 gap-4 text-[10px] font-bold">
+                <div className="grid grid-cols-2 gap-4 text-[9px] font-bold">
                   <p className="text-slate-700">RUC / DNI: <span className="ml-1 text-slate-900">{client?.taxId || "---"}</span></p>
-                  <p className="text-slate-700">LUGAR: <span className="ml-1 text-slate-900">LIMA, PERÚ</span></p>
+                  <p className="text-slate-700">CIUDAD: <span className="ml-1 text-slate-900">LIMA</span></p>
                 </div>
-                <div className="flex items-start gap-1 text-[10px] text-slate-600 mt-1">
+                <div className="flex items-start gap-1 text-[9px] text-slate-600 mt-1">
                   <MapPin className="h-2.5 w-2.5 mt-0.5 shrink-0 text-red-600" />
                   <span className="font-medium">{client?.address || "DIRECCIÓN NO REGISTRADA"}</span>
                 </div>
@@ -223,97 +237,95 @@ export default function QuotationsPage() {
               <Table className="border border-slate-200 w-full rounded-sm overflow-hidden">
                 <TableHeader className="bg-slate-900 hover:bg-slate-900">
                   <TableRow className="hover:bg-transparent border-none">
-                    <TableHead className="text-white font-bold uppercase text-[9px] py-3 pl-4">DESCRIPCIÓN DEL SERVICIO</TableHead>
-                    <TableHead className="text-center text-white font-bold uppercase text-[9px] py-3 w-16">CANT.</TableHead>
-                    <TableHead className="text-right text-white font-bold uppercase text-[9px] py-3 w-24">P. UNIT</TableHead>
-                    <TableHead className="text-right text-white font-bold uppercase text-[9px] py-3 w-24 pr-4">TOTAL (S/)</TableHead>
+                    <TableHead className="text-white font-bold uppercase text-[8px] py-3 pl-4">DESCRIPCIÓN DEL SERVICIO</TableHead>
+                    <TableHead className="text-center text-white font-bold uppercase text-[8px] py-3 w-16">CANT.</TableHead>
+                    <TableHead className="text-right text-white font-bold uppercase text-[8px] py-3 w-24">P. UNIT</TableHead>
+                    <TableHead className="text-right text-white font-bold uppercase text-[8px] py-3 w-24 pr-4">TOTAL (S/)</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {viewingQuotation.items?.map((item: any, idx: number) => (
                     <TableRow key={idx} className="border-b border-slate-100 last:border-none hover:bg-transparent">
-                      <TableCell className="font-bold uppercase text-[10px] py-2.5 pl-4 text-slate-800">
+                      <TableCell className="font-bold uppercase text-[9px] py-2 pl-4 text-slate-800">
                         {item.description}
                       </TableCell>
-                      <TableCell className="text-center font-bold text-[10px] py-2.5">{item.quantity}</TableCell>
-                      <TableCell className="text-right font-medium text-[10px] py-2.5">{(Number(item.unitPrice) || 0).toFixed(2)}</TableCell>
-                      <TableCell className="text-right font-black text-[10px] py-2.5 text-red-600 pr-4">{(Number(item.total) || 0).toFixed(2)}</TableCell>
+                      <TableCell className="text-center font-bold text-[9px] py-2">{item.quantity}</TableCell>
+                      <TableCell className="text-right font-medium text-[9px] py-2">{(Number(item.unitPrice) || 0).toFixed(2)}</TableCell>
+                      <TableCell className="text-right font-black text-[9px] py-2 text-red-600 pr-4">{(Number(item.total) || 0).toFixed(2)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </div>
 
-            {/* TOTALES MÁS COMPACTOS */}
             <div className="mt-6 flex flex-col md:flex-row justify-between items-end gap-6">
-              <div className="flex-1 space-y-3 w-full max-w-sm">
+              <div className="flex-1 space-y-2 w-full max-w-sm">
                 <div className="p-3 bg-slate-50 border border-slate-100 rounded-lg">
-                  <p className="text-[9px] font-black uppercase text-red-600 tracking-widest flex items-center mb-1.5">
+                  <p className="text-[8px] font-black uppercase text-red-600 tracking-widest flex items-center mb-1">
                     <Flame className="h-2.5 w-2.5 mr-1" />
                     CONDICIONES TÉCNICAS
                   </p>
-                  <ul className="text-[8px] text-slate-600 space-y-0.5 font-bold uppercase leading-tight">
+                  <ul className="text-[7px] text-slate-600 space-y-0.5 font-bold uppercase leading-tight">
                     <li>• CUMPLIMIENTO NORMATIVO NTP 350.043 E INDECI.</li>
                     <li>• GARANTÍA DE FÁBRICA DE 01 AÑO.</li>
                     <li>• INCLUYE PRECINTO Y TARJETA DE CONTROL.</li>
+                    <li>• ENTREGA A DOMICILIO SIN COSTO (LIMA METROPOLITANA).</li>
                   </ul>
                 </div>
               </div>
               
-              <div className="w-full md:w-64 space-y-1.5 bg-slate-900 p-4 rounded-xl shadow-lg">
-                <div className="flex justify-between text-[10px]">
+              <div className="w-full md:w-56 space-y-1 bg-slate-900 p-3 rounded-xl shadow-lg">
+                <div className="flex justify-between text-[9px]">
                   <span className="font-bold uppercase text-slate-400">SUBTOTAL</span>
                   <span className="font-black text-white">S/ {(Number(viewingQuotation.subtotal) || 0).toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-[10px]">
+                <div className="flex justify-between text-[9px]">
                   <span className="font-bold uppercase text-slate-400">I.G.V. (18%)</span>
                   <span className="font-black text-white">S/ {(Number(viewingQuotation.tax) || 0).toFixed(2)}</span>
                 </div>
                 <div className="h-[1px] bg-slate-700 my-1"></div>
                 <div className="flex justify-between items-center pt-0.5">
-                  <span className="font-black uppercase text-red-500 text-[10px] tracking-widest">TOTAL</span>
-                  <span className="font-black text-white text-xl tracking-tighter">S/ {(Number(viewingQuotation.total) || 0).toFixed(2)}</span>
+                  <span className="font-black uppercase text-red-500 text-[9px] tracking-widest">TOTAL NETO</span>
+                  <span className="font-black text-white text-lg tracking-tighter">S/ {(Number(viewingQuotation.total) || 0).toFixed(2)}</span>
                 </div>
               </div>
             </div>
 
-            {/* FIRMAS REFINADAS */}
-            <div className="mt-16 grid grid-cols-2 gap-20">
+            <div className="mt-12 grid grid-cols-2 gap-20">
               <div className="flex flex-col items-center">
-                <div className="w-40 h-[1px] bg-slate-300 mb-1.5"></div>
-                <p className="text-[8px] font-black uppercase text-slate-400">RECIBIDO POR</p>
+                <div className="w-32 h-[1px] bg-slate-300 mb-1"></div>
+                <p className="text-[7px] font-black uppercase text-slate-400">RECIBIDO POR</p>
               </div>
               <div className="flex flex-col items-center">
-                <div className="w-40 h-[1px] bg-red-600 mb-1.5"></div>
-                <p className="text-[8px] font-black uppercase text-red-600">DEPARTAMENTO TÉCNICO</p>
-                <p className="text-[7px] font-bold text-slate-500 uppercase">{company?.name || "EXTINTORES APEVA"}</p>
+                <div className="w-32 h-[1px] bg-red-600 mb-1"></div>
+                <p className="text-[7px] font-black uppercase text-red-600">DEPARTAMENTO TÉCNICO</p>
+                <p className="text-[6px] font-bold text-slate-500 uppercase">{company?.name || "EXTINTORES APEVA"}</p>
               </div>
             </div>
           </div>
 
-          {/* PIE DE PÁGINA MÁS PEQUEÑO Y REFINADO */}
-          <div className={cn("mt-auto print-footer w-full relative", footerSrc ? "p-0" : "bg-[#ffdd00] py-4 px-10 border-t-[3px] border-red-600")}>
+          <div className={cn("mt-auto print-footer w-full relative", footerSrc ? "p-0" : "bg-[#ffdd00] py-3 px-10 border-t-[2px] border-red-600")}>
             {footerSrc ? (
-              <div className="relative h-24 w-full">
+              <div className="relative h-20 w-full">
                 <Image src={footerSrc} alt="Pie de Página Oficial" fill className="object-cover" unoptimized />
               </div>
             ) : (
-              <div className="flex flex-col items-center gap-2">
-                <div className="flex flex-wrap justify-center gap-x-8 gap-y-1 w-full text-slate-900 font-black text-[8px] uppercase">
-                  <div className="flex items-center gap-1.5">
-                    <MapPin className="h-2.5 w-2.5 text-red-600" />
+              <div className="flex flex-col items-center gap-1">
+                <div className="flex flex-wrap justify-center gap-x-6 gap-y-0.5 w-full text-slate-900 font-black text-[7px] uppercase">
+                  <div className="flex items-center gap-1">
+                    <MapPin className="h-2 w-2 text-red-600" />
                     <span>{company?.address || "LIMA, PERÚ"}</span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <Phone className="h-2.5 w-2.5 text-red-600" />
+                  <div className="flex items-center gap-1">
+                    <Phone className="h-2 w-2 text-red-600" />
                     <span>{company?.phone || "CENTRAL APEVA"}</span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <Mail className="h-2.5 w-2.5 text-red-600" />
-                    <span className="lowercase">{company?.email || "contacto@extintoresapeva.com"}</span>
+                  <div className="flex items-center gap-1">
+                    <Mail className="h-2 w-2 text-red-600" />
+                    <span className="lowercase">{company?.email || "contacto@apeva.com"}</span>
                   </div>
                 </div>
-                <p className="text-[7px] font-black text-red-800 tracking-[0.3em] opacity-70 uppercase">SEGURIDAD • GARANTÍA • CONFIANZA</p>
+                <p className="text-[6px] font-black text-red-800 tracking-[0.2em] opacity-60 uppercase">SEGURIDAD • GARANTÍA • CONFIANZA</p>
               </div>
             )}
           </div>
@@ -339,8 +351,6 @@ export default function QuotationsPage() {
                 position: absolute !important;
                 bottom: 0 !important;
                 width: 100% !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
               }
               @page { size: A4; margin: 0; }
             }
@@ -388,7 +398,7 @@ export default function QuotationsPage() {
                     </div>
                     <div className="grid gap-2">
                       <Label className="text-[10px] font-black uppercase text-slate-500">N° de Cotización</Label>
-                      <Input name="number" defaultValue={editingQuotation?.quotationNumber} placeholder="COT-XXXX-2024" className="h-10 uppercase font-mono font-bold" />
+                      <Input name="number" defaultValue={editingQuotation?.quotationNumber || suggestedQuotationNumber} placeholder="COT-XXXX-2025" className="h-10 uppercase font-mono font-bold" />
                     </div>
                     <div className="grid gap-2">
                       <Label className="text-[10px] font-black uppercase text-slate-500">Estado</Label>
