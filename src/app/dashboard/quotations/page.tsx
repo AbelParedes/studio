@@ -19,7 +19,8 @@ import {
   Phone,
   Mail,
   Building2,
-  FileText
+  FileText,
+  CheckCircle2
 } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, useUser, useDoc } from "@/firebase"
 import { collection, doc, query, where } from "firebase/firestore"
@@ -179,29 +180,27 @@ export default function QuotationsPage() {
         {/* CONTENEDOR A4 */}
         <div className="bg-white p-0 shadow-2xl mx-auto print-page w-[210mm] min-h-[297mm] flex flex-col relative overflow-hidden text-slate-900 border" id="quotation-print-area">
           
-          {/* CABECERA: PRIORIZA IMAGEN DE AJUSTES */}
+          {/* CABECERA: CENTRADO TOTAL */}
           {company?.headerUrl ? (
-            <div className="relative w-full h-[180px] shrink-0">
-              <Image src={company.headerUrl} alt="Header Membrete" fill className="object-cover" unoptimized />
+            <div className="relative w-full h-[180px] shrink-0 flex items-center justify-center overflow-hidden">
+              <Image src={company.headerUrl} alt="Header Membrete" fill className="object-contain" unoptimized />
             </div>
           ) : (
-            <div className="pt-8 px-10 pb-4 shrink-0">
-              <div className="flex justify-between items-center mb-6">
-                <div className="relative h-20 w-44 shrink-0">
-                  {company?.logoUrl ? (
-                    <Image src={company.logoUrl} alt="Logo Corporativo" fill className="object-contain object-left" unoptimized />
-                  ) : (
-                    <div className="h-full w-full bg-slate-100 flex items-center justify-center border-2 border-dashed border-slate-300 rounded">
-                      <Building2 className="h-8 w-8 text-slate-300" />
-                    </div>
-                  )}
-                </div>
-                <div className="text-right">
-                  <h1 className="text-2xl font-black text-primary uppercase tracking-tighter">PROFORMA COMERCIAL</h1>
-                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{company?.name || "EXTINTORES APEVA SAAS"}</p>
-                  <div className="mt-2 bg-primary text-white px-3 py-1 rounded font-bold text-xs inline-block">
-                    N° {viewingQuotation.quotationNumber}
+            <div className="pt-10 px-10 pb-6 shrink-0 flex flex-col items-center text-center">
+              <div className="relative h-20 w-44 mb-4">
+                {company?.logoUrl ? (
+                  <Image src={company.logoUrl} alt="Logo Corporativo" fill className="object-contain" unoptimized />
+                ) : (
+                  <div className="h-full w-full bg-slate-100 flex items-center justify-center border-2 border-dashed border-slate-300 rounded">
+                    <Building2 className="h-8 w-8 text-slate-300" />
                   </div>
+                )}
+              </div>
+              <div>
+                <h1 className="text-2xl font-black text-primary uppercase tracking-tighter">PROFORMA COMERCIAL</h1>
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{company?.name || "EXTINTORES APEVA SAAS"}</p>
+                <div className="mt-3 bg-primary text-white px-4 py-1.5 rounded-full font-bold text-xs inline-block shadow-sm">
+                  N° {viewingQuotation.quotationNumber}
                 </div>
               </div>
             </div>
@@ -209,18 +208,18 @@ export default function QuotationsPage() {
 
           {/* CUERPO DEL DOCUMENTO */}
           <div className="px-10 py-6 space-y-6 flex-1">
-            <div className="grid grid-cols-2 gap-8 border-b pb-6">
+            <div className="grid grid-cols-2 gap-8 border-b border-slate-200 pb-6">
               <div className="space-y-2">
-                <h3 className="text-[9px] font-black text-primary uppercase border-b pb-1">DATOS DEL CLIENTE</h3>
-                <div className="text-[10px] space-y-1">
-                  <p className="font-bold uppercase">{client?.name || "---"}</p>
+                <h3 className="text-[9px] font-black text-primary uppercase border-b border-primary/20 pb-1">DATOS DEL CLIENTE</h3>
+                <div className="text-[10px] space-y-1.5">
+                  <p className="font-bold uppercase text-slate-900">{client?.name || "---"}</p>
                   <p className="text-slate-600 font-mono">ID FISCAL: {client?.taxId || "---"}</p>
                   <p className="text-slate-600">DIRECCIÓN: {client?.address || "---"}</p>
                 </div>
               </div>
               <div className="space-y-2 text-right">
-                <h3 className="text-[9px] font-black text-primary uppercase border-b pb-1">DETALLE DE EMISIÓN</h3>
-                <div className="text-[10px] space-y-1">
+                <h3 className="text-[9px] font-black text-primary uppercase border-b border-primary/20 pb-1">DETALLE DE EMISIÓN</h3>
+                <div className="text-[10px] space-y-1.5">
                   <p className="font-bold">FECHA: {viewingQuotation.date || "---"}</p>
                   <p className="text-slate-600 uppercase">VALIDEZ: 15 DÍAS</p>
                   <p className="text-slate-600 uppercase">MONEDA: SOLES (S/.)</p>
@@ -230,28 +229,30 @@ export default function QuotationsPage() {
 
             {/* TABLA DE PRODUCTOS / SERVICIOS */}
             <div className="space-y-2">
-              <h3 className="text-[9px] font-black text-primary uppercase">SERVICIOS Y EQUIPOS</h3>
-              <div className="border rounded-sm overflow-hidden">
+              <h3 className="text-[9px] font-black text-primary uppercase flex items-center gap-2">
+                <FileText className="h-3 w-3" /> SERVICIOS Y EQUIPOS
+              </h3>
+              <div className="border border-slate-200 rounded-sm overflow-hidden shadow-sm">
                 <table className="w-full text-[10px] border-collapse">
                   <thead className="bg-slate-900 text-white">
                     <tr>
-                      <th className="p-2 text-left font-bold uppercase w-12 border-r border-slate-700">CANT.</th>
-                      <th className="p-2 text-left font-bold uppercase">DESCRIPCIÓN DEL SERVICIO</th>
-                      <th className="p-2 text-right font-bold uppercase w-24 border-l border-slate-700">UNIT. (S/.)</th>
-                      <th className="p-2 text-right font-bold uppercase w-24 border-l border-slate-700">TOTAL (S/.)</th>
+                      <th className="p-2.5 text-left font-bold uppercase w-12 border-r border-slate-700">CANT.</th>
+                      <th className="p-2.5 text-left font-bold uppercase">DESCRIPCIÓN DEL SERVICIO</th>
+                      <th className="p-2.5 text-right font-bold uppercase w-24 border-l border-slate-700">UNIT. (S/.)</th>
+                      <th className="p-2.5 text-right font-bold uppercase w-24 border-l border-slate-700">TOTAL (S/.)</th>
                     </tr>
                   </thead>
                   <tbody>
                     {viewingQuotation.items?.map((item: any, idx: number) => (
                       <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                        <td className="p-2 text-center font-bold border-r border-slate-100">{item.quantity || 0}</td>
-                        <td className="p-2 font-medium uppercase">{item.description || "---"}</td>
-                        <td className="p-2 text-right border-l border-slate-100">{(Number(item.unitPrice || 0)).toFixed(2)}</td>
-                        <td className="p-2 text-right font-bold border-l border-slate-100">{(Number(item.total || 0)).toFixed(2)}</td>
+                        <td className="p-2.5 text-center font-bold border-r border-slate-100">{item.quantity || 0}</td>
+                        <td className="p-2.5 font-medium uppercase text-slate-700">{item.description || "---"}</td>
+                        <td className="p-2.5 text-right border-l border-slate-100">{(Number(item.unitPrice || 0)).toFixed(2)}</td>
+                        <td className="p-2.5 text-right font-bold border-l border-slate-100">{(Number(item.total || 0)).toFixed(2)}</td>
                       </tr>
                     ))}
                     {/* FILAS VACÍAS PARA RELLENAR */}
-                    {Array.from({ length: Math.max(0, 8 - (viewingQuotation.items?.length || 0)) }).map((_, i) => (
+                    {Array.from({ length: Math.max(0, 10 - (viewingQuotation.items?.length || 0)) }).map((_, i) => (
                       <tr key={`empty-${i}`} className="h-8 border-b border-slate-50">
                         <td className="border-r border-slate-50"></td>
                         <td></td>
@@ -266,7 +267,7 @@ export default function QuotationsPage() {
 
             {/* TOTALES */}
             <div className="flex justify-end pt-4">
-              <div className="w-64 space-y-1.5 pt-2">
+              <div className="w-64 space-y-2 pt-2">
                 <div className="flex justify-between text-[10px] px-2">
                   <span className="font-bold uppercase text-slate-500">SUBTOTAL</span>
                   <span className="font-bold">S/. {(Number(viewingQuotation.subtotal || 0)).toFixed(2)}</span>
@@ -275,37 +276,37 @@ export default function QuotationsPage() {
                   <span className="font-bold uppercase text-slate-500">I.G.V. (18%)</span>
                   <span className="font-bold">S/. {(Number(viewingQuotation.tax || 0)).toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-[11px] bg-primary text-white p-2 rounded-sm font-black mt-2">
+                <div className="flex justify-between text-[12px] bg-primary text-white p-3 rounded font-black mt-2 shadow-sm">
                   <span className="uppercase">TOTAL NETO</span>
                   <span>S/. {(Number(viewingQuotation.total || 0)).toFixed(2)}</span>
                 </div>
               </div>
             </div>
 
-            <div className="space-y-4 pt-6">
-              <h3 className="text-[9px] font-black text-primary uppercase border-b w-fit pb-0.5">CONDICIONES COMERCIALES</h3>
-              <ul className="text-[9px] text-slate-500 space-y-1 uppercase font-bold leading-tight">
-                <li>• LOS EQUIPOS CUMPLEN CON LAS NORMAS TÉCNICAS PERUANAS (NTP).</li>
-                <li>• GARANTÍA DE FÁBRICA POR 01 AÑO CONTRA DEFECTOS DE CARGA.</li>
-                <li>• FORMA DE PAGO: CONTADO / TRANSFERENCIA BANCARIA.</li>
+            <div className="space-y-4 pt-8">
+              <h3 className="text-[9px] font-black text-primary uppercase border-b border-primary/20 w-fit pb-1">CONDICIONES COMERCIALES</h3>
+              <ul className="text-[9px] text-slate-500 space-y-1.5 uppercase font-bold leading-tight">
+                <li className="flex items-center gap-2"><CheckCircle2 className="h-3 w-3 text-primary opacity-50" /> LOS EQUIPOS CUMPLEN CON LAS NORMAS TÉCNICAS PERUANAS (NTP).</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="h-3 w-3 text-primary opacity-50" /> GARANTÍA DE FÁBRICA POR 01 AÑO CONTRA DEFECTOS DE CARGA.</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="h-3 w-3 text-primary opacity-50" /> FORMA DE PAGO: CONTADO / TRANSFERENCIA BANCARIA.</li>
               </ul>
             </div>
           </div>
 
-          {/* PIE DE PÁGINA: PRIORIZA IMAGEN DE AJUSTES */}
+          {/* PIE DE PÁGINA: CENTRADO TOTAL */}
           {company?.footerUrl ? (
-            <div className="relative w-full h-[120px] shrink-0 mt-auto">
-              <Image src={company.footerUrl} alt="Footer Membrete" fill className="object-cover" unoptimized />
+            <div className="relative w-full h-[120px] shrink-0 mt-auto flex items-center justify-center overflow-hidden">
+              <Image src={company.footerUrl} alt="Footer Membrete" fill className="object-contain" unoptimized />
             </div>
           ) : (
-            <div className="mt-auto p-10 bg-slate-50 border-t flex justify-between items-center shrink-0">
-              <div className="space-y-1 text-[8px] font-bold text-slate-400 uppercase">
-                <p className="flex items-center gap-2"><MapPin className="h-3 w-3 text-primary" /> {company?.address || "LIMA, PERÚ"}</p>
-                <p className="flex items-center gap-2"><Phone className="h-3 w-3 text-primary" /> {company?.phone || "CENTRAL DE SERVICIOS"}</p>
-                <p className="flex items-center gap-2"><Mail className="h-3 w-3 text-primary" /> {company?.email || "EMAIL DE CONTACTO"}</p>
+            <div className="mt-auto p-10 bg-slate-50 border-t flex flex-col items-center text-center gap-4 shrink-0">
+              <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 text-[9px] font-bold text-slate-500 uppercase">
+                <p className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5 text-primary" /> {company?.address || "LIMA, PERÚ"}</p>
+                <p className="flex items-center gap-2"><Phone className="h-3.5 w-3.5 text-primary" /> {company?.phone || "CENTRAL DE SERVICIOS"}</p>
+                <p className="flex items-center gap-2"><Mail className="h-3.5 w-3.5 text-primary" /> {company?.email || "EMAIL DE CONTACTO"}</p>
               </div>
-              <div className="text-right">
-                <p className="text-[9px] font-black text-primary uppercase opacity-50 tracking-widest">SISTEMA SAAS MASTER SYNC © {currentYear}</p>
+              <div>
+                <p className="text-[10px] font-black text-primary uppercase tracking-widest opacity-60">SISTEMA SAAS MASTER SYNC © {currentYear}</p>
               </div>
             </div>
           )}
