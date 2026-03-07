@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState } from "react"
@@ -143,7 +144,8 @@ export default function QuotationsPage() {
   // 4. Renderizado de Vista de Impresión (Membretada Oficial Apeva)
   if (viewingQuotation) {
     const client = clients?.find(c => c.id === viewingQuotation.clientId)
-    const defaultLogo = PlaceHolderImages.find(img => img.id === 'apeva-logo')?.imageUrl || ''
+    const defaultLogoUrl = PlaceHolderImages.find(img => img.id === 'apeva-logo')?.imageUrl || "https://res.cloudinary.com/djz39v86m/image/upload/v1711100000/apeva-logo.png"
+    const finalLogoSrc = company?.logoUrl || defaultLogoUrl
 
     return (
       <div className="space-y-6 animate-in fade-in duration-500">
@@ -168,13 +170,15 @@ export default function QuotationsPage() {
           <div className="pt-8 px-10 pb-4">
             <div className="flex justify-between items-start">
               <div className="relative h-28 w-80 shrink-0">
-                <Image 
-                  src={company?.logoUrl || defaultLogo} 
-                  alt="Logotipo Extintores Apeva" 
-                  fill 
-                  className="object-contain"
-                  unoptimized={!!company?.logoUrl}
-                />
+                {finalLogoSrc && (
+                  <Image 
+                    src={finalLogoSrc} 
+                    alt="Logotipo Extintores Apeva" 
+                    fill 
+                    className="object-contain"
+                    unoptimized={!!company?.logoUrl}
+                  />
+                )}
               </div>
 
               <div className="text-right flex flex-col items-end pt-4">
@@ -240,7 +244,7 @@ export default function QuotationsPage() {
                     </TableRow>
                   ))}
                   {/* Espacio para que la tabla siempre tenga una altura mínima y se vea bien en A4 */}
-                  {Array.from({ length: Math.max(0, 8 - viewingQuotation.items.length) }).map((_, i) => (
+                  {Array.from({ length: Math.max(0, 8 - (viewingQuotation.items?.length || 0)) }).map((_, i) => (
                     <TableRow key={`empty-${i}`} className="border-b border-slate-50 border-none h-12">
                       <TableCell colSpan={4}></TableCell>
                     </TableRow>
@@ -300,20 +304,20 @@ export default function QuotationsPage() {
           {/* FOOTER AMARILLO OFICIAL APEVA */}
           <div className="bg-[#ffdd00] py-10 px-10 no-print-bg mt-auto border-t-[6px] border-red-600 footer-apeva">
             <div className="flex flex-col items-center gap-6">
-              <div className="grid grid-cols-2 gap-x-20 gap-y-4 w-full max-w-2xl mx-auto">
-                <div className="flex items-center gap-3 text-[10px] font-black uppercase text-slate-900">
+              <div className="grid grid-cols-2 gap-x-20 gap-y-4 w-full max-w-2xl mx-auto text-black">
+                <div className="flex items-center gap-3 text-[10px] font-black uppercase">
                   <MapPin className="h-4 w-4 text-red-600 shrink-0" />
                   <span>{company?.address || "Av. Naranjal 215 int A 06 Independencia - Lima"}</span>
                 </div>
-                <div className="flex items-center gap-3 text-[10px] font-black uppercase text-slate-900">
+                <div className="flex items-center gap-3 text-[10px] font-black uppercase">
                   <Phone className="h-4 w-4 text-red-600 shrink-0" />
                   <span>{company?.phone || "933 261 752 / 918 790 212"}</span>
                 </div>
-                <div className="flex items-center gap-3 text-[10px] font-black uppercase text-slate-900">
+                <div className="flex items-center gap-3 text-[10px] font-black uppercase">
                   <Mail className="h-4 w-4 text-red-600 shrink-0" />
                   <span className="lowercase">{company?.email || "extintoresapeva@hotmail.com"}</span>
                 </div>
-                <div className="flex items-center gap-3 text-[10px] font-black uppercase text-slate-900">
+                <div className="flex items-center gap-3 text-[10px] font-black uppercase">
                   <Globe className="h-4 w-4 text-red-600 shrink-0" />
                   <span className="lowercase">www.extintoresapeva.com</span>
                 </div>
@@ -355,10 +359,6 @@ export default function QuotationsPage() {
               @page {
                 size: A4;
                 margin: 0;
-              }
-              .no-print-bg {
-                background-color: #ffdd00 !important;
-                -webkit-print-color-adjust: exact;
               }
             }
           `}</style>

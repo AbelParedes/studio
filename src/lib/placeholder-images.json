@@ -1,3 +1,28 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero-bg",
+      "description": "Professional fire safety equipment background",
+      "imageUrl": "https://picsum.photos/seed/servifumiga1/1200/400",
+      "imageHint": "fire extinguisher safety"
+    },
+    {
+      "id": "client-avatar-1",
+      "description": "Client profile picture",
+      "imageUrl": "https://picsum.photos/seed/client1/100/100",
+      "imageHint": "person profile"
+    },
+    {
+      "id": "technician-avatar",
+      "description": "Technician profile picture",
+      "imageUrl": "https://picsum.photos/seed/tech1/100/100",
+      "imageHint": "worker uniform"
+    },
+    {
+      "id": "apeva-logo",
+      "description": "Logo oficial de Extintores Apeva",
+      "imageUrl": "https://res.cloudinary.com/djz39v86m/image/upload/v1711100000/apeva-logo.png",
+      "imageHint": "company logo"
+    }
+  ]
 }
