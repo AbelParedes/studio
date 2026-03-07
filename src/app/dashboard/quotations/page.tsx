@@ -182,9 +182,9 @@ export default function QuotationsPage() {
           
           {/* CABECERA: LOGO (CABECERA) IZQUIERDA, TEXTO DERECHA */}
           <div className="pt-10 px-10 pb-6 shrink-0 flex items-center justify-between border-b-2 border-primary/10">
-            {/* Logo a la izquierda (Usa la cabecera si existe) */}
-            <div className="relative h-24 w-64">
-              {company?.headerUrl || company?.logoUrl ? (
+            {/* Logo o Cabecera a la izquierda */}
+            <div className="relative h-20 w-48">
+              {(company?.headerUrl || company?.logoUrl) ? (
                 <Image 
                   src={company.headerUrl || company.logoUrl} 
                   alt="Logo Corporativo" 
@@ -200,13 +200,13 @@ export default function QuotationsPage() {
             </div>
             
             {/* Razón Social y Número a la derecha */}
-            <div className="text-right space-y-1">
-              <h1 className="text-lg font-black text-primary uppercase tracking-tight">
+            <div className="text-right space-y-1 max-w-[50%]">
+              <h1 className="text-sm font-black text-primary uppercase tracking-tight truncate">
                 {company?.name || "EXTINTORES APEVA SAAS"}
               </h1>
               <div className="flex flex-col items-end">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">COTIZACIÓN COMERCIAL</span>
-                <div className="mt-1 bg-primary text-white px-4 py-1.5 rounded font-bold text-xs shadow-sm">
+                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">PROFORMA COMERCIAL</span>
+                <div className="mt-1 bg-primary text-white px-4 py-1.5 rounded font-black text-xs shadow-sm">
                   N° {viewingQuotation.quotationNumber}
                 </div>
               </div>
@@ -259,7 +259,7 @@ export default function QuotationsPage() {
                       </tr>
                     ))}
                     {/* FILAS VACÍAS PARA RELLENAR */}
-                    {Array.from({ length: Math.max(0, 10 - (viewingQuotation.items?.length || 0)) }).map((_, i) => (
+                    {Array.from({ length: Math.max(0, 12 - (viewingQuotation.items?.length || 0)) }).map((_, i) => (
                       <tr key={`empty-${i}`} className="h-8 border-b border-slate-50">
                         <td className="border-r border-slate-50"></td>
                         <td></td>
@@ -283,7 +283,7 @@ export default function QuotationsPage() {
                   <span className="font-bold uppercase text-slate-500">I.G.V. (18%)</span>
                   <span className="font-bold">S/. {(Number(viewingQuotation.tax || 0)).toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-[12px] bg-primary text-white p-3 rounded font-black mt-2 shadow-sm">
+                <div className="flex justify-between text-[11px] bg-primary text-white p-3 rounded font-black mt-2 shadow-sm">
                   <span className="uppercase">TOTAL NETO</span>
                   <span>S/. {(Number(viewingQuotation.total || 0)).toFixed(2)}</span>
                 </div>
@@ -292,7 +292,7 @@ export default function QuotationsPage() {
 
             <div className="space-y-4 pt-8">
               <h3 className="text-[9px] font-black text-primary uppercase border-b border-primary/20 w-fit pb-1">CONDICIONES COMERCIALES</h3>
-              <ul className="text-[9px] text-slate-500 space-y-1.5 uppercase font-bold leading-tight">
+              <ul className="text-[9px] text-slate-600 space-y-1.5 uppercase font-bold leading-tight">
                 <li className="flex items-center gap-2"><CheckCircle2 className="h-3 w-3 text-primary opacity-50" /> LOS EQUIPOS CUMPLEN CON LAS NORMAS TÉCNICAS PERUANAS (NTP).</li>
                 <li className="flex items-center gap-2"><CheckCircle2 className="h-3 w-3 text-primary opacity-50" /> GARANTÍA DE FÁBRICA POR 01 AÑO CONTRA DEFECTOS DE CARGA.</li>
                 <li className="flex items-center gap-2"><CheckCircle2 className="h-3 w-3 text-primary opacity-50" /> FORMA DE PAGO: CONTADO / TRANSFERENCIA BANCARIA.</li>
@@ -300,23 +300,34 @@ export default function QuotationsPage() {
             </div>
           </div>
 
-          {/* PIE DE PÁGINA: MEMBRETE O DATOS */}
-          {company?.footerUrl ? (
-            <div className="relative w-full h-[120px] shrink-0 mt-auto flex items-center justify-center overflow-hidden">
-              <Image src={company.footerUrl} alt="Footer Membrete" fill className="object-contain" unoptimized />
-            </div>
-          ) : (
-            <div className="mt-auto p-10 bg-slate-50 border-t flex flex-col items-center text-center gap-4 shrink-0">
-              <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 text-[9px] font-bold text-slate-500 uppercase">
-                <p className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5 text-primary" /> {company?.address || "LIMA, PERÚ"}</p>
-                <p className="flex items-center gap-2"><Phone className="h-3.5 w-3.5 text-primary" /> {company?.phone || "CENTRAL DE SERVICIOS"}</p>
-                <p className="flex items-center gap-2"><Mail className="h-3.5 w-3.5 text-primary" /> {company?.email || "EMAIL DE CONTACTO"}</p>
+          {/* PIE DE PÁGINA: FONDO GOLD SOLICITADO */}
+          <div 
+            className="mt-auto shrink-0 flex flex-col items-center justify-center relative overflow-hidden print:bg-[rgb(255,215,0)]"
+            style={{ 
+              backgroundColor: 'rgb(255, 215, 0)',
+              WebkitPrintColorAdjust: 'exact',
+              printColorAdjust: 'exact'
+            }}
+          >
+            {company?.footerUrl ? (
+              <div className="relative w-full h-[100px] flex items-center justify-center">
+                <Image src={company.footerUrl} alt="Footer Membrete" fill className="object-contain" unoptimized />
               </div>
-              <div>
-                <p className="text-[10px] font-black text-primary uppercase tracking-widest opacity-60">SISTEMA SAAS MASTER SYNC © {currentYear}</p>
+            ) : (
+              <div className="p-8 w-full flex flex-col items-center text-center gap-4">
+                <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 text-[9px] font-black text-slate-900 uppercase">
+                  <p className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5" /> {company?.address || "LIMA, PERÚ"}</p>
+                  <p className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" /> {company?.phone || "CENTRAL DE SERVICIOS"}</p>
+                  <p className="flex items-center gap-2"><Mail className="h-3.5 w-3.5" /> {company?.email || "EMAIL DE CONTACTO"}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] font-black text-slate-900 uppercase tracking-widest opacity-60">
+                    SISTEMA SAAS MASTER SYNC © {currentYear} | EXCLUSIVO EXTINTORES APEVA
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           <style jsx global>{`
             @media print {
