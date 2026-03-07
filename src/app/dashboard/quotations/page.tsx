@@ -115,7 +115,7 @@ export default function QuotationsPage() {
     } else {
       const newId = crypto.randomUUID()
       addDocumentNonBlocking(collection(db, "quotations"), { ...quotationData, id: newId, createdAt: new Date().toISOString() })
-      toast({ title: "Proforma Generada con Éxito" })
+      toast({ title: "Proforma Generada" })
     }
 
     setIsAdding(false)
@@ -142,202 +142,186 @@ export default function QuotationsPage() {
     setIsAdding(true)
   }
 
-  // 4. Vista de Impresión / PDF (Fidelidad A4)
+  // 4. Vista de Impresión / PDF (Fidelidad A4 Refinada)
   if (viewingQuotation) {
     const client = clients?.find(c => c.id === viewingQuotation.clientId)
     const defaultLogo = PlaceHolderImages.find(img => img.id === 'apeva-logo')?.imageUrl || "https://res.cloudinary.com/djz39v86m/image/upload/v1711100000/apeva-logo.png"
     
-    // Priorizar recursos de Ajustes
     const headerSrc = company?.headerUrl || company?.logoUrl || defaultLogo
     const footerSrc = company?.footerUrl || null
 
     return (
-      <div className="space-y-6 animate-in fade-in duration-500">
-        <div className="flex items-center justify-between no-print mb-6">
-          <Button variant="ghost" onClick={() => setViewingQuotation(null)} className="font-bold uppercase text-xs text-primary hover:bg-primary/5">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Volver al Listado
+      <div className="space-y-4 animate-in fade-in duration-300">
+        <div className="flex items-center justify-between no-print mb-4">
+          <Button variant="ghost" onClick={() => setViewingQuotation(null)} className="font-bold uppercase text-[10px] text-primary hover:bg-primary/5">
+            <ArrowLeft className="mr-2 h-3 w-3" /> Volver al Listado
           </Button>
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={handlePrint} className="font-bold uppercase text-xs border-primary text-primary">
-              <Printer className="mr-2 h-4 w-4" /> Imprimir Documento
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handlePrint} className="font-bold uppercase text-[10px] border-primary text-primary h-8">
+              <Printer className="mr-2 h-3 w-3" /> Imprimir
             </Button>
-            <Button onClick={handlePrint} className="bg-primary text-white font-bold uppercase text-xs shadow-lg">
-              <Download className="mr-2 h-4 w-4" /> Exportar a PDF
+            <Button onClick={handlePrint} className="bg-primary text-white font-bold uppercase text-[10px] h-8 shadow-md">
+              <Download className="mr-2 h-3 w-3" /> Exportar PDF
             </Button>
           </div>
         </div>
 
-        {/* CONTENEDOR A4 ESTRICTO */}
-        <div className="bg-white p-0 shadow-2xl mx-auto print-page w-[210mm] min-h-[297mm] flex flex-col relative overflow-hidden text-slate-900 border border-slate-200" id="quotation-print-area">
+        {/* CONTENEDOR A4 REFINADO */}
+        <div className="bg-white p-0 shadow-xl mx-auto print-page w-[210mm] min-h-[297mm] flex flex-col relative overflow-hidden text-slate-800 border border-slate-100" id="quotation-print-area">
           
-          {/* HEADER SECCIÓN */}
-          <div className="pt-8 px-10 pb-4">
+          {/* HEADER SECCIÓN MÁS COMPACTA */}
+          <div className="pt-6 px-10 pb-3">
             <div className="flex justify-between items-start">
-              <div className="relative h-32 w-80 shrink-0">
+              <div className="relative h-20 w-64 shrink-0">
                 <Image 
                   src={headerSrc} 
                   alt="Cabecera Corporativa" 
                   fill 
-                  className="object-contain"
+                  className="object-contain object-left"
                   unoptimized
                 />
               </div>
 
-              <div className="text-right flex flex-col items-end pt-4">
-                <div className="border-[3px] border-red-600 p-4 rounded-xl bg-slate-50 min-w-[240px] shadow-sm">
-                  <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-1">R.U.C. {company?.taxId || "20602345678"}</p>
-                  <p className="text-sm font-black uppercase text-red-600 mb-1">PROFORMA / COTIZACIÓN</p>
-                  <p className="text-2xl font-black text-slate-800 tracking-tight">{viewingQuotation.quotationNumber}</p>
+              <div className="text-right flex flex-col items-end pt-2">
+                <div className="border-2 border-red-600 p-3 rounded-lg bg-slate-50 min-w-[200px]">
+                  <p className="text-[9px] font-bold uppercase text-slate-500 tracking-wider mb-0.5">R.U.C. {company?.taxId || "20602345678"}</p>
+                  <p className="text-[11px] font-black uppercase text-red-600 mb-0.5 tracking-tight">PROFORMA / COTIZACIÓN</p>
+                  <p className="text-lg font-black text-slate-900 tracking-tighter">{viewingQuotation.quotationNumber}</p>
                 </div>
-                <p className="text-[10px] mt-3 font-bold text-slate-500 uppercase tracking-tighter">FECHA DE EMISIÓN: {viewingQuotation.date}</p>
+                <p className="text-[9px] mt-2 font-bold text-slate-500 uppercase">FECHA: {viewingQuotation.date}</p>
               </div>
             </div>
           </div>
 
-          <div className="px-10 mt-2">
-            <div className="h-[3px] bg-red-600 w-full mb-[2px]"></div>
-            <div className="h-[1px] bg-orange-500 w-full opacity-50"></div>
+          <div className="px-10">
+            <div className="h-[2px] bg-red-600 w-full mb-[1px]"></div>
+            <div className="h-[1px] bg-slate-900 w-full opacity-10"></div>
           </div>
 
-          {/* CUERPO DEL DOCUMENTO */}
+          {/* CUERPO REFINADO */}
           <div className="p-10 flex-1 flex flex-col">
-            <div className="mb-8">
-              <div className="p-5 border border-slate-200 border-l-[6px] border-l-red-600 bg-slate-50/50 rounded-r-xl">
-                <p className="font-black uppercase text-slate-400 text-[9px] tracking-widest mb-2 flex items-center">
-                   <MousePointer2 className="h-3 w-3 mr-1 text-red-600" />
-                   DATOS DEL CLIENTE / RECEPTOR:
+            <div className="mb-6">
+              <div className="p-4 border border-slate-100 border-l-4 border-l-red-600 bg-slate-50/30 rounded-r-lg">
+                <p className="font-bold uppercase text-slate-400 text-[8px] tracking-widest mb-1.5 flex items-center">
+                   <MousePointer2 className="h-2.5 w-2.5 mr-1 text-red-600" />
+                   CLIENTE:
                 </p>
-                <p className="font-black text-xl uppercase text-slate-800">{client?.name || "CLIENTE GENERAL"}</p>
-                <div className="h-px bg-slate-200 w-full my-2"></div>
-                <div className="grid grid-cols-2 gap-4 text-[11px]">
-                  <p className="font-bold text-slate-700">RUC / DNI: <span className="font-mono bg-white px-1 border rounded ml-2">{client?.taxId || "---"}</span></p>
-                  <p className="font-bold text-slate-700">CIUDAD: <span className="font-medium ml-2">LIMA, PERÚ</span></p>
+                <p className="font-black text-base uppercase text-slate-900 leading-tight">{client?.name || "CLIENTE GENERAL"}</p>
+                <div className="h-[1px] bg-slate-200 w-full my-1.5"></div>
+                <div className="grid grid-cols-2 gap-4 text-[10px] font-bold">
+                  <p className="text-slate-700">RUC / DNI: <span className="ml-1 text-slate-900">{client?.taxId || "---"}</span></p>
+                  <p className="text-slate-700">LUGAR: <span className="ml-1 text-slate-900">LIMA, PERÚ</span></p>
                 </div>
-                <div className="flex items-start gap-1 text-[11px] text-slate-600 mt-2">
-                  <MapPin className="h-3 w-3 mt-0.5 shrink-0 text-red-600" />
+                <div className="flex items-start gap-1 text-[10px] text-slate-600 mt-1">
+                  <MapPin className="h-2.5 w-2.5 mt-0.5 shrink-0 text-red-600" />
                   <span className="font-medium">{client?.address || "DIRECCIÓN NO REGISTRADA"}</span>
                 </div>
               </div>
             </div>
 
             <div className="flex-1">
-              <Table className="border rounded-xl overflow-hidden border-slate-200 shadow-sm w-full">
-                <TableHeader className="bg-slate-800 hover:bg-slate-800">
+              <Table className="border border-slate-200 w-full rounded-sm overflow-hidden">
+                <TableHeader className="bg-slate-900 hover:bg-slate-900">
                   <TableRow className="hover:bg-transparent border-none">
-                    <TableHead className="text-white font-black uppercase text-[10px] tracking-wider py-5 pl-6">DESCRIPCIÓN TÉCNICA DEL SERVICIO / EQUIPO</TableHead>
-                    <TableHead className="text-center text-white font-black uppercase text-[10px] tracking-wider py-5 w-24">CANT.</TableHead>
-                    <TableHead className="text-right text-white font-black uppercase text-[10px] tracking-wider py-5 w-32">P. UNIT (S/)</TableHead>
-                    <TableHead className="text-right text-white font-black uppercase text-[10px] tracking-wider py-5 w-32 pr-6">TOTAL (S/)</TableHead>
+                    <TableHead className="text-white font-bold uppercase text-[9px] py-3 pl-4">DESCRIPCIÓN DEL SERVICIO</TableHead>
+                    <TableHead className="text-center text-white font-bold uppercase text-[9px] py-3 w-16">CANT.</TableHead>
+                    <TableHead className="text-right text-white font-bold uppercase text-[9px] py-3 w-24">P. UNIT</TableHead>
+                    <TableHead className="text-right text-white font-bold uppercase text-[9px] py-3 w-24 pr-4">TOTAL (S/)</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {viewingQuotation.items?.map((item: any, idx: number) => (
-                    <TableRow key={idx} className="border-b border-slate-100 last:border-none hover:bg-slate-50/50">
-                      <TableCell className="font-bold uppercase text-[11px] py-5 pl-6 text-slate-700">
-                        <div className="flex items-center gap-3">
-                           <span className="h-5 w-5 rounded bg-red-600 text-white flex items-center justify-center text-[9px] font-black shrink-0">{idx + 1}</span>
-                           {item.description}
-                        </div>
+                    <TableRow key={idx} className="border-b border-slate-100 last:border-none hover:bg-transparent">
+                      <TableCell className="font-bold uppercase text-[10px] py-2.5 pl-4 text-slate-800">
+                        {item.description}
                       </TableCell>
-                      <TableCell className="text-center font-black text-[11px] py-5">{item.quantity}</TableCell>
-                      <TableCell className="text-right font-bold text-[11px] py-5">{(Number(item.unitPrice) || 0).toFixed(2)}</TableCell>
-                      <TableCell className="text-right font-black text-[11px] py-5 text-red-600 pr-6">{(Number(item.total) || 0).toFixed(2)}</TableCell>
+                      <TableCell className="text-center font-bold text-[10px] py-2.5">{item.quantity}</TableCell>
+                      <TableCell className="text-right font-medium text-[10px] py-2.5">{(Number(item.unitPrice) || 0).toFixed(2)}</TableCell>
+                      <TableCell className="text-right font-black text-[10px] py-2.5 text-red-600 pr-4">{(Number(item.total) || 0).toFixed(2)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </div>
 
-            {/* TOTALES Y NOTAS */}
-            <div className="mt-8 flex flex-col md:flex-row justify-between items-end gap-10">
-              <div className="flex-1 space-y-4 w-full">
-                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
-                  <p className="text-[10px] font-black uppercase text-red-600 tracking-widest flex items-center">
-                    <Flame className="h-3 w-3 mr-1" />
-                    CONDICIONES Y GARANTÍAS TÉCNICAS
+            {/* TOTALES MÁS COMPACTOS */}
+            <div className="mt-6 flex flex-col md:flex-row justify-between items-end gap-6">
+              <div className="flex-1 space-y-3 w-full max-w-sm">
+                <div className="p-3 bg-slate-50 border border-slate-100 rounded-lg">
+                  <p className="text-[9px] font-black uppercase text-red-600 tracking-widest flex items-center mb-1.5">
+                    <Flame className="h-2.5 w-2.5 mr-1" />
+                    CONDICIONES TÉCNICAS
                   </p>
-                  <ul className="text-[9px] text-slate-600 space-y-1 font-bold">
-                    <li>• Cumplimiento normativo estricto según NTP 350.043 e INDECI.</li>
-                    <li>• Garantía de fábrica de 01 año sobre carga y operatividad.</li>
-                    <li>• Incluye precinto de seguridad y tarjeta de control de mantenimiento.</li>
-                    <li>• Capacitación básica gratuita sobre el uso del equipo en la entrega.</li>
+                  <ul className="text-[8px] text-slate-600 space-y-0.5 font-bold uppercase leading-tight">
+                    <li>• CUMPLIMIENTO NORMATIVO NTP 350.043 E INDECI.</li>
+                    <li>• GARANTÍA DE FÁBRICA DE 01 AÑO.</li>
+                    <li>• INCLUYE PRECINTO Y TARJETA DE CONTROL.</li>
                   </ul>
                 </div>
               </div>
               
-              <div className="w-full md:w-80 space-y-2 bg-slate-800 p-6 rounded-2xl shadow-xl">
-                <div className="flex justify-between text-[11px]">
+              <div className="w-full md:w-64 space-y-1.5 bg-slate-900 p-4 rounded-xl shadow-lg">
+                <div className="flex justify-between text-[10px]">
                   <span className="font-bold uppercase text-slate-400">SUBTOTAL</span>
                   <span className="font-black text-white">S/ {(Number(viewingQuotation.subtotal) || 0).toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-[11px]">
+                <div className="flex justify-between text-[10px]">
                   <span className="font-bold uppercase text-slate-400">I.G.V. (18%)</span>
                   <span className="font-black text-white">S/ {(Number(viewingQuotation.tax) || 0).toFixed(2)}</span>
                 </div>
-                <div className="h-px bg-slate-700 my-2"></div>
-                <div className="flex justify-between items-center pt-1">
-                  <span className="font-black uppercase text-red-500 text-sm tracking-widest">TOTAL NETO</span>
-                  <span className="font-black text-white text-2xl tracking-tighter">S/ {(Number(viewingQuotation.total) || 0).toFixed(2)}</span>
+                <div className="h-[1px] bg-slate-700 my-1"></div>
+                <div className="flex justify-between items-center pt-0.5">
+                  <span className="font-black uppercase text-red-500 text-[10px] tracking-widest">TOTAL</span>
+                  <span className="font-black text-white text-xl tracking-tighter">S/ {(Number(viewingQuotation.total) || 0).toFixed(2)}</span>
                 </div>
               </div>
             </div>
 
-            {/* FIRMAS */}
-            <div className="mt-20 grid grid-cols-2 gap-20 no-break">
+            {/* FIRMAS REFINADAS */}
+            <div className="mt-16 grid grid-cols-2 gap-20">
               <div className="flex flex-col items-center">
-                <div className="w-56 h-px bg-slate-400 mb-2"></div>
-                <p className="text-[10px] font-black uppercase text-slate-400 text-center">CONFORMIDAD DEL CLIENTE</p>
+                <div className="w-40 h-[1px] bg-slate-300 mb-1.5"></div>
+                <p className="text-[8px] font-black uppercase text-slate-400">RECIBIDO POR</p>
               </div>
               <div className="flex flex-col items-center">
-                <div className="w-56 h-px bg-red-600 mb-2"></div>
-                <p className="text-[10px] font-black uppercase text-red-600 text-center">DEPTO. VENTAS Y SEGURIDAD</p>
-                <p className="text-[9px] font-bold text-slate-500 italic uppercase text-center">{company?.name || "EXTINTORES APEVA"}</p>
+                <div className="w-40 h-[1px] bg-red-600 mb-1.5"></div>
+                <p className="text-[8px] font-black uppercase text-red-600">DEPARTAMENTO TÉCNICO</p>
+                <p className="text-[7px] font-bold text-slate-500 uppercase">{company?.name || "EXTINTORES APEVA"}</p>
               </div>
             </div>
           </div>
 
-          {/* PIE DE PÁGINA ANCLADO */}
-          <div className={cn("mt-auto print-footer w-full relative", footerSrc ? "p-0" : "bg-[#ffdd00] py-10 px-10 border-t-[6px] border-red-600")}>
+          {/* PIE DE PÁGINA MÁS PEQUEÑO Y REFINADO */}
+          <div className={cn("mt-auto print-footer w-full relative", footerSrc ? "p-0" : "bg-[#ffdd00] py-4 px-10 border-t-[3px] border-red-600")}>
             {footerSrc ? (
-              <div className="relative h-40 w-full">
+              <div className="relative h-24 w-full">
                 <Image src={footerSrc} alt="Pie de Página Oficial" fill className="object-cover" unoptimized />
               </div>
             ) : (
-              <div className="flex flex-col items-center gap-6">
-                <div className="grid grid-cols-2 gap-x-20 gap-y-4 w-full max-w-2xl mx-auto text-black">
-                  <div className="flex items-center gap-3 text-[10px] font-black uppercase">
-                    <MapPin className="h-4 w-4 text-red-600 shrink-0" />
-                    <span>{company?.address || "Av. Naranjal 215 int A 06 Independencia - Lima"}</span>
+              <div className="flex flex-col items-center gap-2">
+                <div className="flex flex-wrap justify-center gap-x-8 gap-y-1 w-full text-slate-900 font-black text-[8px] uppercase">
+                  <div className="flex items-center gap-1.5">
+                    <MapPin className="h-2.5 w-2.5 text-red-600" />
+                    <span>{company?.address || "LIMA, PERÚ"}</span>
                   </div>
-                  <div className="flex items-center gap-3 text-[10px] font-black uppercase">
-                    <Phone className="h-4 w-4 text-red-600 shrink-0" />
-                    <span>{company?.phone || "933 261 752 / 918 790 212"}</span>
+                  <div className="flex items-center gap-1.5">
+                    <Phone className="h-2.5 w-2.5 text-red-600" />
+                    <span>{company?.phone || "CENTRAL APEVA"}</span>
                   </div>
-                  <div className="flex items-center gap-3 text-[10px] font-black uppercase">
-                    <Mail className="h-4 w-4 text-red-600 shrink-0" />
-                    <span className="lowercase">{company?.email || "extintoresapeva@hotmail.com"}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-[10px] font-black uppercase">
-                    <Globe className="h-4 w-4 text-red-600 shrink-0" />
-                    <span className="lowercase">www.extintoresapeva.com</span>
+                  <div className="flex items-center gap-1.5">
+                    <Mail className="h-2.5 w-2.5 text-red-600" />
+                    <span className="lowercase">{company?.email || "contacto@extintoresapeva.com"}</span>
                   </div>
                 </div>
-                <p className="text-[10px] font-black text-red-700 tracking-[0.5em] mt-4 opacity-80 uppercase text-center">SEGURIDAD • GARANTÍA • CONFIANZA</p>
+                <p className="text-[7px] font-black text-red-800 tracking-[0.3em] opacity-70 uppercase">SEGURIDAD • GARANTÍA • CONFIANZA</p>
               </div>
             )}
           </div>
 
           <style jsx global>{`
             @media print {
-              body * {
-                visibility: hidden;
-              }
-              header, aside, .no-print, nav, [role="dialog"], .toaster, .sheet-overlay {
-                display: none !important;
-              }
-              #quotation-print-area, #quotation-print-area * {
-                visibility: visible;
-              }
+              body * { visibility: hidden; }
+              #quotation-print-area, #quotation-print-area * { visibility: visible; }
               #quotation-print-area {
                 position: absolute;
                 left: 0;
@@ -348,28 +332,17 @@ export default function QuotationsPage() {
                 padding: 0 !important;
                 box-shadow: none !important;
                 border: none !important;
-                background-color: white !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
-                display: flex !important;
-                flex-direction: column !important;
-                z-index: 999999;
               }
               .print-footer {
                 position: absolute !important;
                 bottom: 0 !important;
                 width: 100% !important;
-                background-color: #ffdd00 !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
               }
-              .no-break {
-                page-break-inside: avoid;
-              }
-              @page {
-                size: A4;
-                margin: 0;
-              }
+              @page { size: A4; margin: 0; }
             }
           `}</style>
         </div>
@@ -388,7 +361,7 @@ export default function QuotationsPage() {
         <div className="flex gap-2">
           <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) { setEditingQuotation(null); setItems([]); } }}>
             <DialogTrigger asChild>
-              <Button className="bg-primary text-white h-10 font-bold uppercase text-xs px-6 shadow-lg hover:shadow-xl transition-all">
+              <Button className="bg-primary text-white h-10 font-bold uppercase text-xs px-6 shadow-lg">
                 <Plus className="mr-2 h-4 w-4" /> Nueva Proforma
               </Button>
             </DialogTrigger>
@@ -435,7 +408,7 @@ export default function QuotationsPage() {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between border-b border-slate-200 pb-2">
                       <Label className="text-[11px] font-black uppercase text-primary">Ítems de Servicio / Productos</Label>
-                      <Button type="button" variant="secondary" size="sm" onClick={handleAddItem} className="h-8 text-[10px] font-bold uppercase bg-accent text-white hover:bg-accent/90">
+                      <Button type="button" variant="secondary" size="sm" onClick={handleAddItem} className="h-8 text-[10px] font-bold uppercase bg-accent text-white">
                         <Plus className="h-3 w-3 mr-2" /> Agregar Línea
                       </Button>
                     </div>
@@ -487,20 +460,20 @@ export default function QuotationsPage() {
 
                   <div className="bg-slate-900 text-white p-6 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4 shadow-xl">
                     <div className="text-center md:text-left">
-                      <p className="text-[10px] font-black uppercase text-slate-400 mb-1">Inversión Total Estimada (Neto)</p>
-                      <p className="text-4xl font-black text-red-500 tracking-tighter">
+                      <p className="text-[10px] font-black uppercase text-slate-400 mb-1">Total Neto (con IGV)</p>
+                      <p className="text-3xl font-black text-red-500 tracking-tighter">
                         S/ {(items.reduce((acc, i) => acc + (Number(i.quantity || 0) * Number(i.unitPrice || 0)), 0) * 1.18).toFixed(2)}
                       </p>
                     </div>
-                    <div className="flex flex-col items-center md:items-end text-[11px] font-bold opacity-70">
+                    <div className="flex flex-col items-center md:items-end text-[10px] font-bold opacity-70">
                       <p>Subtotal: S/ {items.reduce((acc, i) => acc + (Number(i.quantity || 0) * Number(i.unitPrice || 0)), 0).toFixed(2)}</p>
                       <p>I.G.V. (18%): S/ {(items.reduce((acc, i) => acc + (Number(i.quantity || 0) * Number(i.unitPrice || 0)), 0) * 0.18).toFixed(2)}</p>
                     </div>
                   </div>
                 </div>
                 <DialogFooter className="border-t border-slate-200 pt-6">
-                  <Button type="submit" className="w-full h-12 uppercase font-black text-xs tracking-widest bg-primary hover:bg-primary/90 shadow-md">
-                    {editingQuotation ? "Confirmar Cambios en Proforma" : "Generar Documento de Venta"}
+                  <Button type="submit" className="w-full h-12 uppercase font-black text-xs tracking-widest bg-primary hover:bg-primary/90">
+                    {editingQuotation ? "Actualizar Proforma" : "Generar Proforma"}
                   </Button>
                 </DialogFooter>
               </form>
@@ -531,9 +504,8 @@ export default function QuotationsPage() {
               <TableHeader className="bg-primary hover:bg-primary">
                 <TableRow className="border-none">
                   <TableHead className="text-white h-12 font-black">N° PROFORMA</TableHead>
-                  <TableHead className="text-white h-12 font-black">CLIENTE / ORGANIZACIÓN</TableHead>
-                  <TableHead className="text-white h-12 font-black">EMISIÓN</TableHead>
-                  <TableHead className="text-white h-12 font-black">TOTAL NETO (S/)</TableHead>
+                  <TableHead className="text-white h-12 font-black">CLIENTE</TableHead>
+                  <TableHead className="text-white h-12 font-black text-right pr-6">TOTAL (S/)</TableHead>
                   <TableHead className="text-white h-12 font-black">ESTADO</TableHead>
                   <TableHead className="text-white h-12 text-right pr-6 font-black">ACCIONES</TableHead>
                 </TableRow>
@@ -545,11 +517,10 @@ export default function QuotationsPage() {
                 ).map((q) => {
                   const client = clients?.find(c => c.id === q.clientId)
                   return (
-                    <TableRow key={q.id} className="hover:bg-slate-50 transition-colors border-slate-100">
+                    <TableRow key={q.id} className="hover:bg-slate-50 border-slate-100">
                       <TableCell className="font-black text-primary uppercase tracking-tighter">{q.quotationNumber}</TableCell>
                       <TableCell className="font-bold uppercase text-[11px] text-slate-700">{client?.name || "CARGA..."}</TableCell>
-                      <TableCell className="text-[11px] font-bold text-slate-500">{q.date}</TableCell>
-                      <TableCell className="font-black text-slate-900">S/ {(q.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
+                      <TableCell className="text-right pr-6 font-black text-slate-900">S/ {(q.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className={cn(
                           "text-[9px] font-black uppercase px-2 py-0.5",
@@ -561,13 +532,13 @@ export default function QuotationsPage() {
                       </TableCell>
                       <TableCell className="text-right pr-6">
                         <div className="flex items-center justify-end gap-2">
-                          <Button variant="ghost" size="icon" title="Ver Membrete" className="h-9 w-9 text-primary hover:bg-primary/10 transition-colors" onClick={() => setViewingQuotation(q)}>
+                          <Button variant="ghost" size="icon" className="h-9 w-9 text-primary hover:bg-primary/10" onClick={() => setViewingQuotation(q)}>
                             <Printer className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" title="Editar" className="h-9 w-9 text-blue-600 hover:bg-blue-50 transition-colors" onClick={() => openEdit(q)}>
+                          <Button variant="ghost" size="icon" className="h-9 w-9 text-blue-600 hover:bg-blue-50" onClick={() => openEdit(q)}>
                             <Edit2 className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" title="Eliminar" className="h-9 w-9 text-destructive hover:bg-destructive/10 transition-colors" onClick={() => handleDelete(q.id)}>
+                          <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:bg-destructive/10" onClick={() => handleDelete(q.id)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -575,38 +546,11 @@ export default function QuotationsPage() {
                     </TableRow>
                   )
                 })}
-                {quotations?.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-24 text-muted-foreground uppercase text-[10px] font-black tracking-widest opacity-30">
-                      No hay registros operativos en su organización.
-                    </TableCell>
-                  </TableRow>
-                )}
               </TableBody>
             </Table>
           )}
         </CardContent>
       </Card>
-
-      <Card className="bg-primary text-white shadow-2xl border-none">
-        <CardContent className="p-6 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-              <FileText className="h-6 w-6 text-accent" />
-            </div>
-            <div>
-              <h3 className="font-black text-lg uppercase tracking-tight">Centro de Emisión Apeva</h3>
-              <p className="text-sm opacity-80 font-medium">
-                Gestione proformas de seguridad con estándares técnicos de alta fidelidad.
-              </p>
-            </div>
-          </div>
-          <div className="text-[10px] uppercase font-black text-accent bg-white px-4 py-1.5 rounded-full shadow-sm">
-            Módulo Proformas v3.0
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }
-    
