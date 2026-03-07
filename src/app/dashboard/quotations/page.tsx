@@ -9,12 +9,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { 
   Plus, 
   Search, 
-  Printer, 
   Trash2, 
   Edit2, 
   Loader2, 
   ArrowLeft,
-  Download,
   MapPin,
   Phone,
   Mail,
@@ -74,7 +72,7 @@ export default function QuotationsPage() {
   [db, companyId])
   const { data: clients } = useCollection(clientsRef)
 
-  // 3. Lógica de Numeración Correlativa Anual (COT-0001-202X)
+  // 3. Lógica de Numeración Correlativa Anual
   const currentYear = new Date().getFullYear()
   const suggestedQuotationNumber = useMemo(() => {
     if (!quotations || quotations.length === 0) return `COT-0001-${currentYear}`
@@ -95,7 +93,6 @@ export default function QuotationsPage() {
     return `COT-${(maxNum + 1).toString().padStart(4, '0')}-${currentYear}`
   }, [quotations, currentYear])
 
-  // 4. Handlers de Items
   const handleAddItem = () => {
     setItems([...items, { description: "", quantity: 1, unitPrice: 0 }])
   }
@@ -106,7 +103,6 @@ export default function QuotationsPage() {
     setItems(newItems)
   }
 
-  // 5. Guardar Cotización
   const handleSaveQuotation = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!companyId) return
@@ -130,7 +126,7 @@ export default function QuotationsPage() {
       subtotal,
       tax,
       total,
-      conditions: formData.get("conditions") as string || "• Validez de la oferta: 15 días.\n• Forma de pago: Contado / Transferencia.\n• Tiempo de ejecución: A coordinar.\n• Garantía de servicio: 12 meses.",
+      conditions: formData.get("conditions") as string,
       status: formData.get("status") as string || "Borrador",
       updatedAt: new Date().toISOString()
     }
@@ -154,10 +150,6 @@ export default function QuotationsPage() {
     toast({ variant: "destructive", title: "Cotización Eliminada" })
   }
 
-  const handlePrint = () => {
-    window.print()
-  }
-
   const openEdit = (q: any) => {
     setEditingQuotation(q)
     setItems(q.items?.map((i: any) => ({ 
@@ -174,40 +166,23 @@ export default function QuotationsPage() {
 
     return (
       <div className="space-y-4 animate-in fade-in duration-300">
-        <div className="flex items-center justify-between no-print mb-4">
-          <Button variant="ghost" onClick={() => setViewingQuotation(null)} className="font-bold uppercase text-[10px] text-[#1c1c1c]">
+        <div className="flex items-center justify-between mb-4">
+          <Button variant="ghost" onClick={() => setViewingQuotation(null)} className="font-bold uppercase text-[10px]">
             <ArrowLeft className="mr-2 h-3 w-3" /> Volver al Listado
           </Button>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={handlePrint} className="font-bold uppercase text-[10px] h-8 border-[#1c1c1c] text-[#1c1c1c]">
-              <Printer className="mr-2 h-3 w-3" /> Imprimir
-            </Button>
-            <Button onClick={handlePrint} className="bg-[#d9534f] text-white font-bold uppercase text-[10px] h-8 shadow-md">
-              <Download className="mr-2 h-3 w-3" /> Descargar PDF
-            </Button>
-          </div>
         </div>
 
-        <div className="bg-white p-0 shadow-2xl mx-auto print-page w-[210mm] min-h-[297mm] flex flex-col relative overflow-hidden text-[#1c1c1c] border" id="quotation-print-area">
-          
-          {/* CABECERA CORPORATIVA ASIMÉTRICA */}
+        <div className="bg-white p-0 shadow-2xl mx-auto w-[210mm] min-h-[297mm] flex flex-col relative overflow-hidden text-[#1c1c1c] border">
           <div className="pt-12 px-12 pb-8 shrink-0 flex items-center justify-between border-b-[3px] border-[#d9534f]">
             <div className="relative h-20 w-64">
               {(company?.headerUrl || company?.logoUrl) ? (
-                <Image 
-                  src={company.headerUrl || company.logoUrl} 
-                  alt="Logo Corporativo" 
-                  fill 
-                  className="object-contain object-left" 
-                  unoptimized 
-                />
+                <Image src={company.headerUrl || company.logoUrl} alt="Logo" fill className="object-contain object-left" unoptimized />
               ) : (
                 <div className="h-full w-full bg-slate-50 flex items-center justify-center border-2 border-dashed border-slate-200 rounded">
                   <Building2 className="h-10 w-10 text-slate-300" />
                 </div>
               )}
             </div>
-            
             <div className="text-right space-y-1">
               <h1 className="text-sm font-black text-[#1c1c1c] uppercase tracking-tighter leading-none">
                 {company?.name || "EXTINTORES APEVA"}
@@ -222,7 +197,6 @@ export default function QuotationsPage() {
             </div>
           </div>
 
-          {/* CUERPO DEL DOCUMENTO */}
           <div className="px-12 py-8 space-y-8 flex-1 bg-white">
             <div className="grid grid-cols-2 gap-12">
               <div className="space-y-3">
@@ -271,14 +245,6 @@ export default function QuotationsPage() {
                         <td className="p-3 text-right font-black border-l border-slate-100 text-[#1c1c1c]">{(Number(item.total || 0)).toFixed(2)}</td>
                       </tr>
                     ))}
-                    {Array.from({ length: Math.max(0, 8 - (viewingQuotation.items?.length || 0)) }).map((_, i) => (
-                      <tr key={`empty-${i}`} className="h-9 border-b border-slate-50">
-                        <td className="border-r border-slate-50"></td>
-                        <td></td>
-                        <td className="border-l border-slate-50"></td>
-                        <td className="border-l border-slate-50"></td>
-                      </tr>
-                    ))}
                   </tbody>
                 </table>
               </div>
@@ -312,26 +278,15 @@ export default function QuotationsPage() {
             </div>
           </div>
 
-          {/* PIE DE PÁGINA DINÁMICO COMPACTO */}
           <div 
-            className="mt-auto shrink-0 flex flex-col items-center justify-center relative overflow-hidden py-6"
-            style={{ 
-              backgroundColor: company?.footerBgColor || 'rgb(255, 215, 0)',
-              WebkitPrintColorAdjust: 'exact',
-              printColorAdjust: 'exact'
-            }}
+            className="mt-auto shrink-0 flex flex-col items-center justify-center py-6"
+            style={{ backgroundColor: company?.footerBgColor || 'rgb(255, 215, 0)' }}
           >
             <div className="px-12 w-full flex flex-col items-center text-center gap-2">
               <div className="flex flex-wrap justify-center gap-x-10 gap-y-1 text-[10px] font-black text-[#1c1c1c] uppercase">
-                {company?.address && (
-                  <p className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5" /> {company.address}</p>
-                )}
-                {company?.phone && (
-                  <p className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" /> {company.phone}</p>
-                )}
-                {company?.email && (
-                  <p className="flex items-center gap-2"><Mail className="h-3.5 w-3.5" /> {company.email}</p>
-                )}
+                {company?.address && <p className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5" /> {company.address}</p>}
+                {company?.phone && <p className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" /> {company.phone}</p>}
+                {company?.email && <p className="flex items-center gap-2"><Mail className="h-3.5 w-3.5" /> {company.email}</p>}
               </div>
               <div className="mt-1">
                 <p className="text-[10px] font-black text-[#1c1c1c] uppercase tracking-[0.2em] flex items-center gap-2">
@@ -340,28 +295,6 @@ export default function QuotationsPage() {
               </div>
             </div>
           </div>
-
-          <style jsx global>{`
-            @media print {
-              body * { visibility: hidden; }
-              #quotation-print-area, #quotation-print-area * { visibility: visible; }
-              #quotation-print-area {
-                position: absolute !important;
-                left: 0 !important;
-                top: 0 !important;
-                width: 210mm !important;
-                height: 297mm !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                box-shadow: none !important;
-                border: none !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-                background-color: white !important;
-              }
-              @page { size: A4; margin: 0; }
-            }
-          `}</style>
         </div>
       </div>
     )
@@ -479,7 +412,7 @@ export default function QuotationsPage() {
                     name="conditions" 
                     defaultValue={editingQuotation?.conditions || "• Validez de la oferta: 15 días.\n• Forma de pago: Contado / Transferencia.\n• Tiempo de ejecución: A coordinar.\n• Garantía de servicio: 12 meses."}
                     className="min-h-[120px] text-xs font-medium"
-                    placeholder="Ingrese las condiciones de pago, validez y garantía..."
+                    placeholder="Ingrese las condiciones de pago..."
                   />
                 </div>
 
