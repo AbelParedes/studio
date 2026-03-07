@@ -14,9 +14,11 @@
         "address": { "type": "string" },
         "phone": { "type": "string" },
         "email": { "type": "string", "format": "email" },
-        "primaryColor": { "type": "string", "description": "Color principal en formato HEX (ej. #1a2b3c)" },
-        "accentColor": { "type": "string", "description": "Color de acento en formato HEX (ej. #d9534f)" },
+        "primaryColor": { "type": "string", "description": "Color principal en formato HEX" },
+        "accentColor": { "type": "string", "description": "Color de acento en formato HEX" },
         "themeMode": { "type": "string", "enum": ["light", "dark"] },
+        "status": { "type": "string", "enum": ["Active", "Pending", "Suspended"] },
+        "plan": { "type": "string", "enum": ["Básico", "Profesional", "Empresarial"] },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "name", "taxId"]
@@ -32,7 +34,7 @@
         "name": { "type": "string" },
         "email": { "type": "string", "format": "email" },
         "roleId": { "type": "string" },
-        "status": { "type": "string", "enum": ["Active", "Inactive"] },
+        "status": { "type": "string", "enum": ["Active", "Inactive", "Pending"] },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "companyId", "name", "email", "roleId"]

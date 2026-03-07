@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { DashboardNav } from "@/components/dashboard-nav"
-import { Bell, Loader2, Menu, Building2, Clock, ShieldAlert, LogOut, ShieldCheck } from "lucide-react"
+import { Bell, Loader2, Menu, Building2, Clock, ShieldAlert, LogOut, ShieldCheck, CreditCard } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection, useAuth } from "@/firebase"
 import { doc, collection, query, where, limit } from "firebase/firestore"
@@ -76,6 +76,33 @@ export default function DashboardLayout({
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-background gap-4">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
         <p className="text-sm font-bold text-primary uppercase tracking-widest">Sincronizando Entorno SaaS...</p>
+      </div>
+    )
+  }
+
+  // Suspended service screen
+  if (!isMasterAdmin && company?.status === "Suspended") {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-[#fef2f2] p-6">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl p-10 text-center border-t-8 border-t-status-error">
+          <div className="h-20 w-20 bg-status-error/10 rounded-full flex items-center justify-center mx-auto mb-6">
+            <CreditCard className="h-10 w-10 text-status-error animate-bounce" />
+          </div>
+          <h1 className="text-2xl font-bold uppercase tracking-tight text-status-error mb-4">Servicio Suspendido</h1>
+          <p className="text-sm text-muted-foreground leading-relaxed mb-8 font-medium">
+            Hola, <span className="text-primary font-bold">{profile?.name}</span>. El acceso para <span className="text-primary font-bold">{company?.name}</span> ha sido restringido por falta de pago o vencimiento de plan.
+          </p>
+          <div className="p-4 bg-muted/30 rounded-lg text-[11px] text-muted-foreground uppercase font-bold mb-8">
+            Comuníquese con el departamento de cobranzas para regularizar su cuenta.
+          </div>
+          <Button 
+            variant="outline" 
+            className="w-full font-bold uppercase text-xs h-11 border-status-error text-status-error"
+            onClick={() => signOut(auth).then(() => router.push("/login"))}
+          >
+            <LogOut className="mr-2 h-4 w-4" /> Salir del Sistema
+          </Button>
+        </div>
       </div>
     )
   }
