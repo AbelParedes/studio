@@ -238,7 +238,7 @@ export default function QuotationsPage() {
               <div className="flex flex-col items-end">
                 <span className="text-[10px] font-bold text-slate-600">RUC: {company?.taxId || "---"}</span>
                 <span className="text-[9px] font-black text-[#d9534f] uppercase tracking-[0.2em] mt-2">COTIZACIÓN</span>
-                <div className="mt-2 bg-[#1c1c1c] text-white px-6 py-2 rounded-md font-black text-[12px] shadow-md border-b-2 border-[#d9534f]">
+                <div className="mt-2 bg-slate-100 text-[#1c1c1c] px-6 py-2 rounded-md font-black text-[12px] shadow-sm border-b-2 border-slate-300">
                    N° {viewingQuotation.quotationNumber}
                 </div>
               </div>
@@ -249,8 +249,8 @@ export default function QuotationsPage() {
             <div className="grid grid-cols-2 gap-12">
               <div className="space-y-3">
                 <div className="flex items-center gap-4">
-                  <h3 className="text-[10px] font-black text-[#d9534f] uppercase shrink-0">DATOS DEL CLIENTE</h3>
-                  <div className="h-[2px] bg-[#1c1c1c] w-full"></div>
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase shrink-0">DATOS DEL CLIENTE</h3>
+                  <div className="h-[1px] bg-slate-100 w-full"></div>
                 </div>
                 <div className="text-[11px] space-y-2 pt-1">
                   <p className="font-black uppercase text-[#1c1c1c] text-[12px]">{client?.name || "---"}</p>
@@ -260,8 +260,8 @@ export default function QuotationsPage() {
               </div>
               <div className="space-y-3">
                 <div className="flex items-center gap-4">
-                  <h3 className="text-[10px] font-black text-[#d9534f] uppercase shrink-0">DETALLE DE EMISIÓN</h3>
-                  <div className="h-[2px] bg-[#1c1c1c] w-full"></div>
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase shrink-0">DETALLE DE EMISIÓN</h3>
+                  <div className="h-[1px] bg-slate-100 w-full"></div>
                 </div>
                 <div className="text-[11px] space-y-2 pt-1 text-right">
                   <p className="font-black text-[#1c1c1c] uppercase"><span className="text-slate-400 font-normal">FECHA:</span> {formattedDate}</p>
@@ -272,16 +272,16 @@ export default function QuotationsPage() {
 
             <div className="space-y-3 pt-4">
               <h3 className="text-[10px] font-black text-[#1c1c1c] uppercase flex items-center gap-2 tracking-widest">
-                <FileText className="h-4 w-4 text-[#d9534f]" /> REQUERIMIENTO
+                <FileText className="h-4 w-4 text-slate-400" /> REQUERIMIENTO
               </h3>
               <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
                 <table className="w-full text-[10px] border-collapse">
-                  <thead className="bg-[#1c1c1c] text-white">
+                  <thead className="bg-slate-50 text-slate-800 border-b border-slate-200">
                     <tr>
-                      <th className="p-3 text-center font-black uppercase w-16 border-r border-white/10">CANT.</th>
+                      <th className="p-3 text-center font-black uppercase w-16 border-r border-slate-200">CANT.</th>
                       <th className="p-3 text-left font-black uppercase">DESCRIPCIÓN</th>
-                      <th className="p-3 text-right font-black uppercase w-28 border-l border-white/10">UNIT. (S/.)</th>
-                      <th className="p-3 text-right font-black uppercase w-28 border-l border-white/10">TOTAL (S/.)</th>
+                      <th className="p-3 text-right font-black uppercase w-28 border-l border-slate-200">UNIT. (S/.)</th>
+                      <th className="p-3 text-right font-black uppercase w-28 border-l border-slate-200">TOTAL (S/.)</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -301,7 +301,7 @@ export default function QuotationsPage() {
             <div className="grid grid-cols-12 gap-12 pt-4">
               <div className="col-span-7 space-y-3">
                 <h3 className="text-[10px] font-black text-[#1c1c1c] uppercase flex items-center gap-2 tracking-widest">
-                  <Gavel className="h-4 w-4 text-[#d9534f]" /> CONDICIONES COMERCIALES
+                  <Gavel className="h-4 w-4 text-slate-400" /> CONDICIONES COMERCIALES
                 </h3>
                 <div className="p-4 bg-slate-50 border rounded-lg text-[10px] text-slate-600 leading-relaxed whitespace-pre-line font-medium border-dashed border-slate-300">
                   {conditions}
@@ -317,9 +317,9 @@ export default function QuotationsPage() {
                     <span className="uppercase text-slate-400">I.G.V. (18%)</span>
                     <span className="text-[#1c1c1c]">S/. {(Number(viewingQuotation.tax || 0)).toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-[12px] bg-[#1c1c1c] text-white p-4 rounded-xl font-black mt-3 shadow-lg border-b-4 border-[#d9534f]">
-                    <span className="uppercase tracking-wider">TOTAL NETO</span>
-                    <span className="text-base">S/. {(Number(viewingQuotation.total || 0)).toFixed(2)}</span>
+                  <div className="flex justify-between text-[12px] bg-slate-50 text-[#1c1c1c] p-4 rounded-xl font-black mt-3 shadow-sm border border-slate-200">
+                    <span className="uppercase tracking-wider text-slate-500">TOTAL NETO</span>
+                    <span className="text-base text-primary">S/. {(Number(viewingQuotation.total || 0)).toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -329,19 +329,20 @@ export default function QuotationsPage() {
           <div 
             className="mt-auto shrink-0 flex flex-col items-center justify-center py-6 print-footer"
             style={{ 
-              backgroundColor: company?.footerBgColor || 'rgb(255, 215, 0)',
+              backgroundColor: company?.footerBgColor || '#f8fafc',
               WebkitPrintColorAdjust: 'exact',
-              printColorAdjust: 'exact'
+              printColorAdjust: 'exact',
+              borderTop: '1px solid #e2e8f0'
             } as any}
           >
             <div className="px-12 w-full flex flex-col items-center text-center gap-2">
-              <div className="flex flex-wrap justify-center gap-x-10 gap-y-1 text-[10px] font-black text-[#1c1c1c] uppercase">
+              <div className="flex flex-wrap justify-center gap-x-10 gap-y-1 text-[10px] font-black text-slate-600 uppercase">
                 {company?.address && <p className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5" /> {company.address}</p>}
                 {company?.phone && <p className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" /> {company.phone}</p>}
                 {company?.email && <p className="flex items-center gap-2"><Mail className="h-3.5 w-3.5" /> {company.email}</p>}
               </div>
               <div className="mt-1">
-                <p className="text-[10px] font-black text-[#1c1c1c] uppercase tracking-[0.2em] flex items-center gap-2">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
                   <Globe className="h-3.5 w-3.5" /> {company?.website || "WWW.TUEMPRESA.COM"}
                 </p>
               </div>
