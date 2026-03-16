@@ -90,19 +90,26 @@
     @apply text-[12px] py-1;
   }
   
-  .dark ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+  /* CUSTOM SCROLLBAR PRO */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
   }
-  .dark ::-webkit-scrollbar-track {
-    background: #0f172a;
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
   }
-  .dark ::-webkit-scrollbar-thumb {
-    background: #1e293b;
-    border-radius: 5px;
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/20 rounded-full;
   }
-  .dark ::-webkit-scrollbar-thumb:hover {
-    background: #334155;
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/40;
+  }
+
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-white/10;
+  }
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-white/20;
   }
 }
 

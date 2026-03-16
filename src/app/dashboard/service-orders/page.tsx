@@ -242,7 +242,7 @@ export default function ServiceOrdersPage() {
             </div>
           </div>
 
-          <div className="px-12 py-10 space-y-10 flex-1 bg-white">
+          <div className="px-12 py-10 space-y-10 flex-1 bg-white custom-scrollbar overflow-y-auto">
             <div className="grid grid-cols-2 gap-12">
               <div className="space-y-4">
                 <div className="flex items-center gap-4">
@@ -378,7 +378,7 @@ export default function ServiceOrdersPage() {
                   </div>
                 </DialogHeader>
 
-                <div className="flex-1 overflow-y-auto p-6 space-y-8">
+                <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-1.5">
