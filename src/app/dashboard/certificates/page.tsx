@@ -62,12 +62,12 @@ export default function CertificatesRegistryPage() {
   const [dialogServiceType, setDialogServiceType] = useState<string>("Extintores")
   const [selectedEquipmentIds, setSelectedEquipmentIds] = useState<string[]>([])
 
-  // Perfil para companyId
+  // Perfil para companyId - Estabilizado con useMemo
   const userProfileQuery = useMemoFirebase(() => 
     user?.email ? query(collection(db, "company_users"), where("email", "==", user.email)) : null,
   [db, user?.email])
   const { data: profiles } = useCollection(userProfileQuery)
-  const companyId = profiles?.[0]?.companyId
+  const companyId = useMemo(() => profiles?.[0]?.companyId || "", [profiles])
 
   // Clientes para el selector
   const clientsRef = useMemoFirebase(() => 
@@ -92,7 +92,7 @@ export default function CertificatesRegistryPage() {
   const { data: certificates, isLoading } = useCollection(certificatesQuery)
 
   // Lógica de Numeración Automática Cert_YYYY_NNN
-  const currentYear = new Date().getFullYear()
+  const currentYear = useMemo(() => new Date().getFullYear(), [])
   const suggestedCertNumber = useMemo(() => {
     if (!certificates || certificates.length === 0) return `Cert_${currentYear}_001`
     
@@ -111,6 +111,17 @@ export default function CertificatesRegistryPage() {
     const maxNum = Math.max(...numbers)
     return `Cert_${currentYear}_${(maxNum + 1).toString().padStart(3, '0')}`
   }, [certificates, currentYear])
+
+  // Limpiar estados cuando el diálogo se cierra para evitar loops de re-renderizado
+  useEffect(() => {
+    if (!isAdding) {
+      setEditingCert(null)
+      setDialogClientId("")
+      setDialogServiceType("Extintores")
+      setSelectedPests([])
+      setSelectedEquipmentIds([])
+    }
+  }, [isAdding])
 
   const filteredCerts = useMemo(() => {
     return certificates?.filter(c => 
@@ -162,7 +173,7 @@ export default function CertificatesRegistryPage() {
       chemicalsUsed: formData.get("chemicalsUsed") as string,
       dosage: formData.get("dosage") as string,
       pestTargeted: selectedPests,
-      servicedEquipmentIds: selectedEquipmentIds, // Incluimos los equipos seleccionados
+      servicedEquipmentIds: selectedEquipmentIds,
       observations: formData.get("observations") as string,
       clientSignatureName: formData.get("clientSignatureName") as string,
       technicianName: formData.get("technicianName") as string || profiles?.[0]?.name,
@@ -184,10 +195,6 @@ export default function CertificatesRegistryPage() {
     }
 
     setIsAdding(false)
-    setEditingCert(null)
-    setSelectedPests([])
-    setSelectedEquipmentIds([])
-    setDialogClientId("")
   }
 
   const openEdit = (cert: any) => {
@@ -207,7 +214,7 @@ export default function CertificatesRegistryPage() {
           <p className="text-muted-foreground text-sm font-medium uppercase text-[10px] tracking-widest">Gestión oficial DIRIS/DIGESA y NTP.</p>
         </div>
         <div className="flex gap-2">
-          <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) { setEditingCert(null); setSelectedEquipmentIds([]); setDialogClientId(""); } }}>
+          <Dialog open={isAdding} onOpenChange={setIsAdding}>
             <DialogTrigger asChild>
               <Button className="bg-primary text-white h-10 font-bold uppercase text-xs shadow-lg">
                 <Plus className="mr-2 h-4 w-4" /> Nuevo Certificado (Manual)
