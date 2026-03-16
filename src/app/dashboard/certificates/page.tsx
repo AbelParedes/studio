@@ -22,7 +22,8 @@ import {
   Trash2,
   FlaskConical,
   ClipboardCheck,
-  Bug
+  Bug,
+  Hash
 } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, useUser, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase"
 import { collection, query, where, doc } from "firebase/firestore"
@@ -78,6 +79,27 @@ export default function CertificatesRegistryPage() {
   [db, companyId])
   const { data: certificates, isLoading } = useCollection(certificatesQuery)
 
+  // Lógica de Numeración Automática Cert_YYYY_NNN
+  const currentYear = new Date().getFullYear()
+  const suggestedCertNumber = useMemo(() => {
+    if (!certificates || certificates.length === 0) return `Cert_${currentYear}_001`
+    
+    const yearCerts = certificates.filter(c => {
+      const cNum = c.certificateNumber || ""
+      return cNum.startsWith(`Cert_${currentYear}_`)
+    })
+
+    if (yearCerts.length === 0) return `Cert_${currentYear}_001`
+
+    const numbers = yearCerts.map(c => {
+      const parts = c.certificateNumber.split("_")
+      return parts.length === 3 ? parseInt(parts[2]) : 0
+    })
+    
+    const maxNum = Math.max(...numbers)
+    return `Cert_${currentYear}_${(maxNum + 1).toString().padStart(3, '0')}`
+  }, [certificates, currentYear])
+
   const filteredCerts = useMemo(() => {
     return certificates?.filter(c => 
       c.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -118,7 +140,7 @@ export default function CertificatesRegistryPage() {
       serviceType,
       date: executionDate,
       nextDue,
-      certificateNumber: formData.get("certificateNumber") as string,
+      certificateNumber: formData.get("certificateNumber") as string || suggestedCertNumber,
       chemicalsUsed: formData.get("chemicalsUsed") as string,
       dosage: formData.get("dosage") as string,
       pestTargeted: selectedPests,
@@ -139,7 +161,7 @@ export default function CertificatesRegistryPage() {
         createdAt: new Date().toISOString()
       }
       addDocumentNonBlocking(collection(db, "appointments"), newCert)
-      toast({ title: "Certificado emitido manualmente" })
+      toast({ title: "Certificado emitido con éxito" })
     }
 
     setIsAdding(false)
@@ -158,7 +180,7 @@ export default function CertificatesRegistryPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase text-primary">Archivo de Protocolos Técnicos</h2>
-          <p className="text-muted-foreground text-sm font-medium uppercase text-[10px] tracking-widest tracking-tighter">Gestión oficial DIRIS/DIGESA y NTP.</p>
+          <p className="text-muted-foreground text-sm font-medium uppercase text-[10px] tracking-widest">Gestión oficial DIRIS/DIGESA y NTP.</p>
         </div>
         <div className="flex gap-2">
           <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) setEditingCert(null); }}>
@@ -193,8 +215,16 @@ export default function CertificatesRegistryPage() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-slate-500">Número de Folio / Certificado</Label>
-                      <Input name="certificateNumber" defaultValue={editingCert?.certificateNumber} placeholder="Ej. CERT-2024-001" className="h-11 border-2 font-mono font-bold" required />
+                      <Label className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-1">
+                        <Hash className="h-3 w-3" /> Número de Folio / Certificado
+                      </Label>
+                      <Input 
+                        name="certificateNumber" 
+                        defaultValue={editingCert?.certificateNumber || suggestedCertNumber} 
+                        placeholder="Ej. Cert_2025_001" 
+                        className="h-11 border-2 font-mono font-bold text-primary" 
+                        required 
+                      />
                     </div>
                   </div>
 
@@ -370,7 +400,7 @@ export default function CertificatesRegistryPage() {
                   return (
                     <TableRow key={cert.id} className="hover:bg-muted/30 border-slate-100 transition-colors">
                       <TableCell className="font-black text-primary uppercase">
-                        {cert.certificateNumber || `CERT-${cert.id.split('-')[0].toUpperCase()}`}
+                        {cert.certificateNumber || `Cert_${cert.id.split('-')[0].toUpperCase()}`}
                       </TableCell>
                       <TableCell className="font-bold uppercase text-[11px]">{cert.clientName}</TableCell>
                       <TableCell>
