@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -23,7 +23,8 @@ import {
   FlaskConical,
   ClipboardCheck,
   Bug,
-  Hash
+  Hash,
+  HardDrive
 } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, useUser, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase"
 import { collection, query, where, doc } from "firebase/firestore"
@@ -55,6 +56,11 @@ export default function CertificatesRegistryPage() {
   const [isAdding, setIsAdding] = useState(false)
   const [editingCert, setEditingCert] = useState<any | null>(null)
   const [selectedPests, setSelectedPests] = useState<string[]>([])
+  
+  // Estado para rastrear el cliente seleccionado en el diálogo y sus equipos
+  const [dialogClientId, setDialogClientId] = useState<string>("")
+  const [dialogServiceType, setDialogServiceType] = useState<string>("Extintores")
+  const [selectedEquipmentIds, setSelectedEquipmentIds] = useState<string[]>([])
 
   // Perfil para companyId
   const userProfileQuery = useMemoFirebase(() => 
@@ -68,6 +74,12 @@ export default function CertificatesRegistryPage() {
     companyId ? query(collection(db, "clients"), where("companyId", "==", companyId)) : null,
   [db, companyId])
   const { data: clients } = useCollection(clientsRef)
+
+  // Equipos del cliente seleccionado en el diálogo
+  const clientEquipmentQuery = useMemoFirebase(() => 
+    dialogClientId ? query(collection(db, "client_equipment"), where("clientId", "==", dialogClientId)) : null,
+  [db, dialogClientId])
+  const { data: clientEquipment, isLoading: loadingEquip } = useCollection(clientEquipmentQuery)
 
   // Obtener certificados (citas completadas)
   const certificatesQuery = useMemoFirebase(() => 
@@ -113,6 +125,12 @@ export default function CertificatesRegistryPage() {
     )
   }
 
+  const handleEquipmentToggle = (equipId: string) => {
+    setSelectedEquipmentIds(prev => 
+      prev.includes(equipId) ? prev.filter(id => id !== equipId) : [...prev, equipId]
+    )
+  }
+
   const handleSaveCertificate = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!companyId) return
@@ -144,6 +162,7 @@ export default function CertificatesRegistryPage() {
       chemicalsUsed: formData.get("chemicalsUsed") as string,
       dosage: formData.get("dosage") as string,
       pestTargeted: selectedPests,
+      servicedEquipmentIds: selectedEquipmentIds, // Incluimos los equipos seleccionados
       observations: formData.get("observations") as string,
       clientSignatureName: formData.get("clientSignatureName") as string,
       technicianName: formData.get("technicianName") as string || profiles?.[0]?.name,
@@ -167,11 +186,16 @@ export default function CertificatesRegistryPage() {
     setIsAdding(false)
     setEditingCert(null)
     setSelectedPests([])
+    setSelectedEquipmentIds([])
+    setDialogClientId("")
   }
 
   const openEdit = (cert: any) => {
     setEditingCert(cert)
+    setDialogClientId(cert.clientId || "")
+    setDialogServiceType(cert.serviceType || "Extintores")
     setSelectedPests(cert.pestTargeted || [])
+    setSelectedEquipmentIds(cert.servicedEquipmentIds || [])
     setIsAdding(true)
   }
 
@@ -183,13 +207,13 @@ export default function CertificatesRegistryPage() {
           <p className="text-muted-foreground text-sm font-medium uppercase text-[10px] tracking-widest">Gestión oficial DIRIS/DIGESA y NTP.</p>
         </div>
         <div className="flex gap-2">
-          <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) setEditingCert(null); }}>
+          <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) { setEditingCert(null); setSelectedEquipmentIds([]); setDialogClientId(""); } }}>
             <DialogTrigger asChild>
               <Button className="bg-primary text-white h-10 font-bold uppercase text-xs shadow-lg">
                 <Plus className="mr-2 h-4 w-4" /> Nuevo Certificado (Manual)
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[95vh] flex flex-col p-0 overflow-hidden">
+            <DialogContent className="max-w-5xl max-h-[95vh] flex flex-col p-0 overflow-hidden">
               <form onSubmit={handleSaveCertificate} className="flex flex-col min-h-0 h-full">
                 <DialogHeader className="p-6 border-b bg-slate-50 shrink-0">
                   <DialogTitle className="uppercase font-black text-primary flex items-center gap-2">
@@ -203,7 +227,12 @@ export default function CertificatesRegistryPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase text-slate-500">Cliente Beneficiario</Label>
-                      <Select name="clientId" defaultValue={editingCert?.clientId} required>
+                      <Select 
+                        name="clientId" 
+                        value={dialogClientId} 
+                        onValueChange={setDialogClientId}
+                        required
+                      >
                         <SelectTrigger className="h-11 border-2">
                           <SelectValue placeholder="Seleccione un cliente" />
                         </SelectTrigger>
@@ -231,7 +260,12 @@ export default function CertificatesRegistryPage() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase text-slate-500">Tipo de Certificación</Label>
-                      <Select name="serviceType" defaultValue={editingCert?.serviceType || "Extintores"} required>
+                      <Select 
+                        name="serviceType" 
+                        value={dialogServiceType} 
+                        onValueChange={setDialogServiceType}
+                        required
+                      >
                         <SelectTrigger className="h-11 border-2">
                           <SelectValue />
                         </SelectTrigger>
@@ -252,47 +286,92 @@ export default function CertificatesRegistryPage() {
                     </div>
                   </div>
 
+                  {/* SECCIÓN DINÁMICA: EQUIPOS O FUMIGACIÓN */}
                   <div className="space-y-6 pt-4">
                     <div className="flex items-center gap-2 border-b-2 border-slate-100 pb-2">
                       <ClipboardCheck className="h-4 w-4 text-primary" />
-                      <h3 className="text-[11px] font-black uppercase text-primary tracking-widest">Protocolo de Aplicación (DIRIS)</h3>
+                      <h3 className="text-[11px] font-black uppercase text-primary tracking-widest">
+                        {dialogServiceType === "Fumigación" ? "Protocolo de Aplicación (DIRIS)" : "Inventario de Equipos (NTP)"}
+                      </h3>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div className="space-y-4">
-                        <div className="grid gap-4 p-4 bg-slate-50 rounded-2xl border-2 border-dashed">
-                          <div className="space-y-1.5">
-                            <Label className="text-[9px] font-bold uppercase text-slate-500 flex items-center gap-1"><FlaskConical className="h-3 w-3" /> Producto e Ingrediente Activo</Label>
-                            <Input name="chemicalsUsed" defaultValue={editingCert?.chemicalsUsed} placeholder="Ej. Cypermetrina 20% / Reg. Sanitario" className="h-9 text-xs font-bold" />
+                    {dialogServiceType === "Fumigación" ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-4">
+                          <div className="grid gap-4 p-4 bg-slate-50 rounded-2xl border-2 border-dashed">
+                            <div className="space-y-1.5">
+                              <Label className="text-[9px] font-bold uppercase text-slate-500 flex items-center gap-1"><FlaskConical className="h-3 w-3" /> Producto e Ingrediente Activo</Label>
+                              <Input name="chemicalsUsed" defaultValue={editingCert?.chemicalsUsed} placeholder="Ej. Cypermetrina 20% / Reg. Sanitario" className="h-9 text-xs font-bold" />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-[9px] font-bold uppercase text-slate-500">Dosificación Aplicada</Label>
+                              <Input name="dosage" defaultValue={editingCert?.dosage} placeholder="Ej. 10cc / Litro" className="h-9 text-xs font-bold" />
+                            </div>
                           </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-[9px] font-bold uppercase text-slate-500">Dosificación Aplicada</Label>
-                            <Input name="dosage" defaultValue={editingCert?.dosage} placeholder="Ej. 10cc / Litro" className="h-9 text-xs font-bold" />
+                          
+                          <div className="space-y-2">
+                            <Label className="text-[9px] font-black uppercase text-slate-400 flex items-center gap-1"><Bug className="h-3 w-3" /> Control Biológico (Plagas)</Label>
+                            <div className="grid grid-cols-2 gap-2">
+                              {PESTS.map(pest => (
+                                <div key={pest} className="flex items-center space-x-2 border p-2 rounded-lg bg-white">
+                                  <Checkbox 
+                                    id={`pest-${pest}`} 
+                                    checked={selectedPests.includes(pest)} 
+                                    onCheckedChange={() => handlePestToggle(pest)} 
+                                  />
+                                  <Label htmlFor={`pest-${pest}`} className="text-[9px] font-bold uppercase cursor-pointer">{pest}</Label>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         </div>
-                        
-                        <div className="space-y-2">
-                          <Label className="text-[9px] font-black uppercase text-slate-400 flex items-center gap-1"><Bug className="h-3 w-3" /> Control Biológico (Plagas)</Label>
-                          <div className="grid grid-cols-2 gap-2">
-                            {PESTS.map(pest => (
-                              <div key={pest} className="flex items-center space-x-2 border p-2 rounded-lg bg-white">
-                                <Checkbox 
-                                  id={`pest-${pest}`} 
-                                  checked={selectedPests.includes(pest)} 
-                                  onCheckedChange={() => handlePestToggle(pest)} 
-                                />
-                                <Label htmlFor={`pest-${pest}`} className="text-[9px] font-bold uppercase cursor-pointer">{pest}</Label>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
 
-                      <div className="space-y-4">
-                        <Label className="text-[10px] font-black uppercase text-slate-400">Observaciones y Hallazgos</Label>
-                        <Textarea name="observations" defaultValue={editingCert?.observations} placeholder="Recomendaciones de seguridad o detalles de operatividad..." className="min-h-[200px] text-xs font-medium border-2 rounded-2xl" />
+                        <div className="space-y-4">
+                          <Label className="text-[10px] font-black uppercase text-slate-400">Observaciones y Hallazgos</Label>
+                          <Textarea name="observations" defaultValue={editingCert?.observations} placeholder="Recomendaciones de seguridad o detalles de operatividad..." className="min-h-[200px] text-xs font-medium border-2 rounded-2xl" />
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-4">
+                          <Label className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-1">
+                            <HardDrive className="h-3 w-3 text-accent" /> Seleccionar Extintores para este Protocolo
+                          </Label>
+                          <div className="p-4 bg-slate-50 rounded-2xl border-2 border-dashed min-h-[200px] space-y-2 max-h-[400px] overflow-y-auto custom-scrollbar">
+                            {!dialogClientId ? (
+                              <p className="text-[10px] text-center text-slate-400 uppercase font-bold py-10">Seleccione un cliente para ver sus equipos</p>
+                            ) : loadingEquip ? (
+                              <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+                            ) : clientEquipment && clientEquipment.length > 0 ? (
+                              clientEquipment.map(item => (
+                                <div key={item.id} className={cn(
+                                  "flex items-center justify-between p-3 border-2 rounded-xl transition-all cursor-pointer bg-white",
+                                  selectedEquipmentIds.includes(item.id) ? "border-primary bg-primary/5" : "border-slate-100 hover:border-slate-200"
+                                )} onClick={() => handleEquipmentToggle(item.id)}>
+                                  <div className="flex items-center gap-3">
+                                    <Checkbox 
+                                      checked={selectedEquipmentIds.includes(item.id)} 
+                                      onCheckedChange={() => handleEquipmentToggle(item.id)}
+                                    />
+                                    <div className="flex flex-col">
+                                      <span className="text-[10px] font-black uppercase">{item.serialNumber}</span>
+                                      <span className="text-[8px] font-bold text-slate-400 uppercase">{item.type} • {item.location}</span>
+                                    </div>
+                                  </div>
+                                  <Badge variant="outline" className="text-[7px] font-black uppercase">{item.status}</Badge>
+                                </div>
+                              ))
+                            ) : (
+                              <p className="text-[10px] text-center text-slate-400 uppercase font-bold py-10">No hay equipos registrados para este cliente</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="space-y-4">
+                          <Label className="text-[10px] font-black uppercase text-slate-400">Observaciones de Inspección NTP</Label>
+                          <Textarea name="observations" defaultValue={editingCert?.observations} placeholder="Describa el estado de operatividad de los equipos inspeccionados..." className="min-h-[200px] text-xs font-medium border-2 rounded-2xl" />
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
