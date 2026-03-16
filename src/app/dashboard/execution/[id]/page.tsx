@@ -3,37 +3,32 @@
 
 import { useState, use } from "react"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { 
   ArrowLeft, 
   CheckCircle2, 
   ShieldAlert, 
-  Info, 
   Camera, 
   PenTool, 
   Loader2, 
   FlaskConical,
-  Bug,
-  Thermometer,
-  Wrench,
-  Save
+  Award
 } from "lucide-react"
-import { useDoc, useFirestore, updateDocumentNonBlocking, useUser, useMemoFirebase, useCollection } from "@/firebase"
-import { doc, collection, query, where } from "firebase/firestore"
+import { useDoc, useFirestore, updateDocumentNonBlocking, useUser, useMemoFirebase } from "@/firebase"
+import { doc } from "firebase/firestore"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from "@/hooks/use-toast"
-import { Separator } from "@/components/ui/separator"
+import { addMonths, addYears, format } from "date-fns"
 
 export default function ExecutionPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
   const db = useFirestore()
-  const { user } = useUser()
   const [isSaving, setIsSaving] = useState(false)
 
   const aptRef = useMemoFirebase(() => doc(db, "appointments", id), [db, id])
@@ -44,11 +39,11 @@ export default function ExecutionPage({ params }: { params: Promise<{ id: string
     dosage: "",
     pestTargeted: [],
     extChecklist: {
-      pressure: false,
-      hose: false,
-      pin: false,
-      label: false,
-      weight: false,
+      presion_nominal: false,
+      manguera_boquilla: false,
+      pasador_seguridad: false,
+      etiqueta_vigencia: false,
+      estado_cilindro: false,
     },
     observations: "",
     clientSignatureName: "",
@@ -66,16 +61,25 @@ export default function ExecutionPage({ params }: { params: Promise<{ id: string
     e.preventDefault()
     setIsSaving(true)
     
+    // Cálculo automático de próxima visita Pro
+    const today = new Date()
+    const isFumigation = apt?.serviceType === "Fumigación"
+    const nextDue = isFumigation 
+      ? format(addMonths(today, 6), "yyyy-MM-dd") 
+      : format(addYears(today, 1), "yyyy-MM-dd")
+
     const executionReport = {
       ...techData,
       finishedAt: new Date().toISOString(),
-      status: "Completado"
+      status: "Completado",
+      nextDue: nextDue,
+      certificateNumber: `CERT-${id.split('-')[0].toUpperCase()}`
     }
 
     try {
       updateDocumentNonBlocking(doc(db, "appointments", id), executionReport)
-      toast({ title: "Servicio Finalizado", description: "El reporte técnico ha sido guardado y el certificado generado." })
-      router.push("/dashboard/calendar")
+      toast({ title: "Servicio Finalizado", description: "El certificado técnico ha sido emitido y archivado." })
+      router.push("/dashboard/certificates")
     } catch (err) {
       toast({ variant: "destructive", title: "Error al finalizar" })
     } finally {
@@ -94,37 +98,37 @@ export default function ExecutionPage({ params }: { params: Promise<{ id: string
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => router.back()}><ArrowLeft className="h-5 w-5" /></Button>
         <div>
-          <h2 className="text-xl font-black uppercase tracking-tight">Ejecución de Servicio</h2>
-          <p className="text-[10px] font-bold text-muted-foreground uppercase">Cliente: {apt.clientName}</p>
+          <h2 className="text-xl font-black uppercase tracking-tight text-primary">Control de Campo</h2>
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Orden: {apt.id.split('-')[0]} • {apt.clientName}</p>
         </div>
       </div>
 
       <form onSubmit={handleFinish} className="space-y-6">
-        {/* SECCIÓN 1: DETALLES TÉCNICOS ESPECÍFICOS */}
+        {/* FUMIGACIÓN */}
         {isFumigation && (
-          <Card className="shadow-sm border-none">
+          <Card className="shadow-sm border-none bg-white">
             <CardHeader className="bg-primary/5">
-              <CardTitle className="text-xs font-black uppercase flex items-center gap-2">
-                <FlaskConical className="h-4 w-4 text-primary" /> Control de Plagas (DIGESA)
+              <CardTitle className="text-[10px] font-black uppercase flex items-center gap-2 tracking-widest text-primary">
+                <FlaskConical className="h-4 w-4" /> Protocolo Sanitario (DIGESA)
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase">Químico / Insecticida</Label>
+                  <Label className="text-[9px] font-black uppercase text-slate-500">Producto / I. Activo</Label>
                   <Input 
-                    placeholder="Ej. Deltametrina 2.5%" 
-                    className="h-10 text-xs font-bold"
+                    placeholder="Ej. Cypermetrina 20%" 
+                    className="h-10 text-xs font-bold border-2"
                     value={techData.chemicalsUsed}
                     onChange={e => setTechData({...techData, chemicalsUsed: e.target.value})}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase">Dosificación (ml/L)</Label>
+                  <Label className="text-[9px] font-black uppercase text-slate-500">Dosificación (cc/L)</Label>
                   <Input 
-                    placeholder="Ej. 10ml por 1L de agua" 
-                    className="h-10 text-xs font-bold"
+                    placeholder="Ej. 15cc por Litro" 
+                    className="h-10 text-xs font-bold border-2"
                     value={techData.dosage}
                     onChange={e => setTechData({...techData, dosage: e.target.value})}
                     required
@@ -132,16 +136,16 @@ export default function ExecutionPage({ params }: { params: Promise<{ id: string
                 </div>
               </div>
               <div className="space-y-3">
-                <Label className="text-[10px] font-black uppercase">Plagas a Controlar</Label>
+                <Label className="text-[9px] font-black uppercase text-slate-500">Objetivo Biológico</Label>
                 <div className="grid grid-cols-2 gap-2">
-                  {["Cucarachas", "Roedores", "Hormigas", "Pulgas", "Moscas", "Arácnidos"].map(pest => (
-                    <div key={pest} className="flex items-center space-x-2 border p-2 rounded-lg bg-white">
+                  {["Cucarachas", "Roedores", "Hormigas", "Pulgas", "Arácnidos", "Voladores"].map(pest => (
+                    <div key={pest} className="flex items-center space-x-2 border-2 p-2 rounded-xl bg-slate-50/50">
                       <Checkbox 
                         id={pest} 
                         checked={techData.pestTargeted.includes(pest)} 
                         onCheckedChange={() => handlePestToggle(pest)} 
                       />
-                      <Label htmlFor={pest} className="text-[11px] font-bold cursor-pointer uppercase">{pest}</Label>
+                      <Label htmlFor={pest} className="text-[10px] font-bold cursor-pointer uppercase">{pest}</Label>
                     </div>
                   ))}
                 </div>
@@ -150,24 +154,25 @@ export default function ExecutionPage({ params }: { params: Promise<{ id: string
           </Card>
         )}
 
+        {/* EXTINTORES */}
         {isExtinguisher && (
-          <Card className="shadow-sm border-none">
+          <Card className="shadow-sm border-none bg-white">
             <CardHeader className="bg-primary/5">
-              <CardTitle className="text-xs font-black uppercase flex items-center gap-2">
-                <ShieldAlert className="h-4 w-4 text-primary" /> Inspección de Seguridad (NFPA)
+              <CardTitle className="text-[10px] font-black uppercase flex items-center gap-2 tracking-widest text-primary">
+                <Award className="h-4 w-4" /> Inspección de Operatividad (NFPA)
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
               <div className="grid grid-cols-1 gap-3">
                 {[
-                  { id: 'pressure', label: 'Manómetro / Presión Correcta' },
-                  { id: 'hose', label: 'Manguera y Boquilla Limpias' },
-                  { id: 'pin', label: 'Pasador y Precinto de Seguridad' },
-                  { id: 'label', label: 'Etiqueta de Vigencia Visible' },
-                  { id: 'weight', label: 'Peso del Agente Verificado' },
+                  { id: 'presion_nominal', label: 'Manómetro en Zona Verde (Presión)' },
+                  { id: 'manguera_boquilla', label: 'Manguera sin Obstrucciones' },
+                  { id: 'pasador_seguridad', label: 'Pasador y Precinto de Plástico' },
+                  { id: 'etiqueta_vigencia', label: 'Etiqueta de Mantenimiento Visible' },
+                  { id: 'estado_cilindro', label: 'Cilindro sin Corrosión o Abolladura' },
                 ].map(item => (
-                  <div key={item.id} className="flex items-center justify-between p-3 border rounded-xl bg-white">
-                    <Label className="text-[11px] font-bold uppercase">{item.label}</Label>
+                  <div key={item.id} className="flex items-center justify-between p-3 border-2 rounded-xl bg-white transition-colors hover:bg-slate-50">
+                    <Label className="text-[10px] font-bold uppercase text-slate-700">{item.label}</Label>
                     <Checkbox 
                       checked={techData.extChecklist[item.id]} 
                       onCheckedChange={(val) => setTechData({
@@ -182,55 +187,55 @@ export default function ExecutionPage({ params }: { params: Promise<{ id: string
           </Card>
         )}
 
-        {/* SECCIÓN 2: EVIDENCIA Y OBSERVACIONES */}
-        <Card className="shadow-sm border-none">
+        {/* REPORTE GENERAL */}
+        <Card className="shadow-sm border-none bg-white">
           <CardHeader>
-            <CardTitle className="text-xs font-black uppercase">Reporte de Campo</CardTitle>
+            <CardTitle className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Reporte de Servicio</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase">Observaciones Técnicas</Label>
+              <Label className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Observaciones y Recomendaciones</Label>
               <Textarea 
-                placeholder="Escriba hallazgos o recomendaciones para el cliente..."
-                className="min-h-[100px] text-xs font-bold"
+                placeholder="Indique hallazgos críticos o sugerencias de seguridad..."
+                className="min-h-[100px] text-xs font-bold border-2 leading-relaxed"
                 value={techData.observations}
                 onChange={e => setTechData({...techData, observations: e.target.value})}
               />
             </div>
             
             <div className="grid grid-cols-2 gap-4">
-              <Button type="button" variant="outline" className="h-16 border-dashed border-2 flex flex-col gap-1">
+              <Button type="button" variant="outline" className="h-16 border-dashed border-2 flex flex-col gap-1 hover:bg-slate-50">
                 <Camera className="h-5 w-5 text-muted-foreground" />
-                <span className="text-[9px] font-black uppercase">Foto Antes</span>
+                <span className="text-[8px] font-black uppercase">Evidencia Antes</span>
               </Button>
-              <Button type="button" variant="outline" className="h-16 border-dashed border-2 flex flex-col gap-1">
+              <Button type="button" variant="outline" className="h-16 border-dashed border-2 flex flex-col gap-1 hover:bg-slate-50">
                 <Camera className="h-5 w-5 text-muted-foreground" />
-                <span className="text-[9px] font-black uppercase">Foto Después</span>
+                <span className="text-[8px] font-black uppercase">Evidencia Después</span>
               </Button>
             </div>
           </CardContent>
         </Card>
 
-        {/* SECCIÓN 3: CONFORMIDAD DEL CLIENTE */}
-        <Card className="shadow-sm border-none bg-accent/5 border-t-4 border-t-accent">
+        {/* CONFORMIDAD */}
+        <Card className="shadow-sm border-none bg-[#1c1c1c] text-white border-b-[6px] border-accent rounded-[2rem]">
           <CardHeader>
-            <CardTitle className="text-xs font-black uppercase flex items-center gap-2">
-              <PenTool className="h-4 w-4 text-accent" /> Firma de Conformidad
+            <CardTitle className="text-[10px] font-black uppercase flex items-center gap-2 tracking-widest text-accent">
+              <PenTool className="h-4 w-4" /> Conformidad del Cliente
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase">Nombre de quien recibe</Label>
+              <Label className="text-[9px] font-black uppercase opacity-60">Nombre de quien recibe</Label>
               <Input 
-                placeholder="Nombre completo del cliente" 
-                className="h-10 text-xs font-bold bg-white"
+                placeholder="Nombre completo" 
+                className="h-11 text-xs font-bold bg-white/10 border-none text-white placeholder:text-white/30"
                 value={techData.clientSignatureName}
                 onChange={e => setTechData({...techData, clientSignatureName: e.target.value})}
                 required
               />
             </div>
-            <div className="h-32 w-full border-2 border-dashed border-slate-300 rounded-xl flex items-center justify-center bg-white">
-              <span className="text-[9px] font-black uppercase text-slate-400">Área de Firma Táctil</span>
+            <div className="h-32 w-full border-2 border-dashed border-white/20 rounded-2xl flex items-center justify-center bg-white/5">
+              <span className="text-[8px] font-black uppercase text-white/20 tracking-widest">Área de Firma Táctil</span>
             </div>
           </CardContent>
         </Card>
@@ -238,10 +243,10 @@ export default function ExecutionPage({ params }: { params: Promise<{ id: string
         <Button 
           type="submit" 
           disabled={isSaving}
-          className="w-full h-14 bg-[#1c1c1c] text-white font-black uppercase text-xs tracking-widest shadow-xl border-b-4 border-accent"
+          className="w-full h-14 bg-primary text-white font-black uppercase text-xs tracking-[0.2em] shadow-2xl rounded-xl transition-transform active:scale-95"
         >
           {isSaving ? <Loader2 className="animate-spin mr-2 h-5 w-5" /> : <CheckCircle2 className="mr-2 h-5 w-5 text-accent" />}
-          Finalizar y Generar Certificado
+          Cerrar Servicio y Emitir Certificado
         </Button>
       </form>
     </div>

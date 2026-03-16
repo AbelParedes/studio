@@ -1,194 +1,225 @@
 
 "use client"
 
-import { useSearchParams, useRouter } from "next/navigation"
-import { useDoc, useFirestore, useMemoFirebase, useUser } from "@/firebase"
-import { doc, collection, query, where } from "firebase/firestore"
-import { Card, CardContent } from "@/components/ui/card"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { 
+  FileCheck, 
+  Search, 
   Printer, 
   Download, 
-  ArrowLeft, 
+  ExternalLink, 
+  Loader2, 
   ShieldCheck, 
-  ShieldAlert,
-  Building2,
-  FileText,
-  Clock,
-  UserCheck,
-  CheckSquare
+  Calendar,
+  AlertCircle,
+  CheckCircle2,
+  Filter
 } from "lucide-react"
-import { format, parseISO } from "date-fns"
-import { es } from "date-fns/locale"
-import Image from "next/image"
+import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase"
+import { collection, query, where } from "firebase/firestore"
+import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import { format, isAfter, parseISO } from "date-fns"
+import { es } from "date-fns/locale"
 
-export default function CertificatesPage() {
-  const searchParams = useSearchParams()
-  const id = searchParams.get("id")
-  const router = useRouter()
+export default function CertificatesRegistryPage() {
   const db = useFirestore()
   const { user } = useUser()
+  const router = useRouter()
+  const [searchTerm, setSearchTerm] = useState("")
 
-  const aptRef = useMemoFirebase(() => id ? doc(db, "appointments", id) : null, [db, id])
-  const { data: apt, isLoading } = useDoc(aptRef)
+  // 1. Perfil para companyId
+  const userProfileQuery = useMemoFirebase(() => 
+    user?.email ? query(collection(db, "company_users"), where("email", "==", user.email)) : null,
+  [db, user?.email])
+  const { data: profiles } = useCollection(userProfileQuery)
+  const companyId = profiles?.[0]?.companyId
 
-  const companyRef = useMemoFirebase(() => 
-    apt?.companyId ? doc(db, "companies", apt.companyId) : null,
-  [db, apt?.companyId])
-  const { data: company } = useDoc(companyRef)
+  // 2. Obtener citas completadas (que son las que tienen certificado)
+  const certificatesQuery = useMemoFirebase(() => 
+    companyId ? query(
+      collection(db, "appointments"), 
+      where("companyId", "==", companyId),
+      where("status", "==", "Completado")
+    ) : null,
+  [db, companyId])
+  const { data: certificates, isLoading } = useCollection(certificatesQuery)
 
-  if (isLoading) return <div className="p-20 text-center font-bold uppercase">Cargando Certificado...</div>
-  if (!apt) return <div className="p-20 text-center font-bold uppercase">Servicio no encontrado</div>
-
-  const isFumigation = apt.serviceType === "Fumigación"
-  const formattedDate = apt.date ? format(parseISO(apt.date), "PPP", { locale: es }) : "---"
+  const filteredCerts = certificates?.filter(c => 
+    c.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.id.toLowerCase().includes(searchTerm.toLowerCase())
+  ).sort((a, b) => (b.finishedAt || "").localeCompare(a.finishedAt || ""))
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between print:hidden">
-        <Button variant="ghost" onClick={() => router.back()} className="font-bold uppercase text-[10px]">
-          <ArrowLeft className="mr-2 h-3 w-3" /> Volver
-        </Button>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase text-primary">Registro de Certificados</h2>
+          <p className="text-muted-foreground text-sm font-medium uppercase text-[10px] tracking-widest">Archivo maestro de constancias técnicas emitidas.</p>
+        </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => window.print()} className="font-bold uppercase text-[10px]">
-            <Printer className="mr-2 h-3 w-3" /> Imprimir
-          </Button>
-          <Button size="sm" className="bg-primary text-white font-bold uppercase text-[10px]">
-            <Download className="mr-2 h-3 w-3" /> Guardar PDF
+          <Button variant="outline" className="h-10 text-[10px] font-bold uppercase">
+            <Filter className="mr-2 h-3.5 w-3.5" /> Filtrar Vigencia
           </Button>
         </div>
       </div>
 
-      <div className="bg-white mx-auto w-[210mm] min-h-[297mm] shadow-2xl p-0 border border-slate-200 print:shadow-none print:border-none print:m-0 print:w-full overflow-hidden flex flex-col">
-        {/* HEADER TÉCNICO */}
-        <div className="p-12 pb-8 border-b-[6px] border-primary flex items-center justify-between bg-slate-50/50">
-          <div className="relative h-24 w-64">
-            {company?.logoUrl ? (
-              <Image src={company.logoUrl} alt="Logo" fill className="object-contain object-left" unoptimized />
-            ) : (
-              <div className="h-full w-full bg-slate-200 flex items-center justify-center rounded">
-                <ShieldCheck className="h-12 w-12 text-slate-400" />
-              </div>
-            )}
-          </div>
-          <div className="text-right">
-            <h1 className="text-2xl font-black text-primary uppercase tracking-tighter leading-none mb-2">
-              CERTIFICADO TÉCNICO
-            </h1>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-              CONSTANCIA DE OPERATIVIDAD Y SERVICIO
-            </p>
-            <div className="mt-4 bg-primary text-white px-6 py-2 rounded-lg font-black text-sm tracking-tight inline-block">
-              ORDEN N° {apt.id.split('-')[0].toUpperCase()}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="bg-white border-none shadow-sm border-l-4 border-l-status-success">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Certificados Vigentes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-black text-status-success">
+              {certificates?.filter(c => !c.nextDue || isAfter(parseISO(c.nextDue), new Date())).length || 0}
             </div>
-          </div>
-        </div>
-
-        {/* CUERPO DEL CERTIFICADO */}
-        <div className="p-12 space-y-10 flex-1 relative">
-          {/* MARCA DE AGUA */}
-          <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none -rotate-45">
-            <ShieldCheck className="h-[500px] w-[500px]" />
-          </div>
-
-          <div className="grid grid-cols-2 gap-12">
-            <div className="space-y-4">
-              <h3 className="text-[11px] font-black text-primary uppercase border-b-2 border-slate-100 pb-1">Datos de la Empresa Beneficiaria</h3>
-              <div className="space-y-1">
-                <p className="text-base font-black text-slate-900 uppercase">{apt.clientName}</p>
-                <p className="text-[11px] font-bold text-slate-500">UBICACIÓN: {apt.clientAddress || "---"}</p>
-                <p className="text-[11px] font-bold text-slate-500 uppercase">TIPO DE SERVICIO: {apt.serviceType}</p>
-              </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-white border-none shadow-sm border-l-4 border-l-status-warning">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Próximos a Vencer</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-black text-status-warning">
+              {certificates?.filter(c => {
+                if (!c.nextDue) return false
+                const next = parseISO(c.nextDue)
+                const thirtyDays = new Date()
+                thirtyDays.setDate(thirtyDays.getDate() + 30)
+                return isAfter(next, new Date()) && !isAfter(next, thirtyDays)
+              }).length || 0}
             </div>
-            <div className="space-y-4">
-              <h3 className="text-[11px] font-black text-primary uppercase border-b-2 border-slate-100 pb-1">Vigencia y Emisión</h3>
-              <div className="space-y-1">
-                <p className="text-[11px] font-bold text-slate-700 uppercase">FECHA DE EJECUCIÓN: {formattedDate}</p>
-                <p className="text-[11px] font-black text-status-success uppercase">PRÓXIMO VENCIMIENTO: {apt.nextDue || "PENDIENTE"}</p>
-              </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-white border-none shadow-sm border-l-4 border-l-primary">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Total Histórico</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-black text-primary">
+              {certificates?.length || 0}
             </div>
-          </div>
-
-          <div className="space-y-6 pt-4">
-            <h3 className="text-[11px] font-black text-primary uppercase flex items-center gap-2 tracking-widest bg-slate-50 p-2 rounded">
-              <CheckSquare className="h-4 w-4" /> ESPECIFICACIONES TÉCNICAS DEL SERVICIO
-            </h3>
-            
-            {isFumigation ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-[11px]">
-                <div className="space-y-3">
-                  <p className="font-bold text-slate-500 uppercase">Producto Utilizado:</p>
-                  <p className="font-black text-slate-900 border-b pb-1">{apt.chemicalsUsed || "NO ESPECIFICADO"}</p>
-                  <p className="font-bold text-slate-500 uppercase mt-4">Dosificación Aplicada:</p>
-                  <p className="font-black text-slate-900 border-b pb-1">{apt.dosage || "SEGÚN FICHA TÉCNICA"}</p>
-                </div>
-                <div className="space-y-3">
-                  <p className="font-bold text-slate-500 uppercase">Plagas Controladas:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {apt.pestTargeted?.map((p: string) => (
-                      <Badge key={p} variant="outline" className="bg-slate-100 border-none font-bold uppercase text-[9px]">{p}</Badge>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-[11px]">
-                <div className="space-y-3">
-                  <p className="font-bold text-slate-500 uppercase">Inspección de Equipos:</p>
-                  <ul className="space-y-2">
-                    {Object.entries(apt.extChecklist || {}).map(([key, val]: [string, any]) => (
-                      <li key={key} className="flex items-center justify-between border-b border-dashed pb-1">
-                        <span className="uppercase font-bold text-slate-600">{key}:</span>
-                        {val ? <Badge className="bg-status-success text-white text-[8px] h-4">CONFORME</Badge> : <Badge variant="outline" className="text-[8px] h-4">N/A</Badge>}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="space-y-3">
-                  <p className="font-bold text-slate-500 uppercase">Observaciones Finales:</p>
-                  <p className="italic text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-lg border">
-                    {apt.observations || "Equipo operativo bajo estándares de seguridad vigentes."}
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="pt-12 grid grid-cols-2 gap-24">
-            <div className="text-center space-y-2">
-              <div className="h-24 w-full border-b-2 border-slate-300 flex items-center justify-center">
-                <span className="text-[9px] uppercase font-bold text-slate-300">Sello y Firma Técnico Responsable</span>
-              </div>
-              <p className="text-[10px] font-black uppercase text-primary">{apt.technicianName}</p>
-              <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest">REGISTRO TÉCNICO ESPECIALIZADO</p>
-            </div>
-            <div className="text-center space-y-2">
-              <div className="h-24 w-full border-b-2 border-slate-300 flex items-center justify-center">
-                <span className="text-[9px] uppercase font-bold text-slate-300">Firma de Conformidad Cliente</span>
-              </div>
-              <p className="text-[10px] font-black uppercase text-primary">{apt.clientSignatureName || "---"}</p>
-              <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest">RECEPTOR AUTORIZADO</p>
-            </div>
-          </div>
-        </div>
-
-        {/* FOOTER CORPORATIVO */}
-        <div 
-          className="mt-auto py-8 text-center text-white"
-          style={{ backgroundColor: company?.primaryColor || '#1a2b3c' }}
-        >
-          <div className="px-12 space-y-2">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em]">
-              {company?.name || "SERVIFUMIGA PRO PERÚ"}
-            </p>
-            <p className="text-[9px] font-bold opacity-70 uppercase">
-              {company?.address} • {company?.phone} • {company?.email}
-            </p>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
+
+      <Card className="shadow-sm border-none overflow-hidden">
+        <CardHeader className="pb-3 border-b bg-white">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input 
+              placeholder="Buscar por cliente o N° Certificado..." 
+              className="pl-9 h-10 text-xs font-bold uppercase" 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          {isLoading ? (
+            <div className="flex items-center justify-center p-24">
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            </div>
+          ) : (
+            <Table className="dense-table">
+              <TableHeader className="bg-[#1c1c1c]">
+                <TableRow className="border-none">
+                  <TableHead className="text-white font-black uppercase text-[10px]">Folio / ID</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px]">Cliente Beneficiario</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px]">Tipo Servicio</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px]">Fecha Emisión</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px]">Vencimiento</TableHead>
+                  <TableHead className="text-white text-right pr-6 font-black uppercase text-[10px]">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredCerts?.map((cert) => {
+                  const isExpired = cert.nextDue && !isAfter(parseISO(cert.nextDue), new Date())
+                  return (
+                    <TableRow key={cert.id} className="hover:bg-muted/30 border-slate-100 transition-colors">
+                      <TableCell className="font-black text-primary uppercase">
+                        <div className="flex flex-col">
+                          <span>CERT-{cert.id.split('-')[0].toUpperCase()}</span>
+                          <span className="text-[8px] opacity-50 font-mono">ORD: {cert.id.split('-')[1]}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-bold uppercase text-[11px]">{cert.clientName}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-[9px] font-black uppercase border-primary/20 bg-primary/5">
+                          {cert.serviceType}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-[11px] font-medium">
+                        {cert.date}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span className={cn(
+                            "text-[11px] font-black",
+                            isExpired ? "text-status-error" : "text-status-success"
+                          )}>
+                            {cert.nextDue || "---"}
+                          </span>
+                          {isExpired && <AlertCircle className="h-3 w-3 text-status-error" />}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right pr-6">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-9 w-9 text-primary" 
+                            onClick={() => router.push(`/dashboard/certificates/view/${cert.id}`)}
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400">
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+                {filteredCerts?.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-24 text-muted-foreground">
+                      <div className="flex flex-col items-center gap-2 opacity-40">
+                        <FileCheck className="h-12 w-12" />
+                        <p className="text-[10px] font-black uppercase">No se han emitido certificados aún</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="bg-primary text-white shadow-xl border-none">
+        <CardContent className="p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+              <ShieldCheck className="h-6 w-6 text-accent" />
+            </div>
+            <div>
+              <h3 className="font-bold text-lg uppercase tracking-tight">Validez Legal Asegurada</h3>
+              <p className="text-sm opacity-80 font-medium">
+                Todos los certificados emitidos cumplen con los estándares de seguridad industrial vigentes en Perú.
+              </p>
+            </div>
+          </div>
+          <div className="text-[10px] font-black uppercase text-accent bg-white px-4 py-1.5 rounded-full shadow-lg">
+            Sistema de Certificación v5.0
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

@@ -7,8 +7,6 @@ import {
   LayoutDashboard, 
   Users, 
   Calendar, 
-  Flame, 
-  Bug, 
   Bell, 
   History, 
   BarChart3,
@@ -93,7 +91,7 @@ export function DashboardNav({ onNavItemClick, companyName, logoUrl, userRole, i
       
       <nav className="flex-1 space-y-1 px-4 overflow-y-auto custom-scrollbar">
         {filteredItems.map((item) => {
-          const isActive = pathname === item.href
+          const isActive = pathname === item.href || (item.href === "/dashboard/certificates" && pathname.startsWith("/dashboard/certificates/view/"))
           return (
             <Link
               key={item.href}
