@@ -2,6 +2,7 @@
 "use client"
 
 import { useMemo } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { 
   TrendingUp, 
@@ -16,10 +17,12 @@ import {
   ShieldCheck,
   Coins,
   ArrowUpRight,
-  HardDrive
+  HardDrive,
+  FileText
 } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from "@/firebase"
 import { collection, query, where, limit, doc } from "firebase/firestore"
@@ -29,6 +32,7 @@ import { es } from "date-fns/locale"
 export default function DashboardPage() {
   const db = useFirestore()
   const { user } = useUser()
+  const router = useRouter()
 
   // 1. User profile
   const userProfileQuery = useMemoFirebase(() => 
@@ -181,21 +185,25 @@ export default function DashboardPage() {
                 <TableRow>
                   <TableHead className="text-slate-400 font-black uppercase text-[9px] tracking-widest">Cliente</TableHead>
                   <TableHead className="text-slate-400 font-black uppercase text-[9px] tracking-widest">Operación</TableHead>
-                  <TableHead className="text-slate-400 font-black uppercase text-[9px] tracking-widest">Fecha</TableHead>
                   <TableHead className="text-slate-400 font-black uppercase text-[9px] tracking-widest">Estado</TableHead>
+                  <TableHead className="text-slate-400 font-black uppercase text-[9px] tracking-widest text-right pr-6">Acción</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {recentServices.length > 0 ? (
                   recentServices.map((service) => (
                     <TableRow key={service.id} className="hover:bg-muted/30 border-slate-50">
-                      <TableCell className="font-bold text-primary uppercase text-[11px]">{service.clientName}</TableCell>
+                      <TableCell className="font-bold text-primary uppercase text-[11px]">
+                        <div className="flex flex-col">
+                          <span>{service.clientName}</span>
+                          <span className="text-[9px] font-medium text-slate-400 uppercase tracking-tighter">{service.date}</span>
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="text-[8px] font-black uppercase border-primary/10">
                           {service.serviceType}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-[10px] font-medium text-slate-500">{service.date}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1.5">
                           <div className={cn(
@@ -204,6 +212,27 @@ export default function DashboardPage() {
                           )}></div>
                           <span className="text-[10px] font-black uppercase text-slate-600">{service.status}</span>
                         </div>
+                      </TableCell>
+                      <TableCell className="text-right pr-6">
+                        {service.status === "Completado" ? (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-7 text-[9px] font-black uppercase text-primary hover:bg-primary/5"
+                            onClick={() => router.push(`/dashboard/certificates/view/${service.id}`)}
+                          >
+                            <FileText className="mr-1.5 h-3 w-3" /> Ver Certificado
+                          </Button>
+                        ) : (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-7 text-[9px] font-black uppercase text-accent hover:bg-accent/5"
+                            onClick={() => router.push(`/dashboard/calendar`)}
+                          >
+                            Ir a Agenda
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
