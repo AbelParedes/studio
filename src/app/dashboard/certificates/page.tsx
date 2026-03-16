@@ -12,28 +12,23 @@ import {
   Search, 
   Printer, 
   Download, 
-  ExternalLink, 
   Loader2, 
   ShieldCheck, 
-  Calendar,
   AlertCircle,
-  CheckCircle2,
   Filter,
   FileText,
   Plus,
   Edit2,
   Trash2,
-  Save,
   FlaskConical,
-  Award,
-  ClipboardCheck
+  ClipboardCheck,
+  Bug
 } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, useUser, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase"
 import { collection, query, where, doc } from "firebase/firestore"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { format, isAfter, parseISO, addMonths, addYears } from "date-fns"
-import { es } from "date-fns/locale"
 import {
   Dialog,
   DialogContent,
@@ -49,6 +44,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from "@/hooks/use-toast"
 
+const PESTS = ["Cucarachas", "Roedores", "Hormigas", "Pulgas", "Arácnidos", "Voladores", "Termitas", "Palomas"]
+
 export default function CertificatesRegistryPage() {
   const db = useFirestore()
   const { user } = useUser()
@@ -56,6 +53,7 @@ export default function CertificatesRegistryPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [isAdding, setIsAdding] = useState(false)
   const [editingCert, setEditingCert] = useState<any | null>(null)
+  const [selectedPests, setSelectedPests] = useState<string[]>([])
 
   // Perfil para companyId
   const userProfileQuery = useMemoFirebase(() => 
@@ -83,10 +81,15 @@ export default function CertificatesRegistryPage() {
   const filteredCerts = useMemo(() => {
     return certificates?.filter(c => 
       c.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.certificateNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.id.toLowerCase().includes(searchTerm.toLowerCase())
-    ).sort((a, b) => (b.finishedAt || "").localeCompare(a.finishedAt || ""))
+      c.certificateNumber?.toLowerCase().includes(searchTerm.toLowerCase())
+    ).sort((a, b) => (b.date || "").localeCompare(a.date || ""))
   }, [certificates, searchTerm])
+
+  const handlePestToggle = (pest: string) => {
+    setSelectedPests(prev => 
+      prev.includes(pest) ? prev.filter(p => p !== pest) : [...prev, pest]
+    )
+  }
 
   const handleSaveCertificate = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -98,7 +101,6 @@ export default function CertificatesRegistryPage() {
     const serviceType = formData.get("serviceType") as string
     const executionDate = formData.get("date") as string
 
-    // Sugerir fecha de vencimiento si no se provee
     let nextDue = formData.get("nextDue") as string
     if (!nextDue) {
       const dateObj = parseISO(executionDate)
@@ -111,28 +113,30 @@ export default function CertificatesRegistryPage() {
       companyId,
       clientId,
       clientName: client?.name || "Desconocido",
+      clientTaxId: client?.taxId || "",
+      clientAddress: client?.address || "",
       serviceType,
       date: executionDate,
       nextDue,
       certificateNumber: formData.get("certificateNumber") as string,
       chemicalsUsed: formData.get("chemicalsUsed") as string,
       dosage: formData.get("dosage") as string,
+      pestTargeted: selectedPests,
       observations: formData.get("observations") as string,
       clientSignatureName: formData.get("clientSignatureName") as string,
-      technicianName: profiles?.[0]?.name || "Administrador",
+      technicianName: formData.get("technicianName") as string || profiles?.[0]?.name,
       status: "Completado",
       updatedAt: new Date().toISOString()
     }
 
     if (editingCert) {
       updateDocumentNonBlocking(doc(db, "appointments", editingCert.id), certData)
-      toast({ title: "Certificado actualizado con éxito" })
+      toast({ title: "Protocolo técnico actualizado" })
     } else {
       const newCert = { 
         ...certData, 
         id: crypto.randomUUID(), 
-        createdAt: new Date().toISOString(),
-        finishedAt: new Date().toISOString()
+        createdAt: new Date().toISOString()
       }
       addDocumentNonBlocking(collection(db, "appointments"), newCert)
       toast({ title: "Certificado emitido manualmente" })
@@ -140,15 +144,12 @@ export default function CertificatesRegistryPage() {
 
     setIsAdding(false)
     setEditingCert(null)
-  }
-
-  const handleDelete = (id: string) => {
-    deleteDocumentNonBlocking(doc(db, "appointments", id))
-    toast({ variant: "destructive", title: "Certificado anulado" })
+    setSelectedPests([])
   }
 
   const openEdit = (cert: any) => {
     setEditingCert(cert)
+    setSelectedPests(cert.pestTargeted || [])
     setIsAdding(true)
   }
 
@@ -157,7 +158,7 @@ export default function CertificatesRegistryPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase text-primary">Archivo de Protocolos Técnicos</h2>
-          <p className="text-muted-foreground text-sm font-medium uppercase text-[10px] tracking-widest">Gestión, emisión manual y control de vigencias.</p>
+          <p className="text-muted-foreground text-sm font-medium uppercase text-[10px] tracking-widest tracking-tighter">Gestión oficial DIRIS/DIGESA y NTP.</p>
         </div>
         <div className="flex gap-2">
           <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) setEditingCert(null); }}>
@@ -173,11 +174,10 @@ export default function CertificatesRegistryPage() {
                     <ShieldCheck className="h-5 w-5" /> 
                     {editingCert ? "Editar Protocolo Técnico" : "Emisión Manual de Certificado"}
                   </DialogTitle>
-                  <DialogDescription className="text-[10px] font-bold uppercase">Complete los campos para generar la validez técnica oficial.</DialogDescription>
+                  <DialogDescription className="text-[10px] font-bold uppercase">Configure los parámetros para la validez técnica oficial.</DialogDescription>
                 </DialogHeader>
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar min-h-0">
-                  {/* SECCIÓN 1: IDENTIFICACIÓN */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase text-slate-500">Cliente Beneficiario</Label>
@@ -193,22 +193,22 @@ export default function CertificatesRegistryPage() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-slate-500">Número de Certificado / Folio</Label>
+                      <Label className="text-[10px] font-black uppercase text-slate-500">Número de Folio / Certificado</Label>
                       <Input name="certificateNumber" defaultValue={editingCert?.certificateNumber} placeholder="Ej. CERT-2024-001" className="h-11 border-2 font-mono font-bold" required />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-slate-500">Tipo de Servicio</Label>
+                      <Label className="text-[10px] font-black uppercase text-slate-500">Tipo de Certificación</Label>
                       <Select name="serviceType" defaultValue={editingCert?.serviceType || "Extintores"} required>
                         <SelectTrigger className="h-11 border-2">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Extintores">Recarga/Mantenimiento Extintores</SelectItem>
-                          <SelectItem value="Fumigación">Saneamiento (Fumigación)</SelectItem>
-                          <SelectItem value="Inspección Técnica">Inspección Técnica</SelectItem>
+                          <SelectItem value="Extintores">Operatividad Extintores (NTP)</SelectItem>
+                          <SelectItem value="Fumigación">Saneamiento Ambiental (DIRIS)</SelectItem>
+                          <SelectItem value="Inspección Técnica">Inspección Técnica (NFPA)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -217,43 +217,63 @@ export default function CertificatesRegistryPage() {
                       <Input type="date" name="date" defaultValue={editingCert?.date || new Date().toISOString().split('T')[0]} className="h-11 border-2 font-bold" required />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-slate-500">Próximo Vencimiento</Label>
+                      <Label className="text-[10px] font-black uppercase text-slate-500">Vencimiento</Label>
                       <Input type="date" name="nextDue" defaultValue={editingCert?.nextDue} className="h-11 border-2 font-bold border-accent/20" />
                     </div>
                   </div>
 
-                  {/* SECCIÓN 2: DETALLES TÉCNICOS */}
-                  <div className="space-y-4 pt-4">
+                  <div className="space-y-6 pt-4">
                     <div className="flex items-center gap-2 border-b-2 border-slate-100 pb-2">
                       <ClipboardCheck className="h-4 w-4 text-primary" />
-                      <h3 className="text-[11px] font-black uppercase text-primary tracking-widest">Especificaciones Técnicas</h3>
+                      <h3 className="text-[11px] font-black uppercase text-primary tracking-widest">Protocolo de Aplicación (DIRIS)</h3>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       <div className="space-y-4">
-                        <Label className="text-[10px] font-black uppercase text-slate-400">Protocolo Sanitario (Solo Fumigación)</Label>
                         <div className="grid gap-4 p-4 bg-slate-50 rounded-2xl border-2 border-dashed">
                           <div className="space-y-1.5">
                             <Label className="text-[9px] font-bold uppercase text-slate-500 flex items-center gap-1"><FlaskConical className="h-3 w-3" /> Producto e Ingrediente Activo</Label>
-                            <Input name="chemicalsUsed" defaultValue={editingCert?.chemicalsUsed} placeholder="Ej. Cypermetrina 20%" className="h-9 text-xs font-bold" />
+                            <Input name="chemicalsUsed" defaultValue={editingCert?.chemicalsUsed} placeholder="Ej. Cypermetrina 20% / Reg. Sanitario" className="h-9 text-xs font-bold" />
                           </div>
                           <div className="space-y-1.5">
                             <Label className="text-[9px] font-bold uppercase text-slate-500">Dosificación Aplicada</Label>
-                            <Input name="dosage" defaultValue={editingCert?.dosage} placeholder="Ej. 15cc / Litro" className="h-9 text-xs font-bold" />
+                            <Input name="dosage" defaultValue={editingCert?.dosage} placeholder="Ej. 10cc / Litro" className="h-9 text-xs font-bold" />
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-[9px] font-black uppercase text-slate-400 flex items-center gap-1"><Bug className="h-3 w-3" /> Control Biológico (Plagas)</Label>
+                          <div className="grid grid-cols-2 gap-2">
+                            {PESTS.map(pest => (
+                              <div key={pest} className="flex items-center space-x-2 border p-2 rounded-lg bg-white">
+                                <Checkbox 
+                                  id={`pest-${pest}`} 
+                                  checked={selectedPests.includes(pest)} 
+                                  onCheckedChange={() => handlePestToggle(pest)} 
+                                />
+                                <Label htmlFor={`pest-${pest}`} className="text-[9px] font-bold uppercase cursor-pointer">{pest}</Label>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       </div>
 
                       <div className="space-y-4">
-                        <Label className="text-[10px] font-black uppercase text-slate-400">Observaciones Generales</Label>
-                        <Textarea name="observations" defaultValue={editingCert?.observations} placeholder="Hallazgos técnicos o recomendaciones de seguridad..." className="min-h-[120px] text-xs font-medium border-2 rounded-2xl" />
+                        <Label className="text-[10px] font-black uppercase text-slate-400">Observaciones y Hallazgos</Label>
+                        <Textarea name="observations" defaultValue={editingCert?.observations} placeholder="Recomendaciones de seguridad o detalles de operatividad..." className="min-h-[200px] text-xs font-medium border-2 rounded-2xl" />
                       </div>
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-500">Nombre de quien autoriza (Cliente)</Label>
-                    <Input name="clientSignatureName" defaultValue={editingCert?.clientSignatureName} placeholder="Nombre completo del representante" className="h-11 border-2 font-bold" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase text-slate-500">Técnico Responsable</Label>
+                      <Input name="technicianName" defaultValue={editingCert?.technicianName || profiles?.[0]?.name} className="h-11 border-2 font-bold" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase text-slate-500">Persona que Autoriza (Cliente)</Label>
+                      <Input name="clientSignatureName" defaultValue={editingCert?.clientSignatureName} className="h-11 border-2 font-bold" />
+                    </div>
                   </div>
                 </div>
 
@@ -263,7 +283,7 @@ export default function CertificatesRegistryPage() {
                       Cancelar
                     </Button>
                     <Button type="submit" className="flex-[2] h-12 uppercase font-black text-xs bg-primary text-white shadow-xl">
-                      {editingCert ? "Guardar Cambios en Protocolo" : "Emitir Certificado Oficial"}
+                      {editingCert ? "Actualizar Documento" : "Emitir Certificado Maestro"}
                     </Button>
                   </div>
                 </DialogFooter>
@@ -305,7 +325,7 @@ export default function CertificatesRegistryPage() {
         </Card>
         <Card className="bg-white border-none shadow-sm border-l-4 border-l-primary">
           <CardHeader className="pb-2">
-            <CardTitle className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Documentos Emitidos</CardTitle>
+            <CardTitle className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Documentos en Archivo</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-black text-primary">
@@ -320,7 +340,7 @@ export default function CertificatesRegistryPage() {
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
-              placeholder="Buscar por cliente o N° Certificado..." 
+              placeholder="Buscar cliente o N° Folio..." 
               className="pl-9 h-10 text-xs font-bold uppercase" 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -338,10 +358,10 @@ export default function CertificatesRegistryPage() {
                 <TableRow className="border-none">
                   <TableHead className="text-white font-black uppercase text-[10px]">Folio / Protocolo</TableHead>
                   <TableHead className="text-white font-black uppercase text-[10px]">Empresa Beneficiaria</TableHead>
-                  <TableHead className="text-white font-black uppercase text-[10px]">Tipo de Servicio</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px]">Tipo</TableHead>
                   <TableHead className="text-white font-black uppercase text-[10px]">Emisión</TableHead>
                   <TableHead className="text-white font-black uppercase text-[10px]">Vencimiento</TableHead>
-                  <TableHead className="text-white text-right pr-6 font-black uppercase text-[10px]">Acciones</TableHead>
+                  <TableHead className="text-white text-right pr-6 font-black uppercase text-[10px]">Gestión</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -350,20 +370,18 @@ export default function CertificatesRegistryPage() {
                   return (
                     <TableRow key={cert.id} className="hover:bg-muted/30 border-slate-100 transition-colors">
                       <TableCell className="font-black text-primary uppercase">
-                        <div className="flex flex-col">
-                          <span>{cert.certificateNumber || `CERT-${cert.id.split('-')[0].toUpperCase()}`}</span>
-                          <span className="text-[8px] opacity-50 font-mono">ORD: {cert.id.split('-')[0]}</span>
-                        </div>
+                        {cert.certificateNumber || `CERT-${cert.id.split('-')[0].toUpperCase()}`}
                       </TableCell>
                       <TableCell className="font-bold uppercase text-[11px]">{cert.clientName}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="text-[9px] font-black uppercase border-primary/20 bg-primary/5">
+                        <Badge variant="outline" className={cn(
+                          "text-[9px] font-black uppercase",
+                          cert.serviceType === "Fumigación" ? "border-emerald-200 text-emerald-700 bg-emerald-50" : "border-primary/20 bg-primary/5"
+                        )}>
                           {cert.serviceType}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-[11px] font-medium">
-                        {cert.date}
-                      </TableCell>
+                      <TableCell className="text-[11px] font-medium">{cert.date}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <span className={cn(
@@ -381,7 +399,6 @@ export default function CertificatesRegistryPage() {
                             variant="ghost" 
                             size="icon" 
                             className="h-9 w-9 text-primary" 
-                            title="Ver Protocolo"
                             onClick={() => router.push(`/dashboard/certificates/view/${cert.id}`)}
                           >
                             <FileText className="h-4 w-4" />
@@ -390,7 +407,6 @@ export default function CertificatesRegistryPage() {
                             variant="ghost" 
                             size="icon" 
                             className="h-9 w-9 text-slate-600" 
-                            title="Editar Datos"
                             onClick={() => openEdit(cert)}
                           >
                             <Edit2 className="h-4 w-4" />
@@ -399,8 +415,7 @@ export default function CertificatesRegistryPage() {
                             variant="ghost" 
                             size="icon" 
                             className="h-9 w-9 text-destructive" 
-                            title="Anular"
-                            onClick={() => handleDelete(cert.id)}
+                            onClick={() => { if(confirm("¿Anular este protocolo oficial?")) deleteDocumentNonBlocking(doc(db, "appointments", cert.id)); }}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -409,38 +424,9 @@ export default function CertificatesRegistryPage() {
                     </TableRow>
                   )
                 })}
-                {filteredCerts?.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-24 text-muted-foreground">
-                      <div className="flex flex-col items-center gap-2 opacity-40">
-                        <FileCheck className="h-12 w-12" />
-                        <p className="text-[10px] font-black uppercase">No se han emitido protocolos aún</p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )}
               </TableBody>
             </Table>
           )}
-        </CardContent>
-      </Card>
-
-      <Card className="bg-primary text-white shadow-xl border-none rounded-[2rem]">
-        <CardContent className="p-8 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-6">
-            <div className="h-16 w-16 rounded-3xl bg-white/10 flex items-center justify-center shrink-0 border border-white/20">
-              <ShieldCheck className="h-8 w-8 text-accent" />
-            </div>
-            <div>
-              <h3 className="font-bold text-xl uppercase tracking-tight">Trazabilidad Industrial Asegurada</h3>
-              <p className="text-sm opacity-80 font-medium max-w-xl">
-                Cada certificado emitido queda vinculado permanentemente a la hoja de vida de los equipos del cliente, garantizando cumplimiento normativo total.
-              </p>
-            </div>
-          </div>
-          <div className="text-[10px] font-black uppercase text-accent bg-white px-6 py-2 rounded-full shadow-lg">
-            Sistema de Certificación v5.5
-          </div>
         </CardContent>
       </Card>
     </div>

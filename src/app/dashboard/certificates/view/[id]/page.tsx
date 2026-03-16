@@ -18,13 +18,10 @@ import {
   Mail,
   Globe,
   QrCode,
-  Award,
   FileText,
-  ClipboardCheck,
   CheckCircle2,
   FlaskConical,
   Activity,
-  AlertCircle,
   Scale
 } from "lucide-react"
 import { format, parseISO } from "date-fns"
@@ -76,10 +73,9 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
         </div>
       </div>
 
-      {/* CONTENEDOR DE DOCUMENTO A4 */}
       <div className="proforma-container bg-white mx-auto w-[210mm] min-h-[297mm] shadow-2xl p-0 border border-slate-200 print:shadow-none print:border-none print:m-0 print:w-full overflow-hidden flex flex-col relative text-[#1c1c1c] font-body">
         
-        {/* HEADER DIFERENCIADO POR TIPO */}
+        {/* HEADER DIFERENCIADO */}
         <div 
           className={cn(
             "p-12 pb-8 border-b-[12px] flex items-center justify-between",
@@ -109,9 +105,8 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
           </div>
         </div>
 
-        {/* CUERPO DEL DOCUMENTO */}
         <div className="p-12 space-y-8 flex-1 relative z-10">
-          {/* MARCA DE AGUA SEGÚN TIPO */}
+          {/* MARCA DE AGUA */}
           <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none -rotate-45">
             {isFumigation ? <FlaskConical className="h-[500px] w-[500px]" /> : <ShieldCheck className="h-[500px] w-[500px]" />}
           </div>
@@ -142,7 +137,7 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
             </div>
           </div>
 
-          {/* SECCIÓN ESPECÍFICA: FUMIGACIÓN (DIRIS) */}
+          {/* SECCIÓN FUMIGACIÓN */}
           {isFumigation && (
             <div className="space-y-8 pt-4">
               <div className="flex items-center gap-3 bg-emerald-600 text-white p-3 rounded-xl">
@@ -170,22 +165,19 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
                 <div className="space-y-4">
                   <p className="font-black text-slate-400 uppercase text-[9px] tracking-widest">Control de Vectores y Plagas:</p>
                   <div className="grid grid-cols-2 gap-2">
-                    {(apt.pestTargeted || ["Insectos rastreros", "Insectos voladores", "Roedores"]).map((p: string) => (
+                    {(apt.pestTargeted || ["Insectos rastreros", "Insectos voladores"]).map((p: string) => (
                       <div key={p} className="flex items-center gap-2 p-2 bg-emerald-50 rounded-lg border border-emerald-100">
                         <CheckCircle2 className="h-3 w-3 text-emerald-600" />
                         <span className="text-[9px] font-black uppercase text-emerald-800">{p}</span>
                       </div>
                     ))}
                   </div>
-                  <div className="mt-4 text-[9px] text-slate-500 leading-relaxed italic border-l-2 border-emerald-200 pl-3">
-                    El servicio se realizó siguiendo los protocolos de bioseguridad y manejo integrado de plagas, utilizando productos autorizados por DIGESA.
-                  </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* SECCIÓN ESPECÍFICA: EXTINTORES (NTP) */}
+          {/* SECCIÓN EXTINTORES */}
           {!isFumigation && (
             <div className="space-y-8 pt-4">
               <div className="flex items-center gap-3 bg-primary text-white p-3 rounded-xl">
@@ -198,10 +190,10 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
                   <table className="w-full text-[10px]">
                     <thead className="bg-slate-100 border-b border-slate-200 text-slate-600">
                       <tr>
-                        <th className="p-3 text-left font-black uppercase tracking-wider">N° Serie / Placa</th>
-                        <th className="p-3 text-left font-black uppercase tracking-wider">Tipo / Agente / Capacidad</th>
-                        <th className="p-3 text-left font-black uppercase tracking-wider">Ubicación Registrada</th>
-                        <th className="p-3 text-right font-black uppercase tracking-wider">Resultado</th>
+                        <th className="p-3 text-left font-black uppercase">N° Serie / Placa</th>
+                        <th className="p-3 text-left font-black uppercase">Tipo / Agente / Capacidad</th>
+                        <th className="p-3 text-left font-black uppercase">Ubicación</th>
+                        <th className="p-3 text-right font-black uppercase">Resultado</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -220,67 +212,49 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
                 </div>
               ) : (
                 <div className="p-8 border-2 border-dashed rounded-2xl text-center bg-slate-50">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase">Equipos inspeccionados según lote de mantenimiento programado.</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Inspección de operatividad según lote de mantenimiento.</p>
                 </div>
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-12 text-[11px]">
                 <div className="space-y-4">
-                  <p className="font-black text-slate-400 uppercase text-[9px] tracking-widest">Puntos Críticos Validados (NTP 350.043-1):</p>
-                  <div className="grid grid-cols-1 gap-1.5">
-                    {[
-                      "Presión nominal en zona verde",
-                      "Estado físico del cilindro (Sin corrosión)",
-                      "Manguera y boquilla sin obstrucción",
-                      "Pasador de seguridad y precinto",
-                      "Etiquetado de instrucción y vigencia"
-                    ].map(check => (
-                      <div key={check} className="flex items-center justify-between border-b border-slate-50 pb-1">
-                        <span className="uppercase font-bold text-slate-600 text-[9px]">{check}</span>
-                        <CheckSquare className="h-3.5 w-3.5 text-emerald-600" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <p className="font-black text-slate-400 uppercase text-[9px] tracking-widest">Observaciones de Ingeniería:</p>
+                  <p className="font-black text-slate-400 uppercase text-[9px] tracking-widest">Observaciones Técnicas:</p>
                   <div className="bg-slate-50 p-6 rounded-[2rem] border-2 border-dashed border-slate-200 relative min-h-[120px]">
                     <FileText className="absolute top-4 right-4 h-4 w-4 text-slate-200" />
                     <p className="italic text-slate-700 leading-relaxed font-bold uppercase text-[10px]">
-                      {apt.observations || "Se certifica que los equipos han sido sometidos a pruebas de operatividad, cumpliendo con los estándares de presión y carga establecidos por la normativa nacional vigente."}
+                      {apt.observations || "Se certifica que los equipos han sido sometidos a pruebas de operatividad, cumpliendo con los estándares establecidos por la normativa nacional vigente."}
                     </p>
                   </div>
+                </div>
+                <div className="flex flex-col justify-end items-center space-y-3">
+                  <div className="bg-white p-3 border-4 border-slate-100 rounded-[2rem] shadow-xl">
+                    <QrCode className="h-24 w-24 text-slate-800" />
+                  </div>
+                  <p className="text-[9px] font-black uppercase text-slate-400 tracking-[0.3em]">VALIDAR CERTIFICADO</p>
                 </div>
               </div>
             </div>
           )}
 
-          {/* ÁREA DE AUTENTICACIÓN */}
-          <div className="pt-12 grid grid-cols-12 gap-12 items-end">
-            <div className="col-span-4 text-center space-y-3">
-              <div className="h-28 w-full border-b-2 border-slate-300 flex items-center justify-center relative overflow-hidden bg-slate-50/30 rounded-t-xl">
+          {/* ÁREA DE FIRMAS */}
+          <div className="pt-12 grid grid-cols-2 gap-24 text-center">
+            <div className="space-y-3">
+              <div className="h-28 w-full border-b-2 border-slate-300 flex items-center justify-center bg-slate-50/30 rounded-t-xl">
                 <div className="border-4 border-primary/20 text-primary/20 p-2 rounded-xl rotate-12 font-black text-[11px] uppercase border-double">
                   VALIDADO<br/>{apt.technicianName || "JEFE TÉCNICO"}
                 </div>
               </div>
-              <p className="text-[11px] font-black uppercase text-primary leading-none">{apt.technicianName || "DPTO. TÉCNICO"}</p>
+              <p className="text-[11px] font-black uppercase text-primary">{apt.technicianName || "DPTO. TÉCNICO"}</p>
               <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-[0.2em]">FIRMA Y SELLO AUTORIZADO</p>
             </div>
 
-            <div className="col-span-4 flex flex-col items-center justify-center space-y-3">
-              <div className="bg-white p-3 border-4 border-slate-100 rounded-[2rem] shadow-xl">
-                <QrCode className="h-24 w-24 text-slate-800" />
-              </div>
-              <p className="text-[9px] font-black uppercase text-slate-400 tracking-[0.3em]">VALIDAR CERTIFICADO</p>
-            </div>
-
-            <div className="col-span-4 text-center space-y-3">
-              <div className="h-28 w-full border-b-2 border-slate-300 flex items-center justify-center relative bg-slate-50/30 rounded-t-xl">
+            <div className="space-y-3">
+              <div className="h-28 w-full border-b-2 border-slate-300 flex items-center justify-center bg-slate-50/30 rounded-t-xl">
                 <div className="font-cursive text-3xl text-slate-800 opacity-70 -rotate-3 tracking-tighter">
                   {apt.clientSignatureName}
                 </div>
               </div>
-              <p className="text-[11px] font-black uppercase text-primary leading-none">{apt.clientSignatureName || "---"}</p>
+              <p className="text-[11px] font-black uppercase text-primary">{apt.clientSignatureName || "---"}</p>
               <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-[0.2em]">RECEPTOR CONFORME</p>
             </div>
           </div>
