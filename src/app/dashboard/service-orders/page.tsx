@@ -217,10 +217,11 @@ export default function ServiceOrdersPage() {
 
         {/* DOCUMENTO DE ORDEN DE SERVICIO */}
         <div className="proforma-container bg-white p-0 shadow-2xl mx-auto w-[210mm] min-h-[297mm] flex flex-col relative overflow-hidden text-[#1c1c1c] border print:shadow-none print:border-none print:m-0 print:w-full">
-          <div className="pt-12 px-12 pb-8 shrink-0 flex items-center justify-between border-b-[6px] border-primary">
+          {/* HEADER TÉCNICO - ESTILO COTIZACIÓN */}
+          <div className="pt-12 px-12 pb-8 shrink-0 flex items-center justify-between">
             <div className="relative h-20 w-64">
-              {company?.logoUrl ? (
-                <Image src={company.logoUrl} alt="Logo" fill className="object-contain object-left" unoptimized />
+              {(company?.headerUrl || company?.logoUrl) ? (
+                <Image src={company.headerUrl || company.logoUrl} alt="Logo" fill className="object-contain object-left" unoptimized />
               ) : (
                 <div className="h-full w-full bg-slate-50 flex items-center justify-center border-2 border-dashed border-slate-200 rounded">
                   <Wrench className="h-10 w-10 text-slate-300" />
@@ -228,14 +229,15 @@ export default function ServiceOrdersPage() {
               )}
             </div>
             <div className="text-right">
-              <h1 className="text-xl font-black text-primary uppercase tracking-tighter leading-none mb-1">
-                ORDEN DE SERVICIO
+              <h1 className="text-sm font-black text-[#1c1c1c] uppercase tracking-tighter leading-none mb-1">
+                {company?.name || "SERVIFUMIGA PRO"}
               </h1>
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-4">
-                HOJA DE TRABAJO Y EJECUCIÓN
-              </p>
-              <div className="bg-primary text-white px-6 py-2 rounded-lg font-black text-lg tracking-tight inline-block shadow-lg">
-                N° {viewingOrder.orderNumber}
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] font-bold text-slate-600">RUC: {company?.taxId || "---"}</span>
+                <span className="text-[9px] font-black text-primary uppercase tracking-[0.2em] mt-2">ORDEN DE SERVICIO</span>
+                <div className="mt-2 bg-slate-100 text-[#1c1c1c] px-6 py-2 rounded-md font-black text-[12px] shadow-sm border-b-2 border-slate-300">
+                   N° {viewingOrder.orderNumber}
+                </div>
               </div>
             </div>
           </div>
@@ -243,48 +245,52 @@ export default function ServiceOrdersPage() {
           <div className="px-12 py-10 space-y-10 flex-1 bg-white">
             <div className="grid grid-cols-2 gap-12">
               <div className="space-y-4">
-                <h3 className="text-[11px] font-black text-primary uppercase border-b-2 border-slate-100 pb-1 flex items-center gap-2">
-                  <Building2 className="h-3.5 w-3.5" /> Entidad Solicitante
-                </h3>
-                <div className="text-[11px] space-y-1">
+                <div className="flex items-center gap-4">
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase shrink-0">ENTIDAD SOLICITANTE</h3>
+                  <div className="h-[1px] bg-slate-100 w-full"></div>
+                </div>
+                <div className="text-[11px] space-y-1 pt-1">
                   <p className="font-black uppercase text-[#1c1c1c] text-sm">{client?.name || "---"}</p>
                   <p className="text-slate-500 font-bold uppercase">RUC/DNI: {client?.taxId || "---"}</p>
                   <p className="text-slate-500 font-bold uppercase truncate">DIRECCIÓN: {client?.address || "---"}</p>
                 </div>
               </div>
               <div className="space-y-4">
-                <h3 className="text-[11px] font-black text-primary uppercase border-b-2 border-slate-100 pb-1 flex items-center gap-2">
-                  <CalendarDays className="h-3.5 w-3.5" /> Programación
-                </h3>
-                <div className="text-[11px] space-y-1">
+                <div className="flex items-center gap-4">
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase shrink-0">PROGRAMACIÓN</h3>
+                  <div className="h-[1px] bg-slate-100 w-full"></div>
+                </div>
+                <div className="text-[11px] space-y-1 pt-1 text-right">
                   <p className="font-bold text-slate-700 uppercase">FECHA DE REGISTRO: {formattedDate}</p>
                   <p className="font-bold text-slate-700 uppercase">TIPO: SERVICIO TÉCNICO ESPECIALIZADO</p>
-                  <Badge variant="outline" className="mt-2 text-[9px] font-black uppercase border-primary text-primary px-3">
-                    ESTADO: {viewingOrder.status}
-                  </Badge>
+                  <div className="mt-2">
+                    <Badge variant="outline" className="text-[9px] font-black uppercase bg-slate-50 text-slate-600 border-slate-200 px-3">
+                      ESTADO: {viewingOrder.status}
+                    </Badge>
+                  </div>
                 </div>
               </div>
             </div>
 
             <div className="space-y-4">
-              <h3 className="text-[11px] font-black text-primary uppercase flex items-center gap-2 tracking-widest bg-slate-50 p-2 rounded">
-                <ClipboardList className="h-4 w-4" /> DETALLE DE REQUERIMIENTOS TÉCNICOS
+              <h3 className="text-[10px] font-black text-[#1c1c1c] uppercase flex items-center gap-2 tracking-widest bg-slate-50 p-2 rounded">
+                <ClipboardList className="h-4 w-4 text-slate-400" /> DETALLE DE REQUERIMIENTOS TÉCNICOS
               </h3>
               <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
                 <table className="w-full text-[11px] border-collapse">
                   <thead className="bg-slate-50 text-slate-800 border-b border-slate-200">
                     <tr>
-                      <th className="p-4 text-center font-black uppercase w-20">CANT.</th>
+                      <th className="p-4 text-center font-black uppercase w-20 border-r border-slate-200">CANT.</th>
                       <th className="p-4 text-left font-black uppercase">DESCRIPCIÓN DEL SERVICIO / PRODUCTO</th>
-                      <th className="p-4 text-right font-black uppercase w-32">ESTADO</th>
+                      <th className="p-4 text-right font-black uppercase w-32 border-l border-slate-200">ESTADO</th>
                     </tr>
                   </thead>
                   <tbody>
                     {(viewingOrder.items || []).map((item: any, idx: number) => (
-                      <tr key={idx} className="border-b border-slate-100 last:border-0">
-                        <td className="p-4 text-center font-bold">{item.quantity}</td>
+                      <tr key={idx} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
+                        <td className="p-4 text-center font-bold border-r border-slate-100">{item.quantity}</td>
                         <td className="p-4 font-medium uppercase text-slate-700">{item.description}</td>
-                        <td className="p-4 text-right text-slate-400 italic">Pendiente</td>
+                        <td className="p-4 text-right text-slate-400 italic font-bold border-l border-slate-100">Pendiente</td>
                       </tr>
                     ))}
                   </tbody>
@@ -318,16 +324,25 @@ export default function ServiceOrdersPage() {
           </div>
 
           <div 
-            className="mt-auto shrink-0 py-8 text-center text-white"
-            style={{ backgroundColor: company?.primaryColor || '#1a2b3c' }}
+            className="mt-auto shrink-0 flex flex-col items-center justify-center py-6 print-footer"
+            style={{ 
+              backgroundColor: company?.footerBgColor || '#f8fafc',
+              WebkitPrintColorAdjust: 'exact',
+              printColorAdjust: 'exact',
+              borderTop: '1px solid #e2e8f0'
+            } as any}
           >
-            <div className="px-12 space-y-2">
-              <p className="text-[10px] font-black uppercase tracking-[0.3em]">
-                {company?.name || "SERVIFUMIGA PRO PERÚ"}
-              </p>
-              <p className="text-[9px] font-bold opacity-70 uppercase">
-                {company?.address} • {company?.phone} • {company?.email}
-              </p>
+            <div className="px-12 w-full flex flex-col items-center text-center gap-2">
+              <div className="flex flex-wrap justify-center gap-x-10 gap-y-1 text-[10px] font-black text-slate-600 uppercase">
+                {company?.address && <p className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5" /> {company.address}</p>}
+                {company?.phone && <p className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" /> {company.phone}</p>}
+                {company?.email && <p className="flex items-center gap-2"><Mail className="h-3.5 w-3.5" /> {company.email}</p>}
+              </div>
+              <div className="mt-1">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                  <Globe className="h-3.5 w-3.5" /> {company?.website || "WWW.TUEMPRESA.COM"}
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -502,7 +517,7 @@ export default function ServiceOrdersPage() {
         <Card className="bg-white border-none shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Finalizadas</CardTitle>
-          </CardHeader>
+          </Header>
           <CardContent>
             <div className="text-2xl font-black text-status-success">
               {orders?.filter(o => o.status === "Finalizado").length || 0}
