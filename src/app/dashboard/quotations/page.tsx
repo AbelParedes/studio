@@ -221,7 +221,7 @@ export default function QuotationsPage() {
         </div>
 
         <div className="proforma-container bg-white p-0 shadow-2xl mx-auto w-[210mm] min-h-[297mm] flex flex-col relative overflow-hidden text-[#1c1c1c] border print:shadow-none print:border-none print:m-0 print:w-full print:min-h-[297mm]">
-          <div className="pt-12 px-12 pb-8 shrink-0 flex items-center justify-between border-b-[3px] border-[#d9534f]">
+          <div className="pt-12 px-12 pb-8 shrink-0 flex items-center justify-between">
             <div className="relative h-20 w-64">
               {(company?.headerUrl || company?.logoUrl) ? (
                 <Image src={company.headerUrl || company.logoUrl} alt="Logo" fill className="object-contain object-left" unoptimized />
