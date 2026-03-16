@@ -517,7 +517,7 @@ export default function ServiceOrdersPage() {
         <Card className="bg-white border-none shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Finalizadas</CardTitle>
-          </Header>
+          </CardHeader>
           <CardContent>
             <div className="text-2xl font-black text-status-success">
               {orders?.filter(o => o.status === "Finalizado").length || 0}
