@@ -109,7 +109,7 @@ export default function ExecutionPage({ params }: { params: Promise<{ id: string
         })
       }
 
-      toast({ title: "Servicio Finalizado", description: "El certificado técnico ha sido emitido y la hoja de vida de los equipos actualizada." })
+      toast({ title: "Servicio Finalizado", description: "El protocolo técnico ha sido emitido y la hoja de vida de los equipos actualizada." })
       router.push("/dashboard/certificates")
     } catch (err) {
       toast({ variant: "destructive", title: "Error al finalizar" })
@@ -129,7 +129,7 @@ export default function ExecutionPage({ params }: { params: Promise<{ id: string
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full"><ArrowLeft className="h-5 w-5" /></Button>
         <div>
-          <h2 className="text-xl font-black uppercase tracking-tighter text-primary">Control de Campo</h2>
+          <h2 className="text-xl font-black uppercase tracking-tighter text-primary">Ejecución Técnica</h2>
           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">OT: {apt.id.split('-')[0]} • {apt.clientName}</p>
         </div>
       </div>
@@ -275,7 +275,7 @@ export default function ExecutionPage({ params }: { params: Promise<{ id: string
               </Button>
               <div className="bg-slate-50 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center p-2">
                 <Info className="h-4 w-4 text-slate-300 mb-1" />
-                <p className="text-[7px] font-bold uppercase text-slate-400 text-center">La evidencia digital respalda la validez del certificado.</p>
+                <p className="text-[7px] font-bold uppercase text-slate-400 text-center">La evidencia digital respalda la validez del protocolo.</p>
               </div>
             </div>
           </CardContent>

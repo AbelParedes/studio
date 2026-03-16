@@ -20,7 +20,8 @@ import {
   QrCode,
   Award,
   FileText,
-  ClipboardCheck
+  ClipboardCheck,
+  CheckCircle2
 } from "lucide-react"
 import { format, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
@@ -41,9 +42,12 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
   const { data: company } = useDoc(companyRef)
 
   // Cargar equipos específicos del certificado
-  const equipmentQuery = useMemoFirebase(() => 
-    apt?.servicedEquipmentIds?.length > 0 ? query(collection(db, "client_equipment"), where("id", "in", apt.servicedEquipmentIds)) : null,
-  [db, apt?.servicedEquipmentIds])
+  const equipmentQuery = useMemoFirebase(() => {
+    if (apt?.servicedEquipmentIds && apt.servicedEquipmentIds.length > 0) {
+      return query(collection(db, "client_equipment"), where("id", "in", apt.servicedEquipmentIds))
+    }
+    return null
+  }, [db, apt?.servicedEquipmentIds])
   const { data: equipment } = useCollection(equipmentQuery)
 
   if (isLoading) return <div className="p-20 text-center font-bold uppercase animate-pulse text-primary tracking-widest">Generando Protocolo de Seguridad...</div>
@@ -51,10 +55,10 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
 
   const isFumigation = apt.serviceType === "Fumigación"
   const formattedDate = apt.date ? format(parseISO(apt.date), "dd 'de' MMMM 'del' yyyy", { locale: es }) : "---"
-  const certNumber = `CERT-${apt.id.split('-')[0].toUpperCase()}`
+  const certNumber = apt.certificateNumber || `CERT-${apt.id.split('-')[0].toUpperCase()}`
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20">
       <div className="flex items-center justify-between print:hidden">
         <Button variant="ghost" onClick={() => router.back()} className="font-black uppercase text-[10px] tracking-widest">
           <ArrowLeft className="mr-2 h-3 w-3" /> Regresar al Registro
@@ -96,7 +100,7 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
           </div>
           <div className="text-right">
             <h1 className="text-2xl font-black text-primary uppercase tracking-tighter leading-none mb-2" style={{ color: company?.primaryColor || '#1a2b3c' }}>
-              PROTOCOL TÉCNICO
+              PROTOCOLO TÉCNICO
             </h1>
             <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em]">
               CONSTANCIA DE OPERATIVIDAD INDUSTRIAL
@@ -199,7 +203,11 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
                       {Object.entries(apt.extChecklist || {}).map(([key, val]: [string, any]) => (
                         <li key={key} className="flex items-center justify-between border-b border-dashed border-slate-100 pb-1.5">
                           <span className="uppercase font-bold text-slate-600 tracking-tight">{key.replace('_', ' ')}:</span>
-                          {val ? <Badge className="bg-status-success text-white text-[8px] font-black h-5 px-3 rounded-md">CONFORME</Badge> : <Badge variant="outline" className="text-[8px] h-5 px-3 rounded-md opacity-30">N/A</Badge>}
+                          {val ? (
+                            <Badge className="bg-status-success text-white text-[8px] font-black h-5 px-3 rounded-md">CONFORME</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[8px] h-5 px-3 rounded-md opacity-30">N/A</Badge>
+                          )}
                         </li>
                       ))}
                     </ul>

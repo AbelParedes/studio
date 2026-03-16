@@ -18,7 +18,8 @@ import {
   Calendar,
   AlertCircle,
   CheckCircle2,
-  Filter
+  Filter,
+  FileText
 } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase"
 import { collection, query, where } from "firebase/firestore"
@@ -59,8 +60,8 @@ export default function CertificatesRegistryPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase text-primary">Registro de Certificados</h2>
-          <p className="text-muted-foreground text-sm font-medium uppercase text-[10px] tracking-widest">Archivo maestro de constancias técnicas emitidas.</p>
+          <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase text-primary">Archivo de Protocolos Técnicos</h2>
+          <p className="text-muted-foreground text-sm font-medium uppercase text-[10px] tracking-widest">Repositorio central de certificados de operatividad y sanidad.</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" className="h-10 text-[10px] font-bold uppercase">
@@ -72,7 +73,7 @@ export default function CertificatesRegistryPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-white border-none shadow-sm border-l-4 border-l-status-success">
           <CardHeader className="pb-2">
-            <CardTitle className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Certificados Vigentes</CardTitle>
+            <CardTitle className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Protocolos Vigentes</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-black text-status-success">
@@ -82,7 +83,7 @@ export default function CertificatesRegistryPage() {
         </Card>
         <Card className="bg-white border-none shadow-sm border-l-4 border-l-status-warning">
           <CardHeader className="pb-2">
-            <CardTitle className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Próximos a Vencer</CardTitle>
+            <CardTitle className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Vencimiento Próximo</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-black text-status-warning">
@@ -98,7 +99,7 @@ export default function CertificatesRegistryPage() {
         </Card>
         <Card className="bg-white border-none shadow-sm border-l-4 border-l-primary">
           <CardHeader className="pb-2">
-            <CardTitle className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Total Histórico</CardTitle>
+            <CardTitle className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Documentos Emitidos</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-black text-primary">
@@ -129,10 +130,10 @@ export default function CertificatesRegistryPage() {
             <Table className="dense-table">
               <TableHeader className="bg-[#1c1c1c]">
                 <TableRow className="border-none">
-                  <TableHead className="text-white font-black uppercase text-[10px]">Folio / ID</TableHead>
-                  <TableHead className="text-white font-black uppercase text-[10px]">Cliente Beneficiario</TableHead>
-                  <TableHead className="text-white font-black uppercase text-[10px]">Tipo Servicio</TableHead>
-                  <TableHead className="text-white font-black uppercase text-[10px]">Fecha Emisión</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px]">Folio / Protocolo</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px]">Empresa Beneficiaria</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px]">Tipo de Servicio</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px]">Emisión</TableHead>
                   <TableHead className="text-white font-black uppercase text-[10px]">Vencimiento</TableHead>
                   <TableHead className="text-white text-right pr-6 font-black uppercase text-[10px]">Acciones</TableHead>
                 </TableRow>
@@ -144,8 +145,8 @@ export default function CertificatesRegistryPage() {
                     <TableRow key={cert.id} className="hover:bg-muted/30 border-slate-100 transition-colors">
                       <TableCell className="font-black text-primary uppercase">
                         <div className="flex flex-col">
-                          <span>CERT-{cert.id.split('-')[0].toUpperCase()}</span>
-                          <span className="text-[8px] opacity-50 font-mono">ORD: {cert.id.split('-')[1]}</span>
+                          <span>{cert.certificateNumber || `CERT-${cert.id.split('-')[0].toUpperCase()}`}</span>
+                          <span className="text-[8px] opacity-50 font-mono">ORD: {cert.id.split('-')[0]}</span>
                         </div>
                       </TableCell>
                       <TableCell className="font-bold uppercase text-[11px]">{cert.clientName}</TableCell>
@@ -165,7 +166,7 @@ export default function CertificatesRegistryPage() {
                           )}>
                             {cert.nextDue || "---"}
                           </span>
-                          {isExpired && <AlertCircle className="h-3 w-3 text-status-error" />}
+                          {isExpired && <AlertCircle className="h-3 w-3 text-status-error animate-pulse" />}
                         </div>
                       </TableCell>
                       <TableCell className="text-right pr-6">
@@ -174,12 +175,13 @@ export default function CertificatesRegistryPage() {
                             variant="ghost" 
                             size="icon" 
                             className="h-9 w-9 text-primary" 
+                            title="Ver Protocolo"
                             onClick={() => router.push(`/dashboard/certificates/view/${cert.id}`)}
                           >
-                            <ExternalLink className="h-4 w-4" />
+                            <FileText className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400">
-                            <Download className="h-4 w-4" />
+                          <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400" title="Imprimir">
+                            <Printer className="h-4 w-4" />
                           </Button>
                         </div>
                       </TableCell>
@@ -191,7 +193,7 @@ export default function CertificatesRegistryPage() {
                     <TableCell colSpan={6} className="text-center py-24 text-muted-foreground">
                       <div className="flex flex-col items-center gap-2 opacity-40">
                         <FileCheck className="h-12 w-12" />
-                        <p className="text-[10px] font-black uppercase">No se han emitido certificados aún</p>
+                        <p className="text-[10px] font-black uppercase">No se han emitido protocolos aún</p>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -202,21 +204,21 @@ export default function CertificatesRegistryPage() {
         </CardContent>
       </Card>
 
-      <Card className="bg-primary text-white shadow-xl border-none">
-        <CardContent className="p-6 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-              <ShieldCheck className="h-6 w-6 text-accent" />
+      <Card className="bg-primary text-white shadow-xl border-none rounded-[2rem]">
+        <CardContent className="p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-6">
+            <div className="h-16 w-16 rounded-3xl bg-white/10 flex items-center justify-center shrink-0 border border-white/20">
+              <ShieldCheck className="h-8 w-8 text-accent" />
             </div>
             <div>
-              <h3 className="font-bold text-lg uppercase tracking-tight">Validez Legal Asegurada</h3>
-              <p className="text-sm opacity-80 font-medium">
-                Todos los certificados emitidos cumplen con los estándares de seguridad industrial vigentes en Perú.
+              <h3 className="font-bold text-xl uppercase tracking-tight">Trazabilidad Industrial Asegurada</h3>
+              <p className="text-sm opacity-80 font-medium max-w-xl">
+                Cada certificado emitido queda vinculado permanentemente a la hoja de vida de los equipos del cliente, garantizando cumplimiento normativo total.
               </p>
             </div>
           </div>
-          <div className="text-[10px] font-black uppercase text-accent bg-white px-4 py-1.5 rounded-full shadow-lg">
-            Sistema de Certificación v5.0
+          <div className="text-[10px] font-black uppercase text-accent bg-white px-6 py-2 rounded-full shadow-lg">
+            Sistema de Certificación v5.2
           </div>
         </CardContent>
       </Card>
