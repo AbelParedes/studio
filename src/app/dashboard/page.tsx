@@ -13,14 +13,17 @@ import {
   Bell,
   Loader2,
   Calendar,
-  ShieldCheck
+  ShieldCheck,
+  Coins,
+  ArrowUpRight,
+  HardDrive
 } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from "@/firebase"
 import { collection, query, where, limit, doc } from "firebase/firestore"
-import { format, isBefore, parseISO, addDays } from "date-fns"
+import { format, isBefore, parseISO, addDays, startOfMonth, endOfMonth } from "date-fns"
 import { es } from "date-fns/locale"
 
 export default function DashboardPage() {
@@ -54,31 +57,39 @@ export default function DashboardPage() {
   const inventoryRef = useMemoFirebase(() => 
     companyId ? query(collection(db, "all_extinguishers"), where("companyId", "==", companyId)) : null,
   [db, companyId])
-  const { data: inventory, isLoading: loadingInventory } = useCollection(inventoryRef)
+  const { data: catalog, isLoading: loadingInventory } = useCollection(inventoryRef)
+
+  const equipmentRef = useMemoFirebase(() => 
+    companyId ? query(collection(db, "client_equipment"), where("companyId", "==", companyId)) : null,
+  [db, companyId])
+  const { data: equipment, isLoading: loadingEquipment } = useCollection(equipmentRef)
 
   // 4. Statistics processing
-  const todayStr = format(new Date(), "yyyy-MM-dd")
-  const next7Days = addDays(new Date(), 7)
-  const next7DaysStr = format(next7Days, "yyyy-MM-dd")
+  const today = new Date()
+  const todayStr = format(today, "yyyy-MM-dd")
+  const next30Days = addDays(today, 30)
 
   const stats = useMemo(() => {
-    if (!clients || !appointments || !inventory) return null
+    if (!clients || !appointments || !equipment) return null
 
     const todayApts = appointments.filter(a => a.date === todayStr)
-    const upcoming7Days = appointments.filter(a => a.date > todayStr && a.date <= next7DaysStr)
-    const criticalInventory = inventory.filter(i => {
-      if (!i.nextDue) return false
-      const dueDate = parseISO(i.nextDue)
-      return isBefore(dueDate, next7Days)
+    const expiredEquipment = equipment.filter(e => e.status === "Vencido" || (e.nextServiceDate && isBefore(parseISO(e.nextServiceDate), today)))
+    const criticalThisMonth = equipment.filter(e => {
+      if (!e.nextServiceDate) return false
+      const dueDate = parseISO(e.nextServiceDate)
+      return isBefore(dueDate, next30Days) && !isBefore(dueDate, today)
     })
 
+    // Simulación de "Dinero en Mesa" basado en equipos por vencer (asumiendo S/ 150 por recarga/mantenimiento)
+    const potentialRevenue = (expiredEquipment.length + criticalThisMonth.length) * 150
+
     return [
-      { title: "Clientes Activos", value: clients.length.toString(), icon: Users, color: "text-blue-600" },
-      { title: "Servicios Hoy", value: todayApts.length.toString(), icon: CheckCircle2, color: "text-status-success" },
-      { title: "Equipos por Vencer", value: criticalInventory.length.toString(), icon: AlertTriangle, color: "text-status-warning" },
-      { title: "Próximos 7 días", value: upcoming7Days.length.toString(), icon: Clock, color: "text-primary" },
+      { title: "Ingresos en Riesgo", value: `S/ ${potentialRevenue.toLocaleString()}`, icon: Coins, color: "text-accent", desc: "Equipos por vencer (30 días)" },
+      { title: "Servicios para Hoy", value: todayApts.length.toString(), icon: CheckCircle2, color: "text-status-success", desc: "Visitas técnicas programadas" },
+      { title: "Estado de la Flota", value: `${equipment.length}`, icon: HardDrive, color: "text-primary", desc: `${expiredEquipment.length} equipos vencidos` },
+      { title: "Clientes Pro", value: clients.length.toString(), icon: Users, color: "text-blue-600", desc: "Cartera de clientes activa" },
     ]
-  }, [clients, appointments, inventory, todayStr, next7Days, next7DaysStr])
+  }, [clients, appointments, equipment, todayStr, next30Days])
 
   const recentServices = useMemo(() => {
     if (!appointments) return []
@@ -88,35 +99,35 @@ export default function DashboardPage() {
   }, [appointments])
 
   const criticalAlerts = useMemo(() => {
-    if (!inventory || !appointments) return []
+    if (!equipment || !appointments) return []
     const alerts = []
     
-    const expiredExt = inventory.filter(i => i.status === "Vencido" || (i.nextDue && isBefore(parseISO(i.nextDue), new Date())))
-    if (expiredExt.length > 0) {
+    const expiredCount = equipment.filter(e => e.status === "Vencido" || (e.nextServiceDate && isBefore(parseISO(e.nextServiceDate), today))).length
+    if (expiredCount > 0) {
       alerts.push({
-        title: "Extintores Vencidos",
-        description: `Hay ${expiredExt.length} equipos que requieren recarga inmediata.`,
-        type: "inventory"
+        title: "Alerta de Vencimiento",
+        description: `Hay ${expiredCount} extintores en campo con fecha de servicio expirada. Requieren gestión comercial.`,
+        type: "critical"
       })
     }
 
     const pendingFum = appointments.filter(a => a.serviceType === "Fumigación" && a.status === "Pendiente" && a.date <= todayStr)
     if (pendingFum.length > 0) {
       alerts.push({
-        title: "Fumigación Pendiente",
-        description: `Tienes ${pendingFum.length} servicios de control de plagas retrasados o para hoy.`,
-        type: "service"
+        title: "Retraso en Fumigación",
+        description: `Tienes ${pendingFum.length} servicios sanitarios sin cerrar.`,
+        type: "warning"
       })
     }
 
     return alerts
-  }, [inventory, appointments, todayStr])
+  }, [equipment, appointments, todayStr])
 
-  if (loadingClients || loadingApts || loadingInventory) {
+  if (loadingClients || loadingApts || loadingInventory || loadingEquipment) {
     return (
       <div className="h-full w-full flex flex-col items-center justify-center p-20 gap-4">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Sincronizando Dashboard...</p>
+        <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground text-center">Sincronizando Inteligencia Operativa...</p>
       </div>
     )
   }
@@ -124,122 +135,132 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-1">
-        <h2 className="text-2xl font-bold tracking-tight font-headline flex items-center gap-3">
-          PANEL DE CONTROL
-          <Badge variant="outline" className="text-[10px] font-bold uppercase py-0 px-2 border-primary/20 text-primary">
+        <div className="flex items-center gap-2">
+          <h2 className="text-2xl font-black tracking-tight font-headline uppercase text-primary">
+            Centro de Mando
+          </h2>
+          <Badge className="bg-primary/5 text-primary border-primary/20 font-black uppercase text-[9px] px-3">
             {company?.name || "SERVIFUMIGA PRO"}
           </Badge>
-        </h2>
-        <p className="text-muted-foreground text-[10px] uppercase font-bold tracking-widest">
-          ESTADO OPERATIVO: {format(new Date(), "PPPP", { locale: es }).toUpperCase()}
+        </div>
+        <p className="text-muted-foreground text-[10px] uppercase font-bold tracking-[0.2em] flex items-center gap-2">
+          <Calendar className="h-3 w-3" /> {format(new Date(), "PPPP", { locale: es }).toUpperCase()}
         </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats?.map((stat) => (
-          <Card key={stat.title} className="shadow-sm border-none bg-white hover:shadow-md transition-shadow">
+          <Card key={stat.title} className="shadow-sm border-none bg-white hover:shadow-lg transition-all border-b-4 border-transparent hover:border-primary/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">{stat.title}</CardTitle>
-              <stat.icon className={cn("h-4 w-4", stat.color)} />
+              <CardTitle className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">{stat.title}</CardTitle>
+              <div className={cn("p-2 rounded-lg bg-slate-50", stat.color)}>
+                <stat.icon className="h-4 w-4" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-primary">{stat.value}</div>
-              <div className="flex items-center text-[9px] text-muted-foreground mt-1 font-bold uppercase">
-                <TrendingUp className="h-3.5 w-3.5 mr-1 text-status-success" />
-                <span>Datos Actualizados</span>
-              </div>
+              <div className="text-2xl font-black text-primary tracking-tighter">{stat.value}</div>
+              <p className="text-[9px] text-muted-foreground mt-1 font-bold uppercase tracking-tight flex items-center gap-1">
+                {stat.desc}
+              </p>
             </CardContent>
           </Card>
         ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2 shadow-sm border-none bg-white">
-          <CardHeader className="border-b pb-4">
-            <CardTitle className="text-sm font-bold flex items-center uppercase tracking-wider">
-              <Calendar className="mr-2 h-4 w-4 text-primary" />
-              Últimas Actividades Programadas
+        <Card className="lg:col-span-2 shadow-sm border-none bg-white overflow-hidden">
+          <CardHeader className="border-b bg-slate-50/50">
+            <CardTitle className="text-xs font-black flex items-center uppercase tracking-widest text-primary">
+              <Clock className="mr-2 h-4 w-4 text-accent" />
+              Bitácora de Servicios Recientes
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0 overflow-x-auto">
-            <div className="min-w-[600px]">
-              <Table className="dense-table">
-                <TableHeader className="bg-primary hover:bg-primary">
-                  <TableRow>
-                    <TableHead className="text-white">CLIENTE</TableHead>
-                    <TableHead className="text-white">SERVICIO</TableHead>
-                    <TableHead className="text-white">FECHA</TableHead>
-                    <TableHead className="text-white">ESTADO</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentServices.length > 0 ? (
-                    recentServices.map((service) => (
-                      <TableRow key={service.id} className="hover:bg-muted/30">
-                        <TableCell className="font-bold text-primary uppercase">{service.clientName}</TableCell>
-                        <TableCell className="text-[11px] font-medium">{service.serviceType}</TableCell>
-                        <TableCell className="text-[11px]">{service.date}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" 
-                            className={cn(
-                              "text-[9px] uppercase font-bold px-2 py-0",
-                              service.status === "Completado" && "border-status-success text-status-success bg-status-success/5",
-                              service.status === "Pendiente" && "border-muted text-muted-foreground bg-muted/20",
-                              service.status === "Confirmado" && "border-status-warning text-status-warning bg-status-warning/5",
-                            )}
-                          >
-                            {service.status}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center py-10 text-muted-foreground uppercase text-[10px] font-bold">
-                        No hay servicios registrados recientemente
+          <CardContent className="p-0">
+            <Table className="dense-table">
+              <TableHeader className="bg-white hover:bg-white border-b">
+                <TableRow>
+                  <TableHead className="text-slate-400 font-black uppercase text-[9px] tracking-widest">Cliente</TableHead>
+                  <TableHead className="text-slate-400 font-black uppercase text-[9px] tracking-widest">Operación</TableHead>
+                  <TableHead className="text-slate-400 font-black uppercase text-[9px] tracking-widest">Fecha</TableHead>
+                  <TableHead className="text-slate-400 font-black uppercase text-[9px] tracking-widest">Estado</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {recentServices.length > 0 ? (
+                  recentServices.map((service) => (
+                    <TableRow key={service.id} className="hover:bg-muted/30 border-slate-50">
+                      <TableCell className="font-bold text-primary uppercase text-[11px]">{service.clientName}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-[8px] font-black uppercase border-primary/10">
+                          {service.serviceType}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-[10px] font-medium text-slate-500">{service.date}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          <div className={cn(
+                            "h-1.5 w-1.5 rounded-full",
+                            service.status === "Completado" ? "bg-status-success" : "bg-slate-300 animate-pulse"
+                          )}></div>
+                          <span className="text-[10px] font-black uppercase text-slate-600">{service.status}</span>
+                        </div>
                       </TableCell>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-12 text-muted-foreground uppercase text-[10px] font-bold">
+                      No hay registros en la bitácora actual
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm border-none bg-primary text-white">
-          <CardHeader>
-            <CardTitle className="text-sm font-bold flex items-center text-white uppercase tracking-wider">
-              <Bell className="mr-2 h-4 w-4 text-accent" />
-              ALERTAS DEL SISTEMA
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {criticalAlerts.length > 0 ? (
-              criticalAlerts.map((alert, idx) => (
-                <div key={idx} className="p-3 bg-white/10 rounded-md border border-white/20">
-                  <p className="text-xs font-bold uppercase mb-1 flex items-center gap-2">
-                    <AlertTriangle className="h-3 w-3 text-accent" />
-                    {alert.title}
-                  </p>
-                  <p className="text-[11px] opacity-80 leading-relaxed font-medium">{alert.description}</p>
+        <div className="space-y-6">
+          <Card className="shadow-2xl border-none bg-[#1c1c1c] text-white rounded-[2rem] overflow-hidden">
+            <CardHeader className="bg-white/5 border-b border-white/10">
+              <CardTitle className="text-xs font-black flex items-center text-accent uppercase tracking-widest">
+                <Bell className="mr-2 h-4 w-4 animate-bounce" />
+                Alertas Críticas
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              {criticalAlerts.length > 0 ? (
+                criticalAlerts.map((alert, idx) => (
+                  <div key={idx} className="p-4 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-colors">
+                    <p className="text-[10px] font-black uppercase text-accent mb-1 flex items-center gap-2">
+                      <AlertTriangle className="h-3 w-3" />
+                      {alert.title}
+                    </p>
+                    <p className="text-[11px] text-white/70 leading-relaxed font-bold uppercase">{alert.description}</p>
+                  </div>
+                ))
+              ) : (
+                <div className="flex flex-col items-center justify-center py-10 opacity-40">
+                  <ShieldCheck className="h-12 w-12 mb-3 text-status-success" />
+                  <p className="text-[10px] font-black uppercase tracking-widest text-center">Operaciones bajo control</p>
                 </div>
-              ))
-            ) : (
-              <div className="flex flex-col items-center justify-center py-10 opacity-60">
-                <CheckCircle2 className="h-10 w-10 mb-2" />
-                <p className="text-[10px] font-bold uppercase">Todo en orden</p>
+              )}
+              
+              <div className="pt-6 border-t border-white/10 mt-4 text-center">
+                <p className="text-[8px] font-black uppercase text-white/30 tracking-[0.3em]">Servifumiga Pro SaaS Master</p>
               </div>
-            )}
-            
-            <div className="pt-4 border-t border-white/10 mt-4">
-              <p className="text-[9px] font-bold uppercase opacity-50 tracking-widest">SaaS Master Sync</p>
-              <div className="flex items-center gap-2 mt-1">
-                <div className="h-2 w-2 rounded-full bg-status-success animate-pulse"></div>
-                <span className="text-[10px] font-bold uppercase">Sincronización Activa</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-sm border-none bg-accent text-white rounded-[2rem]">
+            <CardContent className="p-6 flex flex-col items-center justify-center text-center gap-2">
+              <TrendingUp className="h-8 w-8 mb-2" />
+              <h3 className="text-sm font-black uppercase tracking-tighter">Optimización Comercial</h3>
+              <p className="text-[10px] font-bold opacity-80 uppercase leading-tight">
+                Utilice el módulo de Recordatorios IA para convertir las alertas de vencimiento en órdenes de servicio.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   )
