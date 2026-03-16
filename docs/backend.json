@@ -58,6 +58,28 @@
       },
       "required": ["id", "companyId", "clientType", "name", "taxId"]
     },
+    "ClientEquipment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ClientEquipment",
+      "type": "object",
+      "description": "Inventario detallado de equipos propiedad del cliente (Hoja de Vida).",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "clientId": { "type": "string" },
+        "type": { "type": "string", "enum": ["Extintor", "Sensor de Humo", "Luces de Emergencia", "Otros"] },
+        "serialNumber": { "type": "string" },
+        "brand": { "type": "string" },
+        "capacity": { "type": "string" },
+        "extinguishingAgent": { "type": "string" },
+        "location": { "type": "string", "description": "Ubicación física dentro de las instalaciones del cliente." },
+        "manufacturingYear": { "type": "integer" },
+        "lastServiceDate": { "type": "string", "format": "date" },
+        "nextServiceDate": { "type": "string", "format": "date" },
+        "status": { "type": "string", "enum": ["Operativo", "Mantenimiento", "Vencido", "Baja"] }
+      },
+      "required": ["id", "companyId", "clientId", "serialNumber"]
+    },
     "Quotation": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Quotation",
@@ -143,6 +165,10 @@
     "clients": {
       "schema": { "$ref": "#/backend/entities/Client" },
       "description": "Clientes por empresa."
+    },
+    "client_equipment": {
+      "schema": { "$ref": "#/backend/entities/ClientEquipment" },
+      "description": "Inventario de activos de clientes para mantenimiento."
     },
     "quotations": {
       "schema": { "$ref": "#/backend/entities/Quotation" },

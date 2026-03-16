@@ -19,7 +19,8 @@ import {
   Package,
   Zap,
   FileCheck,
-  ClipboardList
+  ClipboardList,
+  HardDrive
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/firebase"
@@ -30,6 +31,7 @@ const navItems = [
   { name: "Resumen", href: "/dashboard", icon: LayoutDashboard },
   { name: "Empresas", href: "/dashboard/companies", icon: Building2, superAdminOnly: true },
   { name: "Clientes", href: "/dashboard/clients", icon: Users },
+  { name: "Equipos de Clientes", href: "/dashboard/equipment", icon: HardDrive },
   { name: "Cotizaciones", href: "/dashboard/quotations", icon: FileText },
   { name: "Órdenes de Servicio", href: "/dashboard/service-orders", icon: ClipboardList },
   { name: "Calendario", href: "/dashboard/calendar", icon: Calendar },
