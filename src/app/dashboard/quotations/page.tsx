@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useMemo } from "react"
@@ -62,7 +61,6 @@ export default function QuotationsPage() {
   const [items, setItems] = useState<{description: string, quantity: number, unitPrice: number, catalogItemId?: string}[]>([])
   const [isConverting, setIsConverting] = useState<string | null>(null)
 
-  // 1. Perfil y Empresa
   const userProfileQuery = useMemoFirebase(() => 
     user?.email ? query(collection(db, "company_users"), where("email", "==", user.email)) : null,
   [db, user?.email])
@@ -74,7 +72,6 @@ export default function QuotationsPage() {
   [db, companyId])
   const { data: company } = useDoc(companyRef)
 
-  // 2. Datos de Cotizaciones, Clientes y Catálogo
   const quotationsRef = useMemoFirebase(() => 
     companyId ? query(collection(db, "quotations"), where("companyId", "==", companyId)) : null,
   [db, companyId])
@@ -90,23 +87,12 @@ export default function QuotationsPage() {
   [db, companyId])
   const { data: catalog } = useCollection(catalogRef)
 
-  // 3. Lógica de Numeración Correlativa Anual
   const currentYear = new Date().getFullYear()
   const suggestedQuotationNumber = useMemo(() => {
     if (!quotations || quotations.length === 0) return `COT-0001-${currentYear}`
-    
-    const yearQuotations = quotations.filter(q => {
-      const qNum = q.quotationNumber || ""
-      return qNum.startsWith("COT-") && qNum.endsWith(`-${currentYear}`)
-    })
-
+    const yearQuotations = quotations.filter(q => q.quotationNumber?.endsWith(`-${currentYear}`))
     if (yearQuotations.length === 0) return `COT-0001-${currentYear}`
-
-    const numbers = yearQuotations.map(q => {
-      const parts = q.quotationNumber.split("-")
-      return parts.length === 3 ? parseInt(parts[1]) : 0
-    })
-    
+    const numbers = yearQuotations.map(q => parseInt(q.quotationNumber.split("-")[1]) || 0)
     const maxNum = Math.max(...numbers)
     return `COT-${(maxNum + 1).toString().padStart(4, '0')}-${currentYear}`
   }, [quotations, currentYear])
@@ -131,12 +117,7 @@ export default function QuotationsPage() {
     const product = catalog?.find(p => p.id === productId)
     if (product) {
       const newItems = [...items]
-      newItems[index] = {
-        ...newItems[index],
-        catalogItemId: product.id,
-        description: product.description,
-        unitPrice: product.sellPrice
-      }
+      newItems[index] = { ...newItems[index], catalogItemId: product.id, description: product.description, unitPrice: product.sellPrice }
       setItems(newItems)
     }
   }
@@ -144,24 +125,14 @@ export default function QuotationsPage() {
   const handleSaveQuotation = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!companyId) return
-
     const formData = new FormData(e.currentTarget)
-
     const quotationData = {
-      companyId: companyId,
+      companyId,
       clientId: formData.get("clientId") as string,
       quotationNumber: formData.get("number") as string || suggestedQuotationNumber,
-      date: formData.get("date") as string || new Date().toISOString().split('T')[0],
-      items: items.map(i => ({ 
-        description: i.description, 
-        quantity: Number(i.quantity || 0), 
-        unitPrice: Number(i.unitPrice || 0),
-        total: Number(i.quantity || 0) * Number(i.unitPrice || 0),
-        catalogItemId: i.catalogItemId || null
-      })),
-      subtotal,
-      tax,
-      total,
+      date: formData.get("date") as string || format(new Date(), "yyyy-MM-dd"),
+      items: items.map(i => ({ ...i, total: Number(i.quantity || 0) * Number(i.unitPrice || 0) })),
+      subtotal, tax, total,
       conditions: formData.get("conditions") as string,
       status: formData.get("status") as string || "Borrador",
       updatedAt: new Date().toISOString()
@@ -169,233 +140,118 @@ export default function QuotationsPage() {
 
     if (editingQuotation) {
       updateDocumentNonBlocking(doc(db, "quotations", editingQuotation.id), quotationData)
-      toast({ title: "Cotización Actualizada" })
+      toast({ title: "Proforma actualizada" })
     } else {
-      const newId = crypto.randomUUID()
-      addDocumentNonBlocking(collection(db, "quotations"), { ...quotationData, id: newId, createdAt: new Date().toISOString() })
-      toast({ title: "Cotización Generada" })
+      addDocumentNonBlocking(collection(db, "quotations"), { ...quotationData, id: crypto.randomUUID(), createdAt: new Date().toISOString() })
+      toast({ title: "Proforma generada" })
     }
-
-    setIsAdding(false)
-    setEditingQuotation(null)
-    setItems([])
+    setIsAdding(false); setEditingQuotation(null); setItems([])
   }
 
-  const handleConvertToOrder = async (quotation: any) => {
+  const handleConvertToOrder = async (q: any) => {
     if (!companyId) return
-    setIsConverting(quotation.id)
-    
+    setIsConverting(q.id)
     try {
-      const orderId = crypto.randomUUID()
-      const orderNumber = `OS-${quotation.quotationNumber.split('-')[1]}-${currentYear}`
-      
-      const orderData = {
-        id: orderId,
-        companyId,
-        clientId: quotation.clientId,
-        quotationId: quotation.id,
-        orderNumber,
-        date: new Date().toISOString().split('T')[0],
-        items: quotation.items,
-        total: quotation.total,
-        status: "Pendiente",
-        createdAt: new Date().toISOString()
-      }
-
-      await addDocumentNonBlocking(collection(db, "service_orders"), orderData)
-      await updateDoc(doc(db, "quotations", quotation.id), { status: "Convertido" })
-      
-      toast({ title: "¡Orden Generada!", description: `Se ha creado la OS: ${orderNumber}` })
+      const orderNumber = `OS-${q.quotationNumber.split('-')[1]}-${currentYear}`
+      await addDocumentNonBlocking(collection(db, "service_orders"), {
+        id: crypto.randomUUID(), companyId, clientId: q.clientId, quotationId: q.id,
+        orderNumber, date: format(new Date(), "yyyy-MM-dd"), items: q.items, total: q.total,
+        status: "Pendiente", createdAt: new Date().toISOString()
+      })
+      await updateDoc(doc(db, "quotations", q.id), { status: "Convertido" })
+      toast({ title: "¡Orden de Servicio Creada!", description: orderNumber })
       router.push("/dashboard/service-orders")
-    } catch (error) {
-      toast({ variant: "destructive", title: "Error al convertir" })
-    } finally {
-      setIsConverting(null)
-    }
+    } catch (e) { toast({ variant: "destructive", title: "Error al convertir" }) } finally { setIsConverting(null) }
   }
 
-  const handleDelete = (id: string) => {
-    deleteDocumentNonBlocking(doc(db, "quotations", id))
-    toast({ variant: "destructive", title: "Cotización Eliminada" })
-  }
-
-  const openEdit = (q: any) => {
-    setEditingQuotation(q)
-    setItems(q.items?.map((i: any) => ({ 
-      description: i.description, 
-      quantity: Number(i.quantity || 1), 
-      unitPrice: Number(i.unitPrice || 0),
-      catalogItemId: i.catalogItemId
-    })) || [])
-    setIsAdding(true)
-  }
-
-  const handlePrint = () => {
-    window.print()
-  }
+  const filteredQuotations = quotations?.filter(q => 
+    q.quotationNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    clients?.find(c => c.id === q.clientId)?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+  )
 
   if (viewingQuotation) {
     const client = clients?.find(c => c.id === viewingQuotation.clientId)
-    const conditions = viewingQuotation.conditions || "• Validez de la oferta: 15 días.\n• Forma de pago: Contado / Transferencia.\n• Tiempo de ejecución: A coordinar.\n• Garantía de servicio: 12 meses."
-    const formattedDate = viewingQuotation.date 
-      ? format(parseISO(viewingQuotation.date), "dd/MM/yyyy") 
-      : "---"
-
     return (
       <div className="space-y-4 animate-in fade-in duration-300">
-        <div className="flex items-center justify-between mb-4 print:hidden">
+        <div className="flex flex-wrap items-center justify-between gap-4 print:hidden">
           <Button variant="ghost" onClick={() => setViewingQuotation(null)} className="font-bold uppercase text-[10px]">
-            <ArrowLeft className="mr-2 h-3 w-3" /> Volver al Listado
+            <ArrowLeft className="mr-2 h-3 w-3" /> Regresar
           </Button>
-          <div className="flex gap-2">
+          <div className="flex gap-2 w-full sm:w-auto">
             {viewingQuotation.status !== "Convertido" && (
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="font-bold uppercase text-[10px] border-status-success text-status-success hover:bg-status-success/5"
+                className="font-bold uppercase text-[10px] border-status-success text-status-success flex-1"
                 onClick={() => handleConvertToOrder(viewingQuotation)}
                 disabled={isConverting === viewingQuotation.id}
               >
-                {isConverting === viewingQuotation.id ? <Loader2 className="animate-spin h-3 w-3 mr-2" /> : <Repeat className="mr-2 h-3 w-3" />}
                 Convertir a OS
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={handlePrint} className="font-bold uppercase text-[10px]">
+            <Button size="sm" onClick={() => window.print()} className="bg-primary text-white font-bold uppercase text-[10px] flex-1">
               <Printer className="mr-2 h-3 w-3" /> Imprimir
-            </Button>
-            <Button size="sm" onClick={handlePrint} className="bg-primary text-white font-bold uppercase text-[10px]">
-              <Download className="mr-2 h-3 w-3" /> Descargar PDF
             </Button>
           </div>
         </div>
 
-        <div className="proforma-container bg-white p-0 shadow-2xl mx-auto w-[210mm] min-h-[297mm] flex flex-col relative overflow-hidden text-[#1c1c1c] border print:shadow-none print:border-none print:m-0 print:w-full print:min-h-[297mm]">
-          <div className="pt-12 px-12 pb-8 shrink-0 flex items-center justify-between">
-            <div className="relative h-20 w-64">
-              {(company?.headerUrl || company?.logoUrl) ? (
-                <Image src={company.headerUrl || company.logoUrl} alt="Logo" fill className="object-contain object-left" unoptimized />
-              ) : (
-                <div className="h-full w-full bg-slate-50 flex items-center justify-center border-2 border-dashed border-slate-200 rounded">
-                  <Building2 className="h-10 w-10 text-slate-300" />
+        <div className="proforma-container bg-white shadow-xl mx-auto w-full max-w-[210mm] min-h-[297mm] flex flex-col relative text-[#1c1c1c] border">
+          {/* VISTA PREVIA PROFESIONAL SIMILAR A LA IMPLEMENTADA ANTERIORMENTE PERO RESPONSIVA */}
+          <div className="p-6 sm:p-12 space-y-8 flex-1">
+             <div className="flex justify-between items-start">
+                <div className="h-16 w-48 relative">
+                  {(company?.headerUrl || company?.logoUrl) && <Image src={company.headerUrl || company.logoUrl} alt="Logo" fill className="object-contain object-left" unoptimized />}
                 </div>
-              )}
-            </div>
-            <div className="text-right space-y-1">
-              <h1 className="text-sm font-black text-[#1c1c1c] uppercase tracking-tighter leading-none">
-                {company?.name || "EXTINTORES APEVA"}
-              </h1>
-              <div className="flex flex-col items-end">
-                <span className="text-[10px] font-bold text-slate-600">RUC: {company?.taxId || "---"}</span>
-                <span className="text-[9px] font-black text-[#d9534f] uppercase tracking-[0.2em] mt-2">COTIZACIÓN</span>
-                <div className="mt-2 bg-slate-100 text-[#1c1c1c] px-6 py-2 rounded-md font-black text-[12px] shadow-sm border-b-2 border-slate-300">
-                   N° {viewingQuotation.quotationNumber}
+                <div className="text-right">
+                  <h1 className="text-xs sm:text-sm font-black uppercase text-primary">COTIZACIÓN COMERCIAL</h1>
+                  <p className="text-[10px] font-mono font-bold mt-1">N° {viewingQuotation.quotationNumber}</p>
                 </div>
-              </div>
-            </div>
-          </div>
+             </div>
+             
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 text-[11px]">
+                <div className="space-y-1">
+                  <p className="text-slate-400 font-black uppercase">Cliente:</p>
+                  <p className="font-black text-sm uppercase">{client?.name || "---"}</p>
+                  <p className="font-bold">RUC: {client?.taxId || "---"}</p>
+                  <p className="truncate">DIR: {client?.address || "---"}</p>
+                </div>
+                <div className="sm:text-right space-y-1">
+                  <p className="text-slate-400 font-black uppercase">Emisión:</p>
+                  <p className="font-bold">{viewingQuotation.date}</p>
+                  <p className="font-black text-status-success uppercase">Estado: {viewingQuotation.status}</p>
+                </div>
+             </div>
 
-          <div className="px-12 py-8 space-y-8 flex-1 bg-white custom-scrollbar overflow-y-auto">
-            <div className="grid grid-cols-2 gap-12">
-              <div className="space-y-3">
-                <div className="flex items-center gap-4">
-                  <h3 className="text-[10px] font-black text-slate-400 uppercase shrink-0">DATOS DEL CLIENTE</h3>
-                  <div className="h-[1px] bg-slate-100 w-full"></div>
-                </div>
-                <div className="text-[11px] space-y-2 pt-1">
-                  <p className="font-black uppercase text-[#1c1c1c] text-[12px]">{client?.name || "---"}</p>
-                  <p className="text-slate-600 font-bold uppercase"><span className="text-slate-400 font-normal">DNI / RUC:</span> {client?.taxId || "---"}</p>
-                  <p className="text-slate-600 font-bold uppercase"><span className="text-slate-400 font-normal">DIRECCIÓN:</span> {client?.address || "---"}</p>
-                </div>
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-center gap-4">
-                  <h3 className="text-[10px] font-black text-slate-400 uppercase shrink-0">DETALLE DE EMISIÓN</h3>
-                  <div className="h-[1px] bg-slate-100 w-full"></div>
-                </div>
-                <div className="text-[11px] space-y-2 pt-1 text-right">
-                  <p className="font-black text-[#1c1c1c] uppercase"><span className="text-slate-400 font-normal">FECHA:</span> {formattedDate}</p>
-                  <p className="text-slate-600 uppercase font-bold"><span className="text-slate-400 font-normal">MONEDA:</span> SOLES (S/.)</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-3 pt-4">
-              <h3 className="text-[10px] font-black text-[#1c1c1c] uppercase flex items-center gap-2 tracking-widest">
-                <FileText className="h-4 w-4 text-slate-400" /> REQUERIMIENTO
-              </h3>
-              <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
-                <table className="w-full text-[10px] border-collapse">
-                  <thead className="bg-slate-50 text-slate-800 border-b border-slate-200">
+             <div className="overflow-x-auto">
+                <table className="w-full text-[10px] sm:text-[11px]">
+                  <thead className="bg-slate-50 border-b-2">
                     <tr>
-                      <th className="p-3 text-center font-black uppercase w-16 border-r border-slate-200">CANT.</th>
-                      <th className="p-3 text-left font-black uppercase">DESCRIPCIÓN</th>
-                      <th className="p-3 text-right font-black uppercase w-28 border-l border-slate-200">UNIT. (S/.)</th>
-                      <th className="p-3 text-right font-black uppercase w-28 border-l border-slate-200">TOTAL (S/.)</th>
+                      <th className="p-2 text-center w-12">CANT</th>
+                      <th className="p-2 text-left">DESCRIPCIÓN</th>
+                      <th className="p-2 text-right w-24">UNIT (S/)</th>
+                      <th className="p-2 text-right w-24">TOTAL (S/)</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {(viewingQuotation.items || []).map((item: any, idx: number) => (
-                      <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                        <td className="p-3 text-center font-bold border-r border-slate-100">{(item.quantity || 0)}</td>
-                        <td className="p-3 font-medium uppercase text-slate-700">{(item.description || "---")}</td>
-                        <td className="p-3 text-right border-l border-slate-100">{(Number(item.unitPrice || 0)).toFixed(2)}</td>
-                        <td className="p-3 text-right font-black border-l border-slate-100 text-[#1c1c1c]">{(Number(item.total || 0)).toFixed(2)}</td>
+                    {viewingQuotation.items?.map((item: any, i: number) => (
+                      <tr key={i} className="border-b border-slate-50">
+                        <td className="p-2 text-center font-bold">{item.quantity}</td>
+                        <td className="p-2 uppercase">{item.description}</td>
+                        <td className="p-2 text-right">{Number(item.unitPrice).toFixed(2)}</td>
+                        <td className="p-2 text-right font-black">{Number(item.total).toFixed(2)}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-              </div>
-            </div>
+             </div>
 
-            <div className="grid grid-cols-12 gap-12 pt-4">
-              <div className="col-span-7 space-y-3">
-                <h3 className="text-[10px] font-black text-[#1c1c1c] uppercase flex items-center gap-2 tracking-widest">
-                  <Gavel className="h-4 w-4 text-slate-400" /> CONDICIONES COMERCIALES
-                </h3>
-                <div className="p-4 bg-slate-50 border rounded-lg text-[10px] text-slate-600 leading-relaxed whitespace-pre-line font-medium border-dashed border-slate-300">
-                  {conditions}
+             <div className="flex justify-end pt-4">
+                <div className="w-full sm:w-64 space-y-1">
+                  <div className="flex justify-between text-[10px] font-bold"><span>SUBTOTAL</span><span>S/ {Number(viewingQuotation.subtotal).toFixed(2)}</span></div>
+                  <div className="flex justify-between text-[10px] font-bold"><span>I.G.V (18%)</span><span>S/ {Number(viewingQuotation.tax).toFixed(2)}</span></div>
+                  <div className="flex justify-between text-base font-black border-t-2 pt-2 text-primary"><span>TOTAL NETO</span><span>S/ {Number(viewingQuotation.total).toFixed(2)}</span></div>
                 </div>
-              </div>
-              <div className="col-span-5 flex justify-end items-start">
-                <div className="w-full space-y-1.5">
-                  <div className="flex justify-between text-[10px] px-3 font-bold">
-                    <span className="uppercase text-slate-400">SUBTOTAL</span>
-                    <span className="text-[#1c1c1c]">S/. {(Number(viewingQuotation.subtotal || 0)).toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-[10px] px-3 font-bold">
-                    <span className="uppercase text-slate-400">I.G.V. (18%)</span>
-                    <span className="text-[#1c1c1c]">S/. {(Number(viewingQuotation.tax || 0)).toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-[12px] bg-slate-50 text-[#1c1c1c] p-4 rounded-xl font-black mt-3 shadow-sm border border-slate-200">
-                    <span className="uppercase tracking-wider text-slate-500">TOTAL NETO</span>
-                    <span className="text-base text-primary">S/. {(Number(viewingQuotation.total || 0)).toFixed(2)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div 
-            className="mt-auto shrink-0 flex flex-col items-center justify-center py-6 print-footer"
-            style={{ 
-              backgroundColor: company?.footerBgColor || '#f8fafc',
-              WebkitPrintColorAdjust: 'exact',
-              printColorAdjust: 'exact',
-              borderTop: '1px solid #e2e8f0'
-            } as any}
-          >
-            <div className="px-12 w-full flex flex-col items-center text-center gap-2">
-              <div className="flex flex-wrap justify-center gap-x-10 gap-y-1 text-[10px] font-black text-slate-600 uppercase">
-                {company?.address && <p className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5" /> {company.address}</p>}
-                {company?.phone && <p className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" /> {company.phone}</p>}
-                {company?.email && <p className="flex items-center gap-2"><Mail className="h-3.5 w-3.5" /> {company.email}</p>}
-              </div>
-              <div className="mt-1">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                  <Globe className="h-3.5 w-3.5" /> {company?.website || "WWW.TUEMPRESA.COM"}
-                </p>
-              </div>
-            </div>
+             </div>
           </div>
         </div>
       </div>
@@ -406,204 +262,103 @@ export default function QuotationsPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase text-[#d9534f]">Gestión Comercial</h2>
-          <p className="text-muted-foreground text-sm italic font-medium">Cotizaciones oficiales bajo estándares industriales.</p>
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight mb-1 uppercase text-[#d9534f]">Gestión Comercial</h2>
+          <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest">Emisión de proformas industriales.</p>
         </div>
         
         <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) { setEditingQuotation(null); setItems([]); } }}>
           <DialogTrigger asChild>
-            <Button className="bg-[#d9534f] hover:bg-[#c9302c] text-white h-10 font-bold uppercase text-xs px-6 shadow-lg">
-              <Plus className="mr-2 h-4 w-4" /> Nueva Cotización
+            <Button className="bg-[#d9534f] hover:bg-[#c9302c] text-white h-10 font-bold uppercase text-xs shadow-lg w-full sm:w-auto px-8">
+              <Plus className="mr-2 h-4 w-4" /> Nueva Proforma
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-5xl max-h-[95vh] flex flex-col p-0 overflow-hidden">
-            <form onSubmit={handleSaveQuotation} className="flex flex-col min-h-0 h-full">
-              <DialogHeader className="p-6 border-b bg-slate-50 shrink-0">
-                <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 bg-[#d9534f] rounded-xl flex items-center justify-center text-white shadow-md">
-                    <FileText className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <DialogTitle className="uppercase font-black text-[#d9534f] text-xl tracking-tight leading-none">Nueva Proforma Oficial</DialogTitle>
-                    <DialogDescription className="text-[10px] font-bold text-slate-500 uppercase mt-1">Sugerido: {suggestedQuotationNumber} • Extintores Apeva SaaS</DialogDescription>
-                  </div>
-                </div>
+            <form onSubmit={handleSaveQuotation} className="flex flex-col h-full overflow-hidden">
+              <DialogHeader className="p-4 sm:p-6 border-b bg-slate-50">
+                <DialogTitle className="uppercase font-black text-[#d9534f] text-lg">Nueva Proforma Oficial</DialogTitle>
+                <DialogDescription className="text-[9px] font-bold uppercase">Sugerido: {suggestedQuotationNumber}</DialogDescription>
               </DialogHeader>
 
-              <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar min-h-0">
-                {/* SECCIÓN 1: DATOS GENERALES */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-1.5">
-                      <Briefcase className="h-3 w-3" /> Cliente Destino
-                    </Label>
-                    <Select name="clientId" defaultValue={editingQuotation?.clientId} required>
-                      <SelectTrigger className="h-11 border-2 focus:ring-[#d9534f]/20">
-                        <SelectValue placeholder="Seleccione un cliente" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {clients?.map(c => (
-                          <SelectItem key={c.id} value={c.id} className="font-bold">{c.name}</SelectItem>
-                        ))}
-                      </SelectContent>
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 custom-scrollbar">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid gap-1.5">
+                    <Label className="text-[10px] font-black uppercase text-slate-500">Cliente</Label>
+                    <Select name="clientId" required>
+                      <SelectTrigger className="h-10 border-2"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                      <SelectContent>{clients?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-1.5">
-                      <Tag className="h-3 w-3" /> Número de Serie
-                    </Label>
-                    <Input name="number" defaultValue={editingQuotation?.quotationNumber || suggestedQuotationNumber} className="h-11 uppercase font-mono font-bold border-2" />
+                  <div className="grid gap-1.5">
+                    <Label className="text-[10px] font-black uppercase text-slate-500">N° Proforma</Label>
+                    <Input name="number" defaultValue={suggestedQuotationNumber} className="h-10 uppercase font-mono font-bold" />
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-1.5">
-                      <CalendarDays className="h-3 w-3" /> Fecha de Emisión
-                    </Label>
-                    <Input type="date" name="date" defaultValue={editingQuotation?.date || new Date().toISOString().split('T')[0]} className="h-11 border-2 font-bold" />
+                  <div className="grid gap-1.5">
+                    <Label className="text-[10px] font-black uppercase text-slate-500">Fecha</Label>
+                    <Input type="date" name="date" defaultValue={format(new Date(), "yyyy-MM-dd")} className="h-10 font-bold" />
                   </div>
                 </div>
 
-                {/* SECCIÓN 2: CONCEPTOS Y CATÁLOGO */}
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between border-b-2 border-slate-100 pb-2">
-                    <div className="flex items-center gap-2">
-                      <Calculator className="h-4 w-4 text-[#d9534f]" />
-                      <h3 className="text-[11px] font-black uppercase text-[#d9534f] tracking-widest">Conceptos del Presupuesto</h3>
-                    </div>
-                    <Button type="button" variant="outline" size="sm" onClick={handleAddItem} className="h-8 text-[10px] font-bold uppercase border-2 hover:bg-slate-50">
-                      <Plus className="h-3 w-3 mr-2" /> Añadir Concepto
+                  <div className="flex items-center justify-between border-b pb-2">
+                    <h3 className="text-[10px] font-black uppercase text-[#d9534f]">Conceptos</h3>
+                    <Button type="button" variant="outline" size="sm" onClick={handleAddItem} className="h-8 text-[9px] font-black uppercase">
+                      <Plus className="h-3 w-3 mr-1" /> Añadir Ítem
                     </Button>
                   </div>
-                  
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {items.map((item, idx) => (
-                      <div key={idx} className="grid grid-cols-12 gap-3 items-end p-5 rounded-2xl bg-white border-2 border-slate-100 shadow-sm relative group">
-                        <div className="col-span-12 md:col-span-4 grid gap-1.5">
-                          <Label className="text-[9px] font-black uppercase text-slate-500 flex items-center gap-1">
-                            <PackageSearch className="h-3 w-3 text-[#d9534f]" /> Cargar del Catálogo Maestro
-                          </Label>
-                          <Select 
-                            value={item.catalogItemId || ""} 
-                            onValueChange={(val) => handleSelectFromCatalog(idx, val)}
-                          >
-                            <SelectTrigger className="h-10 text-[10px] font-bold bg-slate-50 border-none">
-                              <SelectValue placeholder="Seleccionar ítem..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {catalog?.map(p => (
-                                <SelectItem key={p.id} value={p.id} className="text-[11px] font-medium">
-                                  [{p.category}] {p.description} • S/ {p.sellPrice}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
+                      <div key={idx} className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-3 border-2 rounded-xl bg-slate-50/50">
+                        <div className="sm:col-span-4 grid gap-1">
+                          <Label className="text-[8px] font-black uppercase opacity-50">Catálogo</Label>
+                          <Select value={item.catalogItemId || ""} onValueChange={(val) => handleSelectFromCatalog(idx, val)}>
+                            <SelectTrigger className="h-8 text-[10px] bg-white border-none"><SelectValue placeholder="Catálogo..." /></SelectTrigger>
+                            <SelectContent>{catalog?.map(p => <SelectItem key={p.id} value={p.id} className="text-[10px] font-bold">[{p.category}] {p.description}</SelectItem>)}</SelectContent>
                           </Select>
                         </div>
-                        <div className="col-span-12 md:col-span-4 grid gap-1.5">
-                          <Label className="text-[9px] font-black uppercase text-slate-500">Descripción en Proforma</Label>
-                          <Input 
-                            value={item.description} 
-                            onChange={(e) => handleItemChange(idx, "description", e.target.value)}
-                            className="h-10 text-xs font-bold border-2"
-                            required
-                            placeholder="Ej. Recarga de Extintor PQS 6kg ABC"
-                          />
+                        <div className="sm:col-span-4 grid gap-1">
+                          <Label className="text-[8px] font-black uppercase opacity-50">Descripción Proforma</Label>
+                          <Input value={item.description} onChange={(e) => handleItemChange(idx, "description", e.target.value)} className="h-8 text-[10px] font-bold" required />
                         </div>
-                        <div className="col-span-4 md:col-span-1 grid gap-1.5">
-                          <Label className="text-[9px] font-black uppercase text-slate-500">Cant.</Label>
-                          <Input 
-                            type="number"
-                            min="1"
-                            value={item.quantity} 
-                            onChange={(e) => handleItemChange(idx, "quantity", Number(e.target.value))}
-                            className="h-10 text-xs text-center font-black border-2"
-                            required
-                          />
+                        <div className="sm:col-span-1 grid gap-1">
+                          <Label className="text-[8px] font-black uppercase opacity-50">Cant.</Label>
+                          <Input type="number" min="1" value={item.quantity} onChange={(e) => handleItemChange(idx, "quantity", Number(e.target.value))} className="h-8 text-[10px] text-center font-black" required />
                         </div>
-                        <div className="col-span-6 md:col-span-2 grid gap-1.5">
-                          <Label className="text-[9px] font-black uppercase text-slate-500">P. Unit. (S/)</Label>
-                          <Input 
-                            type="number"
-                            step="0.01"
-                            value={item.unitPrice} 
-                            onChange={(e) => handleItemChange(idx, "unitPrice", Number(e.target.value))}
-                            className="h-10 text-xs text-right font-black border-2 text-[#d9534f]"
-                            required
-                          />
+                        <div className="sm:col-span-2 grid gap-1">
+                          <Label className="text-[8px] font-black uppercase opacity-50">P. Unit.</Label>
+                          <Input type="number" step="0.01" value={item.unitPrice} onChange={(e) => handleItemChange(idx, "unitPrice", Number(e.target.value))} className="h-8 text-[10px] text-right font-black" required />
                         </div>
-                        <div className="col-span-2 md:col-span-1 flex justify-center">
-                          <Button type="button" variant="ghost" size="icon" onClick={() => setItems(items.filter((_, i) => i !== idx))} className="h-10 w-10 text-destructive hover:bg-destructive/10">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                        <div className="sm:col-span-1 flex items-end justify-center">
+                          <Button type="button" variant="ghost" size="icon" onClick={() => setItems(items.filter((_, i) => i !== idx))} className="h-8 w-8 text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
                         </div>
                       </div>
                     ))}
-                    {items.length === 0 && (
-                      <div className="text-center py-12 border-2 border-dashed rounded-2xl bg-slate-50">
-                        <PackageSearch className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-                        <p className="text-[10px] font-black uppercase text-slate-400">Presione 'Añadir Concepto' para comenzar</p>
-                      </div>
-                    )}
                   </div>
                 </div>
 
-                {/* SECCIÓN 3: CONDICIONES Y RESUMEN */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-1.5">
-                      <Gavel className="h-3 w-3" /> Condiciones Comerciales
-                    </Label>
-                    <Textarea 
-                      name="conditions" 
-                      defaultValue={editingQuotation?.conditions || "• Validez de la oferta: 15 días.\n• Forma de pago: Contado / Transferencia.\n• Tiempo de ejecución: A coordinar.\n• Garantía de servicio: 12 meses."}
-                      className="min-h-[140px] text-xs font-medium border-2 leading-relaxed"
-                      placeholder="Ingrese los términos de la oferta..."
-                    />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                  <div className="grid gap-2">
+                    <Label className="text-[10px] font-black uppercase text-slate-500">Condiciones Comerciales</Label>
+                    <Textarea name="conditions" className="min-h-[100px] text-[10px] font-medium leading-relaxed" defaultValue="• Validez: 15 días.\n• Forma de pago: Contado.\n• Garantía: 12 meses." />
                   </div>
-                  <div className="bg-[#1c1c1c] text-white p-8 rounded-[2rem] flex flex-col justify-between shadow-2xl border-b-[6px] border-[#d9534f] animate-in zoom-in-95 duration-300 min-h-[200px]">
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center text-[10px] font-bold opacity-60 uppercase tracking-widest">
-                        <span>Estado del Documento</span>
-                        <Select name="status" defaultValue={editingQuotation?.status || "Borrador"}>
-                          <SelectTrigger className="h-7 w-32 bg-white/10 border-none text-[9px] font-black">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Borrador">Borrador</SelectItem>
-                            <SelectItem value="Enviado">Enviado</SelectItem>
-                            <SelectItem value="Aceptado">Aceptado</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="h-px bg-white/10"></div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-[11px] font-bold opacity-80 uppercase">
-                          <span>Subtotal</span>
-                          <span>S/. {subtotal.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between text-[11px] font-bold opacity-80 uppercase">
-                          <span>I.G.V. (18%)</span>
-                          <span>S/. {tax.toFixed(2)}</span>
-                        </div>
-                      </div>
+                  <div className="bg-[#1c1c1c] text-white p-6 rounded-2xl flex flex-col justify-center gap-4">
+                    <div className="flex justify-between items-center text-[10px] font-bold opacity-60 uppercase">
+                      <span>Estado</span>
+                      <Select name="status" defaultValue="Borrador">
+                        <SelectTrigger className="h-7 w-28 bg-white/10 border-none text-[9px] font-black"><SelectValue /></SelectTrigger>
+                        <SelectContent><SelectItem value="Borrador">Borrador</SelectItem><SelectItem value="Enviado">Enviado</SelectItem><SelectItem value="Aceptado">Aceptado</SelectItem></SelectContent>
+                      </Select>
                     </div>
-                    <div className="pt-8">
-                      <p className="text-[10px] font-black uppercase text-accent mb-1 tracking-widest">Inversión Total Estimada</p>
-                      <p className="text-4xl font-black text-white tracking-tighter leading-none">
-                        S/. {total.toFixed(2)}
-                      </p>
+                    <div className="space-y-1 pt-2 border-t border-white/10">
+                      <div className="flex justify-between text-[10px] opacity-80"><span>SUBTOTAL</span><span>S/ {subtotal.toFixed(2)}</span></div>
+                      <div className="flex justify-between text-[10px] opacity-80"><span>I.G.V (18%)</span><span>S/ {tax.toFixed(2)}</span></div>
+                      <div className="flex justify-between text-xl font-black text-accent pt-2"><span>TOTAL</span><span>S/ {total.toFixed(2)}</span></div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <DialogFooter className="p-6 border-t bg-slate-50 shrink-0">
-                <div className="flex gap-4 w-full">
-                  <Button type="button" variant="ghost" onClick={() => setIsAdding(false)} className="flex-1 h-12 uppercase font-black text-[10px] tracking-widest">
-                    Cancelar
-                  </Button>
-                  <Button type="submit" className="flex-[2] h-12 uppercase font-black text-xs tracking-widest bg-[#d9534f] hover:bg-[#c9302c] text-white shadow-xl">
-                    {editingQuotation ? "Actualizar Proforma" : "Generar Documento Maestro"}
-                  </Button>
-                </div>
+              <DialogFooter className="p-4 sm:p-6 border-t bg-slate-50">
+                <Button type="submit" className="w-full h-12 uppercase font-black text-xs bg-[#d9534f] text-white shadow-xl">Generar Proforma Maestra</Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -611,82 +366,42 @@ export default function QuotationsPage() {
       </div>
 
       <Card className="shadow-sm border-none overflow-hidden">
-        <CardHeader className="pb-3 border-b bg-white">
-          <div className="relative flex-1 max-w-sm">
+        <CardHeader className="pb-3 border-b bg-white p-4">
+          <div className="relative w-full max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input 
-              placeholder="Buscar por N° o Cliente..." 
-              className="pl-9 h-9 text-xs font-bold uppercase" 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+            <Input placeholder="Buscar por N° o Cliente..." className="pl-9 h-10 text-[10px] sm:text-xs font-bold uppercase" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
         </CardHeader>
-        <CardContent className="p-0">
-          {isLoading ? (
-            <div className="flex items-center justify-center p-24">
-              <Loader2 className="h-10 w-10 animate-spin text-primary" />
-            </div>
-          ) : (
-            <Table className="dense-table">
-              <TableHeader className="bg-[#1c1c1c] hover:bg-[#1c1c1c]">
-                <TableRow className="border-none">
-                  <TableHead className="text-white font-black uppercase text-[10px]">Identificador</TableHead>
-                  <TableHead className="text-white font-black uppercase text-[10px]">Cliente</TableHead>
-                  <TableHead className="text-white font-black uppercase text-[10px] text-right pr-6">Total Neto (S/.)</TableHead>
-                  <TableHead className="text-white font-black uppercase text-[10px]">Estado</TableHead>
-                  <TableHead className="text-white text-right pr-6 font-black uppercase text-[10px]">Acciones</TableHead>
+        <CardContent className="p-0 overflow-x-auto custom-scrollbar">
+          {isLoading ? <div className="p-20 text-center"><Loader2 className="animate-spin h-8 w-8 mx-auto text-primary" /></div> : (
+            <Table className="dense-table min-w-[700px] lg:min-w-full">
+              <TableHeader className="bg-[#1c1c1c]">
+                <TableRow>
+                  <TableHead className="text-white">Identificador</TableHead>
+                  <TableHead className="text-white">Cliente</TableHead>
+                  <TableHead className="text-white text-right">Total (S/.)</TableHead>
+                  <TableHead className="text-white">Estado</TableHead>
+                  <TableHead className="text-white text-right pr-6">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {quotations?.filter(q => 
-                  q.quotationNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  clients?.find(c => c.id === q.clientId)?.name?.toLowerCase().includes(searchTerm.toLowerCase())
-                ).map((q) => {
-                  const client = clients?.find(c => c.id === q.clientId)
-                  return (
-                    <TableRow key={q.id} className="hover:bg-muted/30 border-slate-100 transition-colors">
-                      <TableCell className="font-black text-[#d9534f] uppercase tracking-tight">{q.quotationNumber}</TableCell>
-                      <TableCell className="font-bold uppercase text-[11px] text-[#1c1c1c]">{client?.name || "---"}</TableCell>
-                      <TableCell className="text-right pr-6 font-black text-[#1c1c1c]">S/. {(Number(q.total || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={cn(
-                          "text-[9px] font-black uppercase px-2 py-0.5",
-                          q.status === "Aceptado" ? "bg-status-success/10 text-status-success" : 
-                          q.status === "Enviado" ? "bg-blue-50 text-blue-700" : 
-                          q.status === "Convertido" ? "bg-accent/10 text-accent border-accent/20" : "bg-slate-50 text-slate-600"
-                        )}>
-                          {q.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right pr-6">
-                        <div className="flex items-center justify-end gap-2">
-                          {q.status !== "Convertido" && (
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-9 w-9 text-status-success" 
-                              title="Convertir a OS"
-                              onClick={() => handleConvertToOrder(q)}
-                              disabled={isConverting === q.id}
-                            >
-                              {isConverting === q.id ? <Loader2 className="animate-spin h-4 w-4" /> : <Repeat className="h-4 w-4" />}
-                            </Button>
-                          )}
-                          <Button variant="ghost" size="icon" className="h-9 w-9 text-[#d9534f]" onClick={() => setViewingQuotation(q)}>
-                            <FileText className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-9 w-9 text-[#1c1c1c]" onClick={() => openEdit(q)}>
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive" onClick={() => handleDelete(q.id)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
+                {filteredQuotations?.map((q) => (
+                  <TableRow key={q.id} className="hover:bg-muted/30">
+                    <TableCell className="font-black text-[#d9534f] uppercase">{q.quotationNumber}</TableCell>
+                    <TableCell className="font-bold uppercase text-[10px] sm:text-[11px] truncate max-w-[200px]">{clients?.find(c => c.id === q.clientId)?.name || "---"}</TableCell>
+                    <TableCell className="text-right font-black">S/ {(Number(q.total || 0)).toLocaleString()}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-[8px] sm:text-[9px] font-black uppercase bg-slate-50">{q.status}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right pr-6">
+                      <div className="flex justify-end gap-1 sm:gap-2">
+                        {q.status !== "Convertido" && <Button variant="ghost" size="icon" className="h-8 w-8 text-status-success" onClick={() => handleConvertToOrder(q)} disabled={isConverting === q.id}><Repeat className="h-4 w-4" /></Button>}
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-[#d9534f]" onClick={() => setViewingQuotation(q)}><FileText className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteDocumentNonBlocking(doc(db, "quotations", q.id))}><Trash2 className="h-4 w-4" /></Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           )}

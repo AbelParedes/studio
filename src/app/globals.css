@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -83,17 +82,19 @@
   h1, h2, h3, h4, h5, h6 {
     @apply font-headline font-bold uppercase tracking-tight;
   }
+  
+  /* TABLE OPTIMIZATION */
   .dense-table th {
-    @apply bg-primary text-primary-foreground text-[12px] uppercase py-2;
+    @apply bg-primary text-primary-foreground text-[10px] sm:text-[12px] uppercase py-2 px-2 sm:px-4;
   }
   .dense-table td {
-    @apply text-[12px] py-1;
+    @apply text-[10px] sm:text-[12px] py-2 px-2 sm:px-4;
   }
   
   /* CUSTOM SCROLLBAR PRO */
   .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
   }
   .custom-scrollbar::-webkit-scrollbar-track {
     background: transparent;
@@ -158,7 +159,6 @@
     box-shadow: none !important;
   }
 
-  /* Asegurar que el contenedor principal de la proforma ocupe toda la hoja */
   .proforma-container {
     width: 100% !important;
     height: 100% !important;

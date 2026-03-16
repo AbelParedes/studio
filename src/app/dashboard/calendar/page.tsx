@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState } from "react"
@@ -66,7 +65,6 @@ export default function CalendarPage() {
 
   const selectedDateStr = date ? format(date, "yyyy-MM-dd") : ""
   
-  // FIX: Se añadió validación de existencia para 'time' antes de llamar a localeCompare para evitar errores en tiempo de ejecución
   const dailyAppointments = [...(allAppointments?.filter(apt => apt.date === selectedDateStr) || [])].sort((a, b) => {
     const timeA = a.time || "00:00"
     const timeB = b.time || "00:00"
@@ -110,6 +108,7 @@ export default function CalendarPage() {
   }
 
   const handleDelete = (id: string) => {
+    if(!confirm("¿Anular esta programación?")) return
     deleteDocumentNonBlocking(doc(db, "appointments", id))
     toast({ variant: "destructive", title: "Cita cancelada" })
   }
@@ -127,32 +126,31 @@ export default function CalendarPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase text-primary">Programación y Ejecución</h2>
-          <p className="text-muted-foreground text-sm font-bold uppercase text-[10px]">Monitoree y ejecute los servicios técnicos de campo.</p>
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight mb-1 uppercase text-primary">Agenda Técnica</h2>
+          <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest">Programación y ejecución de servicios.</p>
         </div>
         
         <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) setEditingApt(null); }}>
           <DialogTrigger asChild>
-            <Button className="bg-primary text-white h-10 font-bold uppercase text-xs shadow-lg">
+            <Button className="bg-primary text-white h-10 font-bold uppercase text-xs shadow-lg w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" /> Nueva Cita
             </Button>
           </DialogTrigger>
-          {/* MEJORA: Se añadió max-h y overflow para garantizar que el formulario sea desplazable en pantallas pequeñas */}
           <DialogContent className="max-w-md max-h-[90vh] overflow-hidden flex flex-col p-0">
             <form onSubmit={handleSaveAppointment} className="flex flex-col h-full">
               <DialogHeader className="p-6 border-b bg-slate-50">
                 <DialogTitle className="uppercase font-black text-primary">
-                  {editingApt ? "Editar Cita" : "Programar Nuevo Servicio"}
+                  {editingApt ? "Editar Cita" : "Programar Visita"}
                 </DialogTitle>
-                <DialogDescription className="text-[10px] font-bold uppercase">Asigne visitas técnicas para su organización.</DialogDescription>
+                <DialogDescription className="text-[10px] font-bold uppercase">Asigne recursos técnicos de campo.</DialogDescription>
               </DialogHeader>
               
               <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
                 <div className="grid gap-2">
-                  <Label htmlFor="clientId" className="text-[10px] font-bold uppercase text-slate-500">Cliente</Label>
+                  <Label className="text-[10px] font-bold uppercase text-slate-500">Cliente Beneficiario</Label>
                   <Select name="clientId" defaultValue={editingApt?.clientId} required>
                     <SelectTrigger className="h-11 border-2">
-                      <SelectValue placeholder="Seleccione un cliente" />
+                      <SelectValue placeholder="Seleccione cliente" />
                     </SelectTrigger>
                     <SelectContent>
                       {clients?.map(c => (
@@ -162,12 +160,12 @@ export default function CalendarPage() {
                   </Select>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="serviceType" className="text-[10px] font-bold uppercase text-slate-500">Tipo</Label>
+                    <Label className="text-[10px] font-bold uppercase text-slate-500">Tipo Servicio</Label>
                     <Select name="serviceType" defaultValue={editingApt?.serviceType || "Fumigación"} required>
                       <SelectTrigger className="h-11 border-2">
-                        <SelectValue placeholder="Tipo" />
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Extintores">Recarga Extintores</SelectItem>
@@ -177,10 +175,10 @@ export default function CalendarPage() {
                     </Select>
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="status" className="text-[10px] font-bold uppercase text-slate-500">Estado</Label>
+                    <Label className="text-[10px] font-bold uppercase text-slate-500">Estado</Label>
                     <Select name="status" defaultValue={editingApt?.status || "Pendiente"} required>
                       <SelectTrigger className="h-11 border-2">
-                        <SelectValue placeholder="Estado" />
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Pendiente">Pendiente</SelectItem>
@@ -192,7 +190,7 @@ export default function CalendarPage() {
                 </div>
 
                 <div className="grid gap-2">
-                  <Label htmlFor="technicianId" className="text-[10px] font-bold uppercase text-slate-500">Técnico Responsable</Label>
+                  <Label className="text-[10px] font-bold uppercase text-slate-500">Técnico Responsable</Label>
                   <Select name="technicianId" defaultValue={editingApt?.technicianId} required>
                     <SelectTrigger className="h-11 border-2">
                       <SelectValue placeholder="Seleccione técnico" />
@@ -207,24 +205,24 @@ export default function CalendarPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="date" className="text-[10px] font-bold uppercase text-slate-500">Fecha</Label>
-                    <Input id="date" name="date" type="date" defaultValue={editingApt?.date || selectedDateStr} className="h-11 border-2 font-bold" required />
+                    <Label className="text-[10px] font-bold uppercase text-slate-500">Fecha</Label>
+                    <Input name="date" type="date" defaultValue={editingApt?.date || selectedDateStr} className="h-11 border-2 font-bold" required />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="time" className="text-[10px] font-bold uppercase text-slate-500">Hora</Label>
-                    <Input id="time" name="time" type="time" defaultValue={editingApt?.time || "09:00"} className="h-11 border-2 font-bold" required />
+                    <Label className="text-[10px] font-bold uppercase text-slate-500">Hora</Label>
+                    <Input name="time" type="time" defaultValue={editingApt?.time || "09:00"} className="h-11 border-2 font-bold" required />
                   </div>
                 </div>
 
                 <div className="grid gap-2">
-                  <Label htmlFor="notes" className="text-[10px] font-bold uppercase text-slate-500">Notas Adicionales</Label>
-                  <Input id="notes" name="notes" defaultValue={editingApt?.notes} placeholder="Indicaciones para el técnico..." className="h-11 border-2 font-bold" />
+                  <Label className="text-[10px] font-bold uppercase text-slate-500">Notas de Trabajo</Label>
+                  <Input name="notes" defaultValue={editingApt?.notes} placeholder="Indicaciones..." className="h-11 border-2 font-bold" />
                 </div>
               </div>
 
               <DialogFooter className="p-6 border-t bg-slate-50">
                 <Button type="submit" className="w-full uppercase font-black text-xs h-12 shadow-xl bg-primary text-white">
-                  {editingApt ? "Actualizar Datos" : "Confirmar y Agendar"}
+                  {editingApt ? "Guardar Cambios" : "Confirmar Programación"}
                 </Button>
               </DialogFooter>
             </form>
@@ -234,11 +232,11 @@ export default function CalendarPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <Card className="lg:col-span-5 shadow-sm border-none bg-white">
-          <CardHeader>
+          <CardHeader className="p-4 sm:p-6">
             <CardTitle className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Calendario de Operaciones</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col items-center">
-            <div className="w-full border rounded-lg overflow-hidden bg-white shadow-inner p-1">
+          <CardContent className="flex flex-col items-center p-2 sm:p-6">
+            <div className="w-full border rounded-lg overflow-hidden bg-white shadow-inner p-1 max-w-full">
               <Calendar
                 mode="single"
                 selected={date}
@@ -251,64 +249,63 @@ export default function CalendarPage() {
         </Card>
 
         <Card className="lg:col-span-7 shadow-sm border-none bg-white">
-          <CardHeader className="border-b bg-slate-50/50">
-            <CardTitle className="text-xs font-black uppercase flex items-center tracking-widest text-primary">
+          <CardHeader className="border-b bg-slate-50/50 p-4 sm:p-6">
+            <CardTitle className="text-[10px] sm:text-xs font-black uppercase flex items-center tracking-widest text-primary">
               <CalendarDays className="mr-2 h-4 w-4 text-accent" />
-              Ruta del día: {date ? format(date, "d 'de' MMMM, yyyy", { locale: es }).toUpperCase() : "..."}
+              Ruta: {date ? format(date, "d 'de' MMMM, yyyy", { locale: es }).toUpperCase() : "---"}
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-6 space-y-4">
+          <CardContent className="p-4 sm:p-6 space-y-4">
             {loadingApts ? (
               <div className="flex items-center justify-center py-20">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : dailyAppointments.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-muted-foreground text-center opacity-40">
-                <CalendarDays className="h-12 w-12 mb-3" />
-                <p className="text-[10px] font-black uppercase tracking-widest">No hay servicios programados para hoy</p>
+                <CalendarDays className="h-10 w-10 mb-3" />
+                <p className="text-[9px] font-black uppercase tracking-widest">No hay servicios para hoy</p>
               </div>
             ) : (
               dailyAppointments.map((apt) => (
                 <div key={apt.id} className={cn(
-                  "relative pl-4 border-l-4 bg-background/50 p-4 rounded-r-lg border border-border transition-all hover:bg-white hover:shadow-md",
+                  "relative pl-4 border-l-4 bg-slate-50/50 p-4 rounded-r-lg border transition-all hover:bg-white hover:shadow-md",
                   apt.status === "Completado" ? "border-l-status-success" : "border-l-primary"
                 )}>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold uppercase text-primary tracking-tight">{apt.clientName}</span>
-                        <Badge variant="outline" className="text-[9px] font-black uppercase bg-slate-50">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs sm:text-sm font-bold uppercase text-primary truncate max-w-[200px]">{apt.clientName}</span>
+                        <Badge variant="outline" className="text-[8px] font-black uppercase bg-white">
                           {apt.serviceType}
                         </Badge>
                       </div>
-                      <div className="flex flex-wrap items-center gap-x-4 text-[10px] text-muted-foreground font-bold uppercase">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[9px] sm:text-[10px] text-muted-foreground font-bold uppercase">
                         <span className="flex items-center"><Clock className="h-3 w-3 mr-1 text-accent" /> {apt.time}</span>
                         <span className="flex items-center"><User className="h-3 w-3 mr-1" /> {apt.technicianName}</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {apt.status !== "Completado" && (
+                    <div className="flex items-center gap-2 mt-2 sm:mt-0">
+                      {apt.status !== "Completado" ? (
                         <Button 
                           size="sm" 
                           variant="outline" 
-                          className="h-8 text-[10px] font-black uppercase bg-accent text-white hover:bg-accent/90 border-none shadow-md px-4"
+                          className="h-8 text-[9px] font-black uppercase bg-accent text-white hover:bg-accent/90 border-none shadow-md px-4 flex-1 sm:flex-none"
                           onClick={() => handleStartService(apt.id)}
                         >
-                          <PlayCircle className="mr-1.5 h-3.5 w-3.5" /> Atender
+                          Atender
                         </Button>
-                      )}
-                      {apt.status === "Completado" && (
+                      ) : (
                         <Button 
                           size="sm" 
                           variant="ghost" 
-                          className="h-8 text-[10px] font-black uppercase text-status-success hover:bg-status-success/5"
+                          className="h-8 text-[9px] font-black uppercase text-status-success hover:bg-status-success/5 flex-1 sm:flex-none"
                           onClick={() => router.push(`/dashboard/certificates?id=${apt.id}`)}
                         >
-                          <FileCheck className="mr-1.5 h-3.5 w-3.5" /> Certificado
+                          Certificado
                         </Button>
                       )}
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => openEdit(apt)}><Edit2 className="h-3.5 w-3.5" /></Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/5" onClick={() => handleDelete(apt.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(apt.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
                     </div>
                   </div>
                 </div>
