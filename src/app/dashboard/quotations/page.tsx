@@ -26,10 +26,11 @@ import {
   Calculator,
   Briefcase,
   CalendarDays,
-  Tag
+  Tag,
+  Repeat
 } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, useUser, useDoc } from "@/firebase"
-import { collection, doc, query, where } from "firebase/firestore"
+import { collection, doc, query, where, updateDoc } from "firebase/firestore"
 import {
   Dialog,
   DialogContent,
@@ -48,15 +49,18 @@ import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { format, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
+import { useRouter } from "next/navigation"
 
 export default function QuotationsPage() {
   const db = useFirestore()
   const { user } = useUser()
+  const router = useRouter()
   const [searchTerm, setSearchTerm] = useState("")
   const [isAdding, setIsAdding] = useState(false)
   const [viewingQuotation, setViewingQuotation] = useState<any | null>(null)
   const [editingQuotation, setEditingQuotation] = useState<any | null>(null)
   const [items, setItems] = useState<{description: string, quantity: number, unitPrice: number, catalogItemId?: string}[]>([])
+  const [isConverting, setIsConverting] = useState<string | null>(null)
 
   // 1. Perfil y Empresa
   const userProfileQuery = useMemoFirebase(() => 
@@ -177,6 +181,39 @@ export default function QuotationsPage() {
     setItems([])
   }
 
+  const handleConvertToOrder = async (quotation: any) => {
+    if (!companyId) return
+    setIsConverting(quotation.id)
+    
+    try {
+      const orderId = crypto.randomUUID()
+      const orderNumber = `OS-${quotation.quotationNumber.split('-')[1]}-${currentYear}`
+      
+      const orderData = {
+        id: orderId,
+        companyId,
+        clientId: quotation.clientId,
+        quotationId: quotation.id,
+        orderNumber,
+        date: new Date().toISOString().split('T')[0],
+        items: quotation.items,
+        total: quotation.total,
+        status: "Pendiente",
+        createdAt: new Date().toISOString()
+      }
+
+      await addDocumentNonBlocking(collection(db, "service_orders"), orderData)
+      await updateDoc(doc(db, "quotations", quotation.id), { status: "Convertido" })
+      
+      toast({ title: "¡Orden Generada!", description: `Se ha creado la OS: ${orderNumber}` })
+      router.push("/dashboard/service-orders")
+    } catch (error) {
+      toast({ variant: "destructive", title: "Error al convertir" })
+    } finally {
+      setIsConverting(null)
+    }
+  }
+
   const handleDelete = (id: string) => {
     deleteDocumentNonBlocking(doc(db, "quotations", id))
     toast({ variant: "destructive", title: "Cotización Eliminada" })
@@ -211,6 +248,18 @@ export default function QuotationsPage() {
             <ArrowLeft className="mr-2 h-3 w-3" /> Volver al Listado
           </Button>
           <div className="flex gap-2">
+            {viewingQuotation.status !== "Convertido" && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="font-bold uppercase text-[10px] border-status-success text-status-success hover:bg-status-success/5"
+                onClick={() => handleConvertToOrder(viewingQuotation)}
+                disabled={isConverting === viewingQuotation.id}
+              >
+                {isConverting === viewingQuotation.id ? <Loader2 className="animate-spin h-3 w-3 mr-2" /> : <Repeat className="mr-2 h-3 w-3" />}
+                Convertir a OS
+              </Button>
+            )}
             <Button variant="outline" size="sm" onClick={handlePrint} className="font-bold uppercase text-[10px]">
               <Printer className="mr-2 h-3 w-3" /> Imprimir
             </Button>
@@ -604,13 +653,26 @@ export default function QuotationsPage() {
                         <Badge variant="outline" className={cn(
                           "text-[9px] font-black uppercase px-2 py-0.5",
                           q.status === "Aceptado" ? "bg-status-success/10 text-status-success" : 
-                          q.status === "Enviado" ? "bg-blue-50 text-blue-700" : "bg-slate-50 text-slate-600"
+                          q.status === "Enviado" ? "bg-blue-50 text-blue-700" : 
+                          q.status === "Convertido" ? "bg-accent/10 text-accent border-accent/20" : "bg-slate-50 text-slate-600"
                         )}>
                           {q.status}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right pr-6">
                         <div className="flex items-center justify-end gap-2">
+                          {q.status !== "Convertido" && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-9 w-9 text-status-success" 
+                              title="Convertir a OS"
+                              onClick={() => handleConvertToOrder(q)}
+                              disabled={isConverting === q.id}
+                            >
+                              {isConverting === q.id ? <Loader2 className="animate-spin h-4 w-4" /> : <Repeat className="h-4 w-4" />}
+                            </Button>
+                          )}
                           <Button variant="ghost" size="icon" className="h-9 w-9 text-[#d9534f]" onClick={() => setViewingQuotation(q)}>
                             <FileText className="h-4 w-4" />
                           </Button>

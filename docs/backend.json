@@ -83,8 +83,26 @@
         "subtotal": { "type": "number" },
         "tax": { "type": "number" },
         "total": { "type": "number" },
-        "conditions": { "type": "string", "description": "Términos y condiciones de la cotización." },
-        "status": { "type": "string", "enum": ["Borrador", "Enviado", "Aceptado", "Rechazado"] }
+        "conditions": { "type": "string" },
+        "status": { "type": "string", "enum": ["Borrador", "Enviado", "Aceptado", "Rechazado", "Convertido"] }
+      }
+    },
+    "ServiceOrder": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ServiceOrder",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "clientId": { "type": "string" },
+        "quotationId": { "type": "string" },
+        "orderNumber": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "items": { "type": "array" },
+        "total": { "type": "number" },
+        "status": { "type": "string", "enum": ["Pendiente", "Programado", "En Ejecución", "Finalizado", "Cancelado"] },
+        "technicianId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
       }
     },
     "CatalogItem": {
@@ -129,6 +147,10 @@
     "quotations": {
       "schema": { "$ref": "#/backend/entities/Quotation" },
       "description": "Cotizaciones generadas por empresa."
+    },
+    "service_orders": {
+      "schema": { "$ref": "#/backend/entities/ServiceOrder" },
+      "description": "Órdenes de servicio activas."
     },
     "all_extinguishers": {
       "schema": { "$ref": "#/backend/entities/CatalogItem" },

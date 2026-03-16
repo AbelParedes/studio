@@ -20,7 +20,8 @@ import {
   FileText,
   Package,
   Zap,
-  FileCheck
+  FileCheck,
+  ClipboardList
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/firebase"
@@ -32,6 +33,7 @@ const navItems = [
   { name: "Empresas", href: "/dashboard/companies", icon: Building2, superAdminOnly: true },
   { name: "Clientes", href: "/dashboard/clients", icon: Users },
   { name: "Cotizaciones", href: "/dashboard/quotations", icon: FileText },
+  { name: "Órdenes de Servicio", href: "/dashboard/service-orders", icon: ClipboardList },
   { name: "Calendario", href: "/dashboard/calendar", icon: Calendar },
   { name: "Certificados", href: "/dashboard/certificates", icon: FileCheck },
   { name: "Productos y Servicios", href: "/dashboard/inventory", icon: Package },
