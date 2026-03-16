@@ -365,8 +365,8 @@ export default function ServiceOrdersPage() {
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
-              <form onSubmit={handleSaveOrder} className="flex flex-col h-full">
-                <DialogHeader className="p-6 border-b bg-slate-50">
+              <form onSubmit={handleSaveOrder} className="flex flex-col min-h-0 h-full">
+                <DialogHeader className="p-6 border-b bg-slate-50 shrink-0">
                   <div className="flex items-center gap-4">
                     <div className="h-12 w-12 bg-primary rounded-xl flex items-center justify-center text-white shadow-md">
                       <ClipboardList className="h-6 w-6" />
@@ -378,7 +378,7 @@ export default function ServiceOrdersPage() {
                   </div>
                 </DialogHeader>
 
-                <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar min-h-0">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-1.5">
@@ -474,7 +474,7 @@ export default function ServiceOrdersPage() {
                   </div>
                 </div>
 
-                <DialogFooter className="p-6 border-t bg-slate-50">
+                <DialogFooter className="p-6 border-t bg-slate-50 shrink-0">
                   <div className="flex gap-4 w-full">
                     <Button type="button" variant="ghost" onClick={() => setIsAdding(false)} className="flex-1 h-12 uppercase font-black text-[10px]">
                       Cancelar

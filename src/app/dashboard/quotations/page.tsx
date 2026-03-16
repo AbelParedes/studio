@@ -417,8 +417,8 @@ export default function QuotationsPage() {
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-5xl max-h-[95vh] flex flex-col p-0 overflow-hidden">
-            <form onSubmit={handleSaveQuotation} className="flex flex-col h-full">
-              <DialogHeader className="p-6 border-b bg-slate-50">
+            <form onSubmit={handleSaveQuotation} className="flex flex-col min-h-0 h-full">
+              <DialogHeader className="p-6 border-b bg-slate-50 shrink-0">
                 <div className="flex items-center gap-4">
                   <div className="h-12 w-12 bg-[#d9534f] rounded-xl flex items-center justify-center text-white shadow-md">
                     <FileText className="h-6 w-6" />
@@ -430,7 +430,7 @@ export default function QuotationsPage() {
                 </div>
               </DialogHeader>
 
-              <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+              <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar min-h-0">
                 {/* SECCIÓN 1: DATOS GENERALES */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="space-y-2">
@@ -558,7 +558,7 @@ export default function QuotationsPage() {
                       placeholder="Ingrese los términos de la oferta..."
                     />
                   </div>
-                  <div className="bg-[#1c1c1c] text-white p-8 rounded-[2rem] flex flex-col justify-between shadow-2xl border-b-[6px] border-[#d9534f] animate-in zoom-in-95 duration-300">
+                  <div className="bg-[#1c1c1c] text-white p-8 rounded-[2rem] flex flex-col justify-between shadow-2xl border-b-[6px] border-[#d9534f] animate-in zoom-in-95 duration-300 min-h-[200px]">
                     <div className="space-y-4">
                       <div className="flex justify-between items-center text-[10px] font-bold opacity-60 uppercase tracking-widest">
                         <span>Estado del Documento</span>
@@ -595,7 +595,7 @@ export default function QuotationsPage() {
                 </div>
               </div>
 
-              <DialogFooter className="p-6 border-t bg-slate-50">
+              <DialogFooter className="p-6 border-t bg-slate-50 shrink-0">
                 <div className="flex gap-4 w-full">
                   <Button type="button" variant="ghost" onClick={() => setIsAdding(false)} className="flex-1 h-12 uppercase font-black text-[10px] tracking-widest">
                     Cancelar
