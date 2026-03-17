@@ -20,7 +20,7 @@ import {
   Hash,
   HardDrive
 } from "lucide-react"
-import { useCollection, useFirestore, useMemoFirebase, useUser, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase"
+import { useCollection, useFirestore, useMemoFirebase, useUser, updateDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from "@/firebase"
 import { collection, query, where, doc } from "firebase/firestore"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
@@ -51,16 +51,18 @@ export default function CertificatesRegistryPage() {
   const [dialogClientId, setDialogClientId] = useState<string>("")
   const [selectedEquipmentIds, setSelectedEquipmentIds] = useState<string[]>([])
 
+  // 1. Obtención estable del companyId
   const userProfileQuery = useMemoFirebase(() => 
     user?.email ? query(collection(db, "company_users"), where("email", "==", user.email)) : null,
   [db, user?.email])
   const { data: profiles } = useCollection(userProfileQuery)
   const companyId = profiles?.[0]?.companyId || ""
 
-  const clientsRef = useMemoFirebase(() => 
+  // 2. Consultas estabilizadas
+  const clientsQuery = useMemoFirebase(() => 
     companyId ? query(collection(db, "clients"), where("companyId", "==", companyId)) : null,
   [db, companyId])
-  const { data: clients } = useCollection(clientsRef)
+  const { data: clients } = useCollection(clientsQuery)
 
   const clientEquipmentQuery = useMemoFirebase(() => 
     dialogClientId ? query(collection(db, "client_equipment"), where("clientId", "==", dialogClientId)) : null,
@@ -90,6 +92,7 @@ export default function CertificatesRegistryPage() {
     return `Cert_${currentYear}_${(maxNum + 1).toString().padStart(3, '0')}`
   }, [certificates, currentYear])
 
+  // Limpieza de estados al cerrar el diálogo
   useEffect(() => {
     if (!isAdding) {
       setEditingCert(null)
@@ -99,7 +102,7 @@ export default function CertificatesRegistryPage() {
   }, [isAdding])
 
   const filteredCerts = useMemo(() => {
-    return certificates?.filter(c => 
+    return (certificates || []).filter(c => 
       c.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.certificateNumber?.toLowerCase().includes(searchTerm.toLowerCase())
     ).sort((a, b) => (b.date || "").localeCompare(a.date || ""))
@@ -154,7 +157,7 @@ export default function CertificatesRegistryPage() {
         id: crypto.randomUUID(), 
         createdAt: new Date().toISOString() 
       })
-      toast({ title: "Certificado emitido con éxito" })
+      toast({ title: "Protocolo emitido con éxito" })
     }
 
     setIsAdding(false)
@@ -171,8 +174,8 @@ export default function CertificatesRegistryPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase text-primary">Protocolos de Operatividad (NTP)</h2>
-          <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest">Gestión de certificados según Norma Técnica Peruana.</p>
+          <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase text-primary">Protocolos de Operatividad NTP</h2>
+          <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest">Gestión de certificados de extintores (Norma Técnica Peruana).</p>
         </div>
         
         <Dialog open={isAdding} onOpenChange={setIsAdding}>
@@ -186,9 +189,9 @@ export default function CertificatesRegistryPage() {
               <DialogHeader className="p-6 border-b bg-slate-50 shrink-0">
                 <DialogTitle className="uppercase font-black text-primary flex items-center gap-2">
                   <ShieldCheck className="h-5 w-5" /> 
-                  {editingCert ? "Editar Protocolo NTP" : "Emisión Manual de Certificado"}
+                  {editingCert ? "Editar Protocolo Técnico" : "Emisión Manual de Certificado"}
                 </DialogTitle>
-                <DialogDescription className="text-[10px] font-bold uppercase">Validez técnica para equipos contra incendios.</DialogDescription>
+                <DialogDescription className="text-[10px] font-bold uppercase">Validez técnica para equipos contra incendios según NTP 350.043-1.</DialogDescription>
               </DialogHeader>
 
               <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar min-h-0">
@@ -226,6 +229,7 @@ export default function CertificatesRegistryPage() {
                         <SelectItem value="Recarga">Recarga de Agente</SelectItem>
                         <SelectItem value="Inspección">Inspección Trimestral</SelectItem>
                         <SelectItem value="Alquiler">Alquiler / Préstamo</SelectItem>
+                        <SelectItem value="Venta">Venta / Entrega</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -234,14 +238,14 @@ export default function CertificatesRegistryPage() {
                     <Input type="date" name="date" defaultValue={editingCert?.date || new Date().toISOString().split('T')[0]} className="h-11 border-2 font-bold" required />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-500">Vencimiento</Label>
+                    <Label className="text-[10px] font-black uppercase text-slate-500">Próximo Vencimiento</Label>
                     <Input type="date" name="nextDue" defaultValue={editingCert?.nextDue} className="h-11 border-2 font-bold border-accent/20" />
                   </div>
                 </div>
 
                 <div className="space-y-4">
                   <Label className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-1">
-                    <HardDrive className="h-3 w-3" /> Selección de Equipos (Hoja de Vida)
+                    <HardDrive className="h-3 w-3" /> Selección de Extintores (Hoja de Vida)
                   </Label>
                   <div className="p-4 bg-slate-50 rounded-2xl border-2 border-dashed min-h-[200px] space-y-2 max-h-[400px] overflow-y-auto custom-scrollbar">
                     {!dialogClientId ? (
@@ -265,19 +269,19 @@ export default function CertificatesRegistryPage() {
                         </div>
                       ))
                     ) : (
-                      <p className="text-[10px] text-center text-slate-400 uppercase font-bold py-10">Sin equipos registrados</p>
+                      <p className="text-[10px] text-center text-slate-400 uppercase font-bold py-10">Sin equipos registrados en este cliente</p>
                     )}
                   </div>
                 </div>
 
                 <div className="space-y-4">
-                  <Label className="text-[10px] font-black uppercase text-slate-400">Observaciones Técnicas</Label>
-                  <Textarea name="observations" defaultValue={editingCert?.observations} placeholder="Indique el estado de operatividad..." className="min-h-[120px] text-xs font-medium border-2 rounded-2xl" />
+                  <Label className="text-[10px] font-black uppercase text-slate-400">Observaciones de Operatividad</Label>
+                  <Textarea name="observations" defaultValue={editingCert?.observations} placeholder="Indique el estado de los componentes (manómetros, precintos, cilindro)..." className="min-h-[120px] text-xs font-medium border-2 rounded-2xl" />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-500">Técnico Responsable</Label>
+                    <Label className="text-[10px] font-black uppercase text-slate-500">Técnico Autorizado</Label>
                     <Input name="technicianName" defaultValue={editingCert?.technicianName || profiles?.[0]?.name} className="h-11 border-2 font-bold" />
                   </div>
                   <div className="space-y-2">
@@ -289,7 +293,7 @@ export default function CertificatesRegistryPage() {
 
               <DialogFooter className="p-6 border-t bg-slate-50 shrink-0">
                 <Button type="submit" className="w-full h-12 uppercase font-black text-xs bg-primary text-white shadow-xl">
-                  {editingCert ? "Actualizar Documento" : "Emitir Protocolo Oficial"}
+                  {editingCert ? "Actualizar Protocolo" : "Emitir Protocolo Oficial NTP"}
                 </Button>
               </DialogFooter>
             </form>
@@ -307,7 +311,7 @@ export default function CertificatesRegistryPage() {
           <CardContent><div className="text-2xl font-black text-status-warning">{certificates?.filter(c => { if (!c.nextDue) return false; const next = parseISO(c.nextDue); const thirtyDays = new Date(); thirtyDays.setDate(thirtyDays.getDate() + 30); return isAfter(next, new Date()) && !isAfter(next, thirtyDays); }).length || 0}</div></CardContent>
         </Card>
         <Card className="bg-white border-none shadow-sm border-l-4 border-l-primary">
-          <CardHeader className="pb-2"><CardTitle className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Documentos en Archivo</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Protocolos en Archivo</CardTitle></CardHeader>
           <CardContent><div className="text-2xl font-black text-primary">{certificates?.length || 0}</div></CardContent>
         </Card>
       </div>
@@ -327,7 +331,7 @@ export default function CertificatesRegistryPage() {
               <TableHeader className="bg-[#1c1c1c]">
                 <TableRow>
                   <TableHead className="text-white font-black uppercase text-[10px]">Folio / Protocolo</TableHead>
-                  <TableHead className="text-white font-black uppercase text-[10px]">Empresa Beneficiaria</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px]">Cliente Beneficiario</TableHead>
                   <TableHead className="text-white font-black uppercase text-[10px]">Servicio</TableHead>
                   <TableHead className="text-white font-black uppercase text-[10px]">Emisión</TableHead>
                   <TableHead className="text-white font-black uppercase text-[10px]">Vencimiento</TableHead>

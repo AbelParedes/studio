@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState } from "react"
@@ -32,7 +33,7 @@ export default function RemindersPage() {
 
   const handleGenerateReminders = async () => {
     if (!companyId || !clients || clients.length === 0) {
-      toast({ title: "Sin clientes", description: "No hay clientes registrados en su empresa para analizar." })
+      toast({ title: "Sin clientes", description: "No hay clientes registrados para analizar." })
       return
     }
 
@@ -41,12 +42,9 @@ export default function RemindersPage() {
 
     try {
       const allGeneratedReminders: AutomatedServiceReminderOutput['reminders'] = []
-      
-      // Escaneamos los primeros 10 clientes para el prototipo
       const scanLimit = clients.slice(0, 10)
 
       for (const client of scanLimit) {
-        // Consultar citas reales para este cliente en esta empresa
         const appointmentsQuery = query(
           collection(db, "appointments"),
           where("companyId", "==", companyId),
@@ -57,13 +55,9 @@ export default function RemindersPage() {
         const snapshot = await getDocs(appointmentsQuery)
         const history = snapshot.docs.map(doc => {
           const data = doc.data()
-          // Mapeo de tipos para el flujo de IA
-          const mappedType: "extinguisher_maintenance" | "fumigation_follow_up" = 
-            data.serviceType === "Extintores" ? "extinguisher_maintenance" : "fumigation_follow_up"
-
           return {
             date: data.date || "2024-01-01",
-            type: mappedType,
+            type: "extinguisher_maintenance" as const,
             description: data.notes || `Servicio de ${data.serviceType}`,
             nextRecommendedDate: data.nextDue || undefined,
             lastTechnicianNotes: data.notes || undefined
@@ -86,9 +80,9 @@ export default function RemindersPage() {
 
       setReminders(allGeneratedReminders)
       if (allGeneratedReminders.length === 0) {
-        toast({ title: "Escaneo completado", description: "No se detectaron necesidades urgentes en su base de datos." })
+        toast({ title: "Escaneo completado", description: "No se detectaron necesidades urgentes en extintores." })
       } else {
-        toast({ title: "Análisis completado", description: `Se identificaron ${allGeneratedReminders.length} oportunidades de servicio.` })
+        toast({ title: "Análisis completado", description: `Se identificaron ${allGeneratedReminders.length} oportunidades de mantenimiento.` })
       }
     } catch (error) {
       console.error("AI Reminders failed", error)
@@ -103,19 +97,19 @@ export default function RemindersPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight mb-1 flex items-center text-primary uppercase">
-            Recordatorios IA <Sparkles className="ml-2 h-5 w-5 text-accent animate-pulse" />
+            Recordatorios IA de Extintores <Sparkles className="ml-2 h-5 w-5 text-accent animate-pulse" />
           </h2>
-          <p className="text-muted-foreground text-sm">
-            Análisis inteligente de su historial exclusivo para predecir mantenimientos.
+          <p className="text-muted-foreground text-sm font-bold uppercase text-[10px] tracking-widest">
+            Análisis inteligente para predecir recargas y mantenimientos NTP.
           </p>
         </div>
         <Button 
           onClick={handleGenerateReminders} 
           disabled={isScanning || loadingClients || !companyId}
-          className="bg-accent hover:bg-accent/90 text-white font-bold uppercase text-[11px] h-9"
+          className="bg-accent hover:bg-accent/90 text-white font-bold uppercase text-[11px] h-9 shadow-lg"
         >
           {isScanning ? (
-            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Analizando Historiales...</>
+            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Analizando Hoja de Vida...</>
           ) : (
             <><RefreshCw className="mr-2 h-4 w-4" /> Escanear Base de Datos</>
           )}
@@ -139,7 +133,7 @@ export default function RemindersPage() {
                   <span className="text-[10px] text-muted-foreground font-bold uppercase">Vto Sugerido: {reminder.dueDate}</span>
                 </div>
                 <CardTitle className="text-sm font-bold text-primary truncate uppercase tracking-tight">
-                  {reminder.serviceType === "extinguisher_maintenance" ? "Mantenimiento Extintores" : "Seguimiento Fumigación"}
+                  Mantenimiento NTP
                 </CardTitle>
                 <p className="text-[11px] text-muted-foreground font-bold truncate">{reminder.clientName}</p>
               </CardHeader>
@@ -167,30 +161,11 @@ export default function RemindersPage() {
             </div>
             <h3 className="text-lg font-bold uppercase text-primary tracking-tight">Motor AI listo para escanear</h3>
             <p className="text-muted-foreground text-sm max-w-md mx-auto mt-2 font-medium">
-              Al presionar el botón de escaneo, la IA revisará las últimas visitas de sus clientes y generará oportunidades de venta automáticas.
+              Al presionar el botón, la IA revisará las fechas de mantenimiento de sus extintores y generará alertas de recarga automáticas.
             </p>
           </CardContent>
         </Card>
       )}
-
-      <Card className="bg-primary text-white shadow-xl border-none">
-        <CardContent className="p-6 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-              <Sparkles className="h-6 w-6 text-accent" />
-            </div>
-            <div>
-              <h3 className="font-bold text-lg uppercase tracking-tight">Proactividad Basada en Datos</h3>
-              <p className="text-sm opacity-80">
-                Aumente su tasa de retorno detectando necesidades antes de que el cliente las solicite.
-              </p>
-            </div>
-          </div>
-          <div className="text-[10px] uppercase font-bold text-accent bg-white px-3 py-1 rounded-full shadow-sm">
-            Inteligencia Predictiva v1.5
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }

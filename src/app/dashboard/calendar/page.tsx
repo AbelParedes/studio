@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState } from "react"
@@ -120,8 +121,8 @@ export default function CalendarPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight mb-1 uppercase text-primary">Agenda Técnica</h2>
-          <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest">Programación de mantenimiento de extintores.</p>
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight mb-1 uppercase text-primary">Agenda Técnica de Extintores</h2>
+          <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest">Programación de mantenimiento y recarga de equipos.</p>
         </div>
         
         <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) setEditingApt(null); }}>
@@ -136,7 +137,7 @@ export default function CalendarPage() {
                 <DialogTitle className="uppercase font-black text-primary">
                   {editingApt ? "Editar Cita" : "Programar Visita"}
                 </DialogTitle>
-                <DialogDescription className="text-[10px] font-bold uppercase">Asigne recursos técnicos de campo.</DialogDescription>
+                <DialogDescription className="text-[10px] font-bold uppercase">Asigne recursos técnicos para extintores.</DialogDescription>
               </DialogHeader>
               
               <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar min-h-0">
@@ -162,8 +163,8 @@ export default function CalendarPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Mantenimiento">Mantenimiento</SelectItem>
-                        <SelectItem value="Recarga">Recarga</SelectItem>
+                        <SelectItem value="Mantenimiento">Mantenimiento NTP</SelectItem>
+                        <SelectItem value="Recarga">Recarga Anual</SelectItem>
                         <SelectItem value="Inspección">Inspección Técnica</SelectItem>
                         <SelectItem value="Venta">Venta / Entrega</SelectItem>
                         <SelectItem value="Alquiler">Alquiler de Equipos</SelectItem>
