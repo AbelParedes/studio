@@ -51,24 +51,18 @@ export default function CertificatesRegistryPage() {
   const [dialogClientId, setDialogClientId] = useState<string>("")
   const [selectedEquipmentIds, setSelectedEquipmentIds] = useState<string[]>([])
 
-  // Obtención estable del companyId
+  // 1. Obtención estable del perfil y companyId
   const userProfileQuery = useMemoFirebase(() => 
     user?.email ? query(collection(db, "company_users"), where("email", "==", user.email)) : null,
   [db, user?.email])
   const { data: profiles } = useCollection(userProfileQuery)
-  
-  const companyId = useMemo(() => profiles?.[0]?.companyId || "", [profiles])
+  const companyId = profiles?.[0]?.companyId || ""
 
-  // Consultas estabilizadas
+  // 2. Consultas estabilizadas por companyId
   const clientsQuery = useMemoFirebase(() => 
     companyId ? query(collection(db, "clients"), where("companyId", "==", companyId)) : null,
   [db, companyId])
   const { data: clients } = useCollection(clientsQuery)
-
-  const clientEquipmentQuery = useMemoFirebase(() => 
-    dialogClientId ? query(collection(db, "client_equipment"), where("clientId", "==", dialogClientId)) : null,
-  [db, dialogClientId])
-  const { data: clientEquipment, isLoading: loadingEquip } = useCollection(clientEquipmentQuery)
 
   const certificatesQuery = useMemoFirebase(() => 
     companyId ? query(
@@ -78,6 +72,12 @@ export default function CertificatesRegistryPage() {
     ) : null,
   [db, companyId])
   const { data: certificates, isLoading: loadingCerts } = useCollection(certificatesQuery)
+
+  // 3. Consulta de equipos supeditada a dialogClientId (solo cuando el diálogo está abierto)
+  const clientEquipmentQuery = useMemoFirebase(() => 
+    isAdding && dialogClientId ? query(collection(db, "client_equipment"), where("clientId", "==", dialogClientId)) : null,
+  [db, dialogClientId, isAdding])
+  const { data: clientEquipment, isLoading: loadingEquip } = useCollection(clientEquipmentQuery)
 
   const currentYear = useMemo(() => new Date().getFullYear(), [])
   
@@ -93,21 +93,15 @@ export default function CertificatesRegistryPage() {
     return `Cert_${currentYear}_${(maxNum + 1).toString().padStart(3, '0')}`
   }, [certificates, currentYear])
 
-  // Limpieza de estados al cerrar el diálogo
-  useEffect(() => {
-    if (!isAdding) {
+  // Limpiar estados locales al cerrar el diálogo para evitar bucles de renderizado
+  const handleOpenChange = (open: boolean) => {
+    setIsAdding(open)
+    if (!open) {
       setEditingCert(null)
       setDialogClientId("")
       setSelectedEquipmentIds([])
     }
-  }, [isAdding])
-
-  const filteredCerts = useMemo(() => {
-    return (certificates || []).filter(c => 
-      c.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.certificateNumber?.toLowerCase().includes(searchTerm.toLowerCase())
-    ).sort((a, b) => (b.date || "").localeCompare(a.date || ""))
-  }, [certificates, searchTerm])
+  }
 
   const handleEquipmentToggle = (equipId: string) => {
     setSelectedEquipmentIds(prev => 
@@ -164,6 +158,13 @@ export default function CertificatesRegistryPage() {
     setIsAdding(false)
   }
 
+  const filteredCerts = useMemo(() => {
+    return (certificates || []).filter(c => 
+      c.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.certificateNumber?.toLowerCase().includes(searchTerm.toLowerCase())
+    ).sort((a, b) => (b.date || "").localeCompare(a.date || ""))
+  }, [certificates, searchTerm])
+
   const openEdit = (cert: any) => {
     setEditingCert(cert)
     setDialogClientId(cert.clientId || "")
@@ -179,15 +180,15 @@ export default function CertificatesRegistryPage() {
           <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest">Gestión de certificados de extintores (Norma Técnica Peruana).</p>
         </div>
         
-        <Dialog open={isAdding} onOpenChange={setIsAdding}>
+        <Dialog open={isAdding} onOpenChange={handleOpenChange}>
           <DialogTrigger asChild>
             <Button className="bg-primary text-white h-10 font-bold uppercase text-xs shadow-lg">
               <Plus className="mr-2 h-4 w-4" /> Nuevo Protocolo (Manual)
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-5xl max-h-[95vh] flex flex-col p-0 overflow-hidden">
-            <form onSubmit={handleSaveCertificate} className="flex flex-col min-h-0 h-full overflow-hidden">
-              <DialogHeader className="p-6 border-b bg-slate-50 shrink-0">
+            <form onSubmit={handleSaveCertificate} className="flex flex-col min-h-0 h-full">
+              <DialogHeader className="p-6 border-b bg-slate-50">
                 <DialogTitle className="uppercase font-black text-primary flex items-center gap-2">
                   <ShieldCheck className="h-5 w-5" /> 
                   {editingCert ? "Editar Protocolo Técnico" : "Emisión Manual de Certificado"}
@@ -195,7 +196,7 @@ export default function CertificatesRegistryPage() {
                 <DialogDescription className="text-[10px] font-bold uppercase">Validez técnica para equipos contra incendios según NTP 350.043-1.</DialogDescription>
               </DialogHeader>
 
-              <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar min-h-0">
+              <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase text-slate-500">Cliente Beneficiario</Label>
@@ -292,7 +293,7 @@ export default function CertificatesRegistryPage() {
                 </div>
               </div>
 
-              <DialogFooter className="p-6 border-t bg-slate-50 shrink-0">
+              <DialogFooter className="p-6 border-t bg-slate-50">
                 <Button type="submit" className="w-full h-12 uppercase font-black text-xs bg-primary text-white shadow-xl">
                   {editingCert ? "Actualizar Protocolo" : "Emitir Protocolo Oficial NTP"}
                 </Button>
