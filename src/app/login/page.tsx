@@ -187,7 +187,7 @@ export default function LoginPage() {
         </CardContent>
         <CardFooter className="flex flex-col border-t bg-muted/20 py-4">
           <p className="text-[9px] text-center text-muted-foreground font-bold uppercase tracking-tighter">
-            Servifumiga Pro SaaS v2.5 - Master HQ
+            Servifumiga Pro SaaS v2.5 
           </p>
         </CardFooter>
       </Card>

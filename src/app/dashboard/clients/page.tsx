@@ -129,8 +129,8 @@ export default function ClientsPage() {
                         <SelectValue placeholder="Seleccione tipo" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Empresa">Empresa / Moral</SelectItem>
-                        <SelectItem value="Persona">Persona / Física</SelectItem>
+                        <SelectItem value="Empresa">Empresa </SelectItem>
+                        <SelectItem value="Persona">Persona Natural</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -142,7 +142,7 @@ export default function ClientsPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="name">Nombre Comercial / Completo</Label>
+                    <Label htmlFor="name">Nombre Comercial</Label>
                     <Input id="name" name="name" defaultValue={editingClient?.name} required />
                   </div>
                   <div className="grid gap-2">
@@ -192,7 +192,7 @@ export default function ClientsPage() {
 
                 <Separator />
                 <div className="grid gap-2">
-                  <Label htmlFor="notes" className="flex items-center gap-2">Notas Técnicas</Label>
+                  <Label htmlFor="notes" className="flex items-center gap-2">Nota</Label>
                   <Textarea id="notes" name="notes" defaultValue={editingClient?.notes} className="min-h-[100px]" />
                 </div>
               </div>

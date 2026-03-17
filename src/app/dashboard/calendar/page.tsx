@@ -14,9 +14,7 @@ import {
   Loader2,
   Trash2,
   Edit2,
-  PlayCircle,
-  CheckCircle2,
-  FileCheck
+  PlayCircle
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, useUser } from "@/firebase"
@@ -118,16 +116,12 @@ export default function CalendarPage() {
     setIsAdding(true)
   }
 
-  const handleStartService = (aptId: string) => {
-    router.push(`/dashboard/execution/${aptId}`)
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight mb-1 uppercase text-primary">Agenda Técnica</h2>
-          <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest">Programación y ejecución de servicios.</p>
+          <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest">Programación de mantenimiento de extintores.</p>
         </div>
         
         <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) setEditingApt(null); }}>
@@ -136,18 +130,18 @@ export default function CalendarPage() {
               <Plus className="mr-2 h-4 w-4" /> Nueva Cita
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md max-h-[90vh] overflow-hidden flex flex-col p-0">
-            <form onSubmit={handleSaveAppointment} className="flex flex-col h-full">
-              <DialogHeader className="p-6 border-b bg-slate-50">
+          <DialogContent className="max-w-md max-h-[90vh] flex flex-col p-0 overflow-hidden">
+            <form onSubmit={handleSaveAppointment} className="flex flex-col h-full overflow-hidden">
+              <DialogHeader className="p-6 border-b bg-slate-50 shrink-0">
                 <DialogTitle className="uppercase font-black text-primary">
                   {editingApt ? "Editar Cita" : "Programar Visita"}
                 </DialogTitle>
                 <DialogDescription className="text-[10px] font-bold uppercase">Asigne recursos técnicos de campo.</DialogDescription>
               </DialogHeader>
               
-              <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+              <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar min-h-0">
                 <div className="grid gap-2">
-                  <Label className="text-[10px] font-bold uppercase text-slate-500">Cliente Beneficiario</Label>
+                  <Label className="text-[10px] font-bold uppercase text-slate-500">Cliente</Label>
                   <Select name="clientId" defaultValue={editingApt?.clientId} required>
                     <SelectTrigger className="h-11 border-2">
                       <SelectValue placeholder="Seleccione cliente" />
@@ -162,15 +156,17 @@ export default function CalendarPage() {
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label className="text-[10px] font-bold uppercase text-slate-500">Tipo Servicio</Label>
-                    <Select name="serviceType" defaultValue={editingApt?.serviceType || "Fumigación"} required>
+                    <Label className="text-[10px] font-bold uppercase text-slate-500">Tipo de Trabajo</Label>
+                    <Select name="serviceType" defaultValue={editingApt?.serviceType || "Mantenimiento"} required>
                       <SelectTrigger className="h-11 border-2">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Extintores">Recarga Extintores</SelectItem>
-                        <SelectItem value="Fumigación">Fumigación</SelectItem>
+                        <SelectItem value="Mantenimiento">Mantenimiento</SelectItem>
+                        <SelectItem value="Recarga">Recarga</SelectItem>
                         <SelectItem value="Inspección">Inspección Técnica</SelectItem>
+                        <SelectItem value="Venta">Venta / Entrega</SelectItem>
+                        <SelectItem value="Alquiler">Alquiler de Equipos</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -216,11 +212,11 @@ export default function CalendarPage() {
 
                 <div className="grid gap-2">
                   <Label className="text-[10px] font-bold uppercase text-slate-500">Notas de Trabajo</Label>
-                  <Input name="notes" defaultValue={editingApt?.notes} placeholder="Indicaciones..." className="h-11 border-2 font-bold" />
+                  <Input name="notes" defaultValue={editingApt?.notes} placeholder="Indicaciones técnicas..." className="h-11 border-2 font-bold" />
                 </div>
               </div>
 
-              <DialogFooter className="p-6 border-t bg-slate-50">
+              <DialogFooter className="p-6 border-t bg-slate-50 shrink-0">
                 <Button type="submit" className="w-full uppercase font-black text-xs h-12 shadow-xl bg-primary text-white">
                   {editingApt ? "Guardar Cambios" : "Confirmar Programación"}
                 </Button>
@@ -252,7 +248,7 @@ export default function CalendarPage() {
           <CardHeader className="border-b bg-slate-50/50 p-4 sm:p-6">
             <CardTitle className="text-[10px] sm:text-xs font-black uppercase flex items-center tracking-widest text-primary">
               <CalendarDays className="mr-2 h-4 w-4 text-accent" />
-              Ruta: {date ? format(date, "d 'de' MMMM, yyyy", { locale: es }).toUpperCase() : "---"}
+              Servicios: {date ? format(date, "d 'de' MMMM, yyyy", { locale: es }).toUpperCase() : "---"}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 sm:p-6 space-y-4">
@@ -263,7 +259,7 @@ export default function CalendarPage() {
             ) : dailyAppointments.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-muted-foreground text-center opacity-40">
                 <CalendarDays className="h-10 w-10 mb-3" />
-                <p className="text-[9px] font-black uppercase tracking-widest">No hay servicios para hoy</p>
+                <p className="text-[9px] font-black uppercase tracking-widest">Sin servicios programados</p>
               </div>
             ) : (
               dailyAppointments.map((apt) => (
@@ -290,7 +286,7 @@ export default function CalendarPage() {
                           size="sm" 
                           variant="outline" 
                           className="h-8 text-[9px] font-black uppercase bg-accent text-white hover:bg-accent/90 border-none shadow-md px-4 flex-1 sm:flex-none"
-                          onClick={() => handleStartService(apt.id)}
+                          onClick={() => router.push(`/dashboard/execution/${apt.id}`)}
                         >
                           Atender
                         </Button>
@@ -299,9 +295,9 @@ export default function CalendarPage() {
                           size="sm" 
                           variant="ghost" 
                           className="h-8 text-[9px] font-black uppercase text-status-success hover:bg-status-success/5 flex-1 sm:flex-none"
-                          onClick={() => router.push(`/dashboard/certificates?id=${apt.id}`)}
+                          onClick={() => router.push(`/dashboard/certificates/view/${apt.id}`)}
                         >
-                          Certificado
+                          Protocolo
                         </Button>
                       )}
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => openEdit(apt)}><Edit2 className="h-3.5 w-3.5" /></Button>

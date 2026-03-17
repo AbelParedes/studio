@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "Company": {
@@ -67,11 +66,10 @@
         "id": { "type": "string" },
         "companyId": { "type": "string" },
         "clientId": { "type": "string" },
-        "type": { "type": "string", "enum": ["Extintor", "Sensor de Humo", "Luces de Emergencia", "Otros"] },
+        "type": { "type": "string", "enum": ["PQS", "CO2", "Agua", "Acetato de Potasio", "Otros"] },
         "serialNumber": { "type": "string" },
         "brand": { "type": "string" },
         "capacity": { "type": "string" },
-        "extinguishingAgent": { "type": "string" },
         "location": { "type": "string", "description": "Ubicación física dentro de las instalaciones del cliente." },
         "manufacturingYear": { "type": "integer" },
         "lastServiceDate": { "type": "string", "format": "date" },
@@ -135,8 +133,8 @@
       "properties": {
         "id": { "type": "string" },
         "companyId": { "type": "string" },
-        "category": { "type": "string", "enum": ["Extintor", "Fumigación", "Accesorios"] },
-        "operationType": { "type": "string", "enum": ["Venta", "Recarga", "Mantenimiento", "Inspección"] },
+        "category": { "type": "string", "enum": ["Extintor", "Gabinete", "Accesorios"] },
+        "operationType": { "type": "string", "enum": ["Venta", "Recarga", "Mantenimiento", "Inspección", "Alquiler"] },
         "description": { "type": "string" },
         "extinguishingAgent": { "type": "string" },
         "capacity": { "type": "string" },
