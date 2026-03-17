@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
@@ -12,12 +13,10 @@ import {
   Loader2, 
   ShieldCheck, 
   AlertCircle,
-  Filter,
-  FileText,
   Plus,
   Edit2,
   Trash2,
-  ClipboardCheck,
+  FileText,
   Hash,
   HardDrive
 } from "lucide-react"
