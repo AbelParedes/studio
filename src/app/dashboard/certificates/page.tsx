@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -39,7 +39,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from "@/hooks/use-toast"
 
-// Sub-componente para aislar la carga de equipos y evitar bucles de renderizado en la página principal
 function EquipmentSelector({ clientId, selectedIds, onToggle }: { clientId: string, selectedIds: string[], onToggle: (id: string) => void }) {
   const db = useFirestore()
   const q = useMemoFirebase(() => 
@@ -105,7 +104,8 @@ export default function CertificatesRegistryPage() {
     user?.email ? query(collection(db, "company_users"), where("email", "==", user.email)) : null,
   [db, user?.email])
   const { data: profiles } = useCollection(userProfileQuery)
-  const companyId = profiles?.[0]?.companyId || ""
+  
+  const companyId = useMemo(() => profiles?.[0]?.companyId || "", [profiles])
 
   const clientsQuery = useMemoFirebase(() => 
     companyId ? query(collection(db, "clients"), where("companyId", "==", companyId)) : null,
@@ -135,20 +135,20 @@ export default function CertificatesRegistryPage() {
     return `Cert_${currentYear}_${(maxNum + 1).toString().padStart(3, '0')}`
   }, [certificates, currentYear])
 
-  const handleOpenChange = (open: boolean) => {
+  const handleOpenChange = useCallback((open: boolean) => {
     if (!open) {
       setEditingCert(null)
       setDialogClientId("")
       setSelectedEquipmentIds([])
     }
     setIsAdding(open)
-  }
+  }, [])
 
-  const handleEquipmentToggle = (equipId: string) => {
+  const handleEquipmentToggle = useCallback((equipId: string) => {
     setSelectedEquipmentIds(prev => 
       prev.includes(equipId) ? prev.filter(id => id !== equipId) : [...prev, equipId]
     )
-  }
+  }, [])
 
   const handleSaveCertificate = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -206,12 +206,12 @@ export default function CertificatesRegistryPage() {
     ).sort((a, b) => (b.date || "").localeCompare(a.date || ""))
   }, [certificates, searchTerm])
 
-  const openEdit = (cert: any) => {
+  const openEdit = useCallback((cert: any) => {
     setEditingCert(cert)
     setDialogClientId(cert.clientId || "")
     setSelectedEquipmentIds(cert.servicedEquipmentIds || [])
     setIsAdding(true)
-  }
+  }, [])
 
   return (
     <div className="space-y-6">
