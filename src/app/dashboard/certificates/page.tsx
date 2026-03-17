@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { 
-  FileCheck, 
   Search, 
   Loader2, 
   ShieldCheck, 
@@ -40,6 +39,57 @@ import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from "@/hooks/use-toast"
 
+// Sub-componente para aislar la carga de equipos y evitar bucles de renderizado en la página principal
+function EquipmentSelector({ clientId, selectedIds, onToggle }: { clientId: string, selectedIds: string[], onToggle: (id: string) => void }) {
+  const db = useFirestore()
+  const q = useMemoFirebase(() => 
+    clientId ? query(collection(db, "client_equipment"), where("clientId", "==", clientId)) : null,
+  [db, clientId])
+  const { data: equipment, isLoading } = useCollection(q)
+
+  if (!clientId) return (
+    <div className="py-10 text-center border-2 border-dashed rounded-xl bg-slate-50">
+      <p className="text-[10px] text-slate-400 uppercase font-black">Seleccione un cliente para ver sus equipos</p>
+    </div>
+  )
+
+  if (isLoading) return (
+    <div className="py-10 flex justify-center">
+      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+    </div>
+  )
+
+  if (!equipment || equipment.length === 0) return (
+    <div className="py-10 text-center border-2 border-dashed rounded-xl bg-slate-50">
+      <p className="text-[10px] text-slate-400 uppercase font-black">Sin equipos registrados para este cliente</p>
+    </div>
+  )
+
+  return (
+    <div className="grid grid-cols-1 gap-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+      {equipment.map(item => (
+        <div 
+          key={item.id} 
+          className={cn(
+            "flex items-center justify-between p-3 border-2 rounded-xl transition-all cursor-pointer bg-white",
+            selectedIds.includes(item.id) ? "border-primary bg-primary/5" : "border-slate-100 hover:border-slate-200"
+          )}
+          onClick={() => onToggle(item.id)}
+        >
+          <div className="flex items-center gap-3">
+            <Checkbox checked={selectedIds.includes(item.id)} onCheckedChange={() => onToggle(item.id)} />
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black uppercase">{item.serialNumber}</span>
+              <span className="text-[8px] font-bold text-slate-400 uppercase">{item.type} • {item.location}</span>
+            </div>
+          </div>
+          <Badge variant="outline" className="text-[7px] font-black uppercase">{item.status}</Badge>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function CertificatesRegistryPage() {
   const db = useFirestore()
   const { user } = useUser()
@@ -51,14 +101,12 @@ export default function CertificatesRegistryPage() {
   const [dialogClientId, setDialogClientId] = useState<string>("")
   const [selectedEquipmentIds, setSelectedEquipmentIds] = useState<string[]>([])
 
-  // 1. Obtención estable del perfil y companyId
   const userProfileQuery = useMemoFirebase(() => 
     user?.email ? query(collection(db, "company_users"), where("email", "==", user.email)) : null,
   [db, user?.email])
   const { data: profiles } = useCollection(userProfileQuery)
   const companyId = profiles?.[0]?.companyId || ""
 
-  // 2. Consultas estabilizadas por companyId
   const clientsQuery = useMemoFirebase(() => 
     companyId ? query(collection(db, "clients"), where("companyId", "==", companyId)) : null,
   [db, companyId])
@@ -72,12 +120,6 @@ export default function CertificatesRegistryPage() {
     ) : null,
   [db, companyId])
   const { data: certificates, isLoading: loadingCerts } = useCollection(certificatesQuery)
-
-  // 3. Consulta de equipos supeditada a dialogClientId (solo cuando el diálogo está abierto)
-  const clientEquipmentQuery = useMemoFirebase(() => 
-    isAdding && dialogClientId ? query(collection(db, "client_equipment"), where("clientId", "==", dialogClientId)) : null,
-  [db, dialogClientId, isAdding])
-  const { data: clientEquipment, isLoading: loadingEquip } = useCollection(clientEquipmentQuery)
 
   const currentYear = useMemo(() => new Date().getFullYear(), [])
   
@@ -93,14 +135,13 @@ export default function CertificatesRegistryPage() {
     return `Cert_${currentYear}_${(maxNum + 1).toString().padStart(3, '0')}`
   }, [certificates, currentYear])
 
-  // Limpiar estados locales al cerrar el diálogo para evitar bucles de renderizado
   const handleOpenChange = (open: boolean) => {
-    setIsAdding(open)
     if (!open) {
       setEditingCert(null)
       setDialogClientId("")
       setSelectedEquipmentIds([])
     }
+    setIsAdding(open)
   }
 
   const handleEquipmentToggle = (equipId: string) => {
@@ -188,7 +229,7 @@ export default function CertificatesRegistryPage() {
           </DialogTrigger>
           <DialogContent className="max-w-5xl max-h-[95vh] flex flex-col p-0 overflow-hidden">
             <form onSubmit={handleSaveCertificate} className="flex flex-col min-h-0 h-full">
-              <DialogHeader className="p-6 border-b bg-slate-50">
+              <DialogHeader className="p-6 border-b bg-slate-50 shrink-0">
                 <DialogTitle className="uppercase font-black text-primary flex items-center gap-2">
                   <ShieldCheck className="h-5 w-5" /> 
                   {editingCert ? "Editar Protocolo Técnico" : "Emisión Manual de Certificado"}
@@ -249,31 +290,11 @@ export default function CertificatesRegistryPage() {
                   <Label className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-1">
                     <HardDrive className="h-3 w-3" /> Selección de Extintores (Hoja de Vida)
                   </Label>
-                  <div className="p-4 bg-slate-50 rounded-2xl border-2 border-dashed min-h-[200px] space-y-2 max-h-[400px] overflow-y-auto custom-scrollbar">
-                    {!dialogClientId ? (
-                      <p className="text-[10px] text-center text-slate-400 uppercase font-bold py-10">Seleccione un cliente para ver sus equipos</p>
-                    ) : loadingEquip ? (
-                      <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
-                    ) : clientEquipment && clientEquipment.length > 0 ? (
-                      clientEquipment.map(item => (
-                        <div key={item.id} className={cn(
-                          "flex items-center justify-between p-3 border-2 rounded-xl transition-all cursor-pointer bg-white",
-                          selectedEquipmentIds.includes(item.id) ? "border-primary bg-primary/5" : "border-slate-100 hover:border-slate-200"
-                        )} onClick={() => handleEquipmentToggle(item.id)}>
-                          <div className="flex items-center gap-3">
-                            <Checkbox checked={selectedEquipmentIds.includes(item.id)} onCheckedChange={() => handleEquipmentToggle(item.id)} />
-                            <div className="flex flex-col">
-                              <span className="text-[10px] font-black uppercase">{item.serialNumber}</span>
-                              <span className="text-[8px] font-bold text-slate-400 uppercase">{item.type} • {item.location}</span>
-                            </div>
-                          </div>
-                          <Badge variant="outline" className="text-[7px] font-black uppercase">{item.status}</Badge>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-[10px] text-center text-slate-400 uppercase font-bold py-10">Sin equipos registrados en este cliente</p>
-                    )}
-                  </div>
+                  <EquipmentSelector 
+                    clientId={dialogClientId} 
+                    selectedIds={selectedEquipmentIds} 
+                    onToggle={handleEquipmentToggle} 
+                  />
                 </div>
 
                 <div className="space-y-4">
@@ -293,7 +314,7 @@ export default function CertificatesRegistryPage() {
                 </div>
               </div>
 
-              <DialogFooter className="p-6 border-t bg-slate-50">
+              <DialogFooter className="p-6 border-t bg-slate-50 shrink-0">
                 <Button type="submit" className="w-full h-12 uppercase font-black text-xs bg-primary text-white shadow-xl">
                   {editingCert ? "Actualizar Protocolo" : "Emitir Protocolo Oficial NTP"}
                 </Button>
