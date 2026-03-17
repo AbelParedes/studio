@@ -3,15 +3,13 @@
 
 import { useState, useMemo, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { 
   FileCheck, 
   Search, 
-  Printer, 
-  Download, 
   Loader2, 
   ShieldCheck, 
   AlertCircle,
@@ -57,31 +55,26 @@ export default function CertificatesRegistryPage() {
   const [editingCert, setEditingCert] = useState<any | null>(null)
   const [selectedPests, setSelectedPests] = useState<string[]>([])
   
-  // Estado para rastrear el cliente seleccionado en el diálogo y sus equipos
   const [dialogClientId, setDialogClientId] = useState<string>("")
   const [dialogServiceType, setDialogServiceType] = useState<string>("Extintores")
   const [selectedEquipmentIds, setSelectedEquipmentIds] = useState<string[]>([])
 
-  // Perfil para companyId - Estabilizado con useMemo
   const userProfileQuery = useMemoFirebase(() => 
     user?.email ? query(collection(db, "company_users"), where("email", "==", user.email)) : null,
   [db, user?.email])
   const { data: profiles } = useCollection(userProfileQuery)
-  const companyId = useMemo(() => profiles?.[0]?.companyId || "", [profiles])
+  const companyId = profiles?.[0]?.companyId || ""
 
-  // Clientes para el selector
   const clientsRef = useMemoFirebase(() => 
     companyId ? query(collection(db, "clients"), where("companyId", "==", companyId)) : null,
   [db, companyId])
   const { data: clients } = useCollection(clientsRef)
 
-  // Equipos del cliente seleccionado en el diálogo
   const clientEquipmentQuery = useMemoFirebase(() => 
     dialogClientId ? query(collection(db, "client_equipment"), where("clientId", "==", dialogClientId)) : null,
   [db, dialogClientId])
   const { data: clientEquipment, isLoading: loadingEquip } = useCollection(clientEquipmentQuery)
 
-  // Obtener certificados (citas completadas)
   const certificatesQuery = useMemoFirebase(() => 
     companyId ? query(
       collection(db, "appointments"), 
@@ -89,9 +82,8 @@ export default function CertificatesRegistryPage() {
       where("status", "==", "Completado")
     ) : null,
   [db, companyId])
-  const { data: certificates, isLoading } = useCollection(certificatesQuery)
+  const { data: certificates, isLoading: loadingCerts } = useCollection(certificatesQuery)
 
-  // Lógica de Numeración Automática Cert_YYYY_NNN
   const currentYear = useMemo(() => new Date().getFullYear(), [])
   const suggestedCertNumber = useMemo(() => {
     if (!certificates || certificates.length === 0) return `Cert_${currentYear}_001`
@@ -112,7 +104,6 @@ export default function CertificatesRegistryPage() {
     return `Cert_${currentYear}_${(maxNum + 1).toString().padStart(3, '0')}`
   }, [certificates, currentYear])
 
-  // Limpiar estados cuando el diálogo se cierra para evitar loops de re-renderizado
   useEffect(() => {
     if (!isAdding) {
       setEditingCert(null)
@@ -293,7 +284,6 @@ export default function CertificatesRegistryPage() {
                     </div>
                   </div>
 
-                  {/* SECCIÓN DINÁMICA: EQUIPOS O FUMIGACIÓN */}
                   <div className="space-y-6 pt-4">
                     <div className="flex items-center gap-2 border-b-2 border-slate-100 pb-2">
                       <ClipboardCheck className="h-4 w-4 text-primary" />
@@ -464,7 +454,7 @@ export default function CertificatesRegistryPage() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          {isLoading ? (
+          {loadingCerts ? (
             <div className="flex items-center justify-center p-24">
               <Loader2 className="h-10 w-10 animate-spin text-primary" />
             </div>
