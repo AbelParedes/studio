@@ -51,14 +51,15 @@ export default function CertificatesRegistryPage() {
   const [dialogClientId, setDialogClientId] = useState<string>("")
   const [selectedEquipmentIds, setSelectedEquipmentIds] = useState<string[]>([])
 
-  // 1. Obtención estable del companyId
+  // Obtención estable del companyId
   const userProfileQuery = useMemoFirebase(() => 
     user?.email ? query(collection(db, "company_users"), where("email", "==", user.email)) : null,
   [db, user?.email])
   const { data: profiles } = useCollection(userProfileQuery)
-  const companyId = profiles?.[0]?.companyId || ""
+  
+  const companyId = useMemo(() => profiles?.[0]?.companyId || "", [profiles])
 
-  // 2. Consultas estabilizadas
+  // Consultas estabilizadas
   const clientsQuery = useMemoFirebase(() => 
     companyId ? query(collection(db, "clients"), where("companyId", "==", companyId)) : null,
   [db, companyId])
