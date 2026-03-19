@@ -14,8 +14,7 @@ import {
   Loader2, 
   Award,
   HardDrive,
-  Info,
-  Hash
+  Info
 } from "lucide-react"
 import { useDoc, useFirestore, updateDocumentNonBlocking, useMemoFirebase, useCollection } from "@/firebase"
 import { doc, collection, query, where } from "firebase/firestore"
@@ -41,24 +40,6 @@ export default function ExecutionPage({ params }: { params: Promise<{ id: string
   [db, apt?.clientId])
   const { data: equipment } = useCollection(equipmentQuery)
 
-  const certsQuery = useMemoFirebase(() => 
-    apt?.companyId ? query(collection(db, "appointments"), where("companyId", "==", apt.companyId), where("status", "==", "Completado")) : null,
-  [db, apt?.companyId])
-  const { data: certificates } = useCollection(certsQuery)
-
-  const currentYear = new Date().getFullYear()
-  const suggestedCertNumber = useMemo(() => {
-    if (!certificates || certificates.length === 0) return `Cert_${currentYear}_001`
-    const yearCerts = certificates.filter(c => (c.certificateNumber || "").startsWith(`Cert_${currentYear}_`))
-    if (yearCerts.length === 0) return `Cert_${currentYear}_001`
-    const numbers = yearCerts.map(c => {
-      const parts = c.certificateNumber.split("_")
-      return parts.length === 3 ? parseInt(parts[2]) : 0
-    })
-    const maxNum = Math.max(...numbers)
-    return `Cert_${currentYear}_${(maxNum + 1).toString().padStart(3, '0')}`
-  }, [certificates, currentYear])
-
   const [techData, setTechData] = useState<any>({
     extChecklist: {
       presion_nominal: false,
@@ -69,8 +50,7 @@ export default function ExecutionPage({ params }: { params: Promise<{ id: string
     },
     servicedEquipmentIds: [], 
     observations: "",
-    clientSignatureName: "",
-    customCertNumber: ""
+    clientSignatureName: ""
   })
 
   const handleEquipmentToggle = (equipId: string) => {
@@ -85,14 +65,12 @@ export default function ExecutionPage({ params }: { params: Promise<{ id: string
     
     const today = new Date()
     const nextDue = format(addYears(today, 1), "yyyy-MM-dd")
-    const finalCertNumber = techData.customCertNumber || suggestedCertNumber
 
     const executionReport = {
       ...techData,
       finishedAt: new Date().toISOString(),
       status: "Completado",
-      nextDue: nextDue,
-      certificateNumber: finalCertNumber
+      nextDue: nextDue
     }
 
     try {
@@ -107,8 +85,8 @@ export default function ExecutionPage({ params }: { params: Promise<{ id: string
           })
         })
       }
-      toast({ title: "Servicio Finalizado", description: `Protocolo ${finalCertNumber} emitido.` })
-      router.push("/dashboard/certificates")
+      toast({ title: "Servicio Finalizado", description: "La orden ha sido cerrada correctamente." })
+      router.push("/dashboard/service-orders")
     } catch (err) {
       toast({ variant: "destructive", title: "Error al finalizar" })
     } finally {
@@ -130,21 +108,6 @@ export default function ExecutionPage({ params }: { params: Promise<{ id: string
       </div>
 
       <form onSubmit={handleFinish} className="space-y-6">
-        <Card className="shadow-sm border-none bg-white">
-          <CardContent className="pt-6">
-            <div className="space-y-2">
-              <Label className="text-[9px] font-black uppercase text-primary flex items-center gap-1.5 tracking-widest">
-                <Hash className="h-3 w-3 text-accent" /> Folio de Protocolo Sugerido
-              </Label>
-              <Input 
-                value={techData.customCertNumber || suggestedCertNumber} 
-                onChange={e => setTechData({...techData, customCertNumber: e.target.value})}
-                className="h-12 text-sm font-mono font-black border-2 bg-slate-50 border-primary/10 text-primary"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
         {equipment && equipment.length > 0 && (
           <Card className="shadow-sm border-none bg-white">
             <CardHeader className="bg-slate-50 border-b">
@@ -255,7 +218,7 @@ export default function ExecutionPage({ params }: { params: Promise<{ id: string
           className="w-full h-16 bg-primary text-white font-black uppercase text-xs tracking-[0.2em] shadow-2xl rounded-2xl transition-all active:scale-95"
         >
           {isSaving ? <Loader2 className="animate-spin mr-2 h-5 w-5" /> : <CheckCircle2 className="mr-2 h-5 w-5 text-accent" />}
-          Cerrar Orden y Emitir Certificado
+          Cerrar Orden de Trabajo
         </Button>
       </form>
     </div>

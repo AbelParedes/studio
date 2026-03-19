@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState } from "react"
@@ -13,8 +14,7 @@ import {
   Plus,
   Loader2,
   Trash2,
-  Edit2,
-  PlayCircle
+  Edit2
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, useUser } from "@/firebase"
@@ -295,9 +295,9 @@ export default function CalendarPage() {
                           size="sm" 
                           variant="ghost" 
                           className="h-8 text-[9px] font-black uppercase text-status-success hover:bg-status-success/5 flex-1 sm:flex-none"
-                          onClick={() => router.push(`/dashboard/certificates/view/${apt.id}`)}
+                          onClick={() => router.push(`/dashboard/service-orders`)}
                         >
-                          Protocolo
+                          Ver OT
                         </Button>
                       )}
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => openEdit(apt)}><Edit2 className="h-3.5 w-3.5" /></Button>

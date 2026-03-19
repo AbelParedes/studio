@@ -1,3 +1,4 @@
+
 "use client"
 
 import Link from "next/link"
@@ -17,7 +18,6 @@ import {
   FileText,
   Package,
   Zap,
-  FileCheck,
   ClipboardList,
   HardDrive
 } from "lucide-react"
@@ -34,7 +34,6 @@ const navItems = [
   { name: "Cotizaciones", href: "/dashboard/quotations", icon: FileText },
   { name: "Órdenes de Servicio", href: "/dashboard/service-orders", icon: ClipboardList },
   { name: "Calendario", href: "/dashboard/calendar", icon: Calendar },
-  { name: "Certificados", href: "/dashboard/certificates", icon: FileCheck },
   { name: "Productos y Servicios", href: "/dashboard/inventory", icon: Package },
   { name: "Recordatorios IA", href: "/dashboard/reminders", icon: Bell },
   { name: "Usuarios", href: "/dashboard/users", icon: UserCheck },
@@ -92,7 +91,7 @@ export function DashboardNav({ onNavItemClick, companyName, logoUrl, userRole, i
       
       <nav className="flex-1 space-y-1 px-4 overflow-y-auto custom-scrollbar">
         {filteredItems.map((item) => {
-          const isActive = pathname === item.href || (item.href === "/dashboard/certificates" && pathname.startsWith("/dashboard/certificates/view/"))
+          const isActive = pathname === item.href
           return (
             <Link
               key={item.href}

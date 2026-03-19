@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useMemo } from "react"
@@ -21,7 +22,7 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from "@/firebase"
 import { collection, query, where, limit, doc } from "firebase/firestore"
-import { format, isBefore, parseISO, addDays } from "date-fns"
+import { format, isBefore, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
 
 export default function DashboardPage() {
@@ -111,7 +112,7 @@ export default function DashboardPage() {
                     <TableCell className="font-bold text-primary uppercase text-[10px] sm:text-[11px]"><div className="flex flex-col"><span>{service.clientName}</span><span className="text-[8px] text-slate-400">{service.date}</span></div></TableCell>
                     <TableCell><Badge variant="outline" className="text-[7px] sm:text-[8px] font-black uppercase">{service.serviceType}</Badge></TableCell>
                     <TableCell><div className="flex items-center gap-1.5"><div className={cn("h-1.5 w-1.5 rounded-full", service.status === "Completado" ? "bg-status-success" : "bg-slate-300 animate-pulse")}></div><span className="text-[9px] font-black uppercase">{service.status}</span></div></TableCell>
-                    <TableCell className="text-right pr-6"><Button variant="ghost" size="sm" className="h-7 text-[8px] font-black uppercase" onClick={() => router.push(service.status === "Completado" ? `/dashboard/certificates/view/${service.id}` : `/dashboard/calendar`)}>{service.status === "Completado" ? "Protocolo" : "Agenda"}</Button></TableCell>
+                    <TableCell className="text-right pr-6"><Button variant="ghost" size="sm" className="h-7 text-[8px] font-black uppercase" onClick={() => router.push(`/dashboard/service-orders`)}>Ver OT</Button></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
