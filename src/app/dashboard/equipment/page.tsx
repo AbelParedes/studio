@@ -21,7 +21,10 @@ import {
   FileText,
   Building2,
   Tag,
-  Factory
+  Factory,
+  Flame,
+  ShieldCheck,
+  Zap
 } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, useUser } from "@/firebase"
 import { collection, doc, query, where } from "firebase/firestore"
@@ -90,11 +93,11 @@ export default function ClientEquipmentPage() {
 
     if (editingItem) {
       updateDocumentNonBlocking(doc(db, "client_equipment", editingItem.id), equipmentData)
-      toast({ title: "Equipo actualizado" })
+      toast({ title: "Equipo actualizado en base de datos" })
     } else {
       const newItem = { ...equipmentData, id: crypto.randomUUID(), createdAt: new Date().toISOString() }
       addDocumentNonBlocking(collection(db, "client_equipment"), newItem)
-      toast({ title: "Activo registrado con éxito" })
+      toast({ title: "Nuevo activo registrado con éxito" })
     }
 
     setIsAdding(false)
@@ -102,6 +105,7 @@ export default function ClientEquipmentPage() {
   }
 
   const handleDelete = (id: string) => {
+    if (!confirm("¿Eliminar este registro de forma permanente? Se borrará de la hoja de vida.")) return
     deleteDocumentNonBlocking(doc(db, "client_equipment", id))
     toast({ variant: "destructive", title: "Activo eliminado de la base" })
   }
@@ -117,110 +121,134 @@ export default function ClientEquipmentPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase text-primary">Gestión de Extintores</h2>
-          <p className="text-muted-foreground text-sm font-medium uppercase text-[10px] tracking-widest">Inventario detallado y hoja de vida de equipos en campo.</p>
+          <h2 className="text-2xl font-black tracking-tight mb-1 uppercase text-primary">Gestión de Extintores (NTP)</h2>
+          <p className="text-muted-foreground text-sm font-bold uppercase text-[10px] tracking-[0.2em]">Registro técnico y trazabilidad para protocolos de seguridad.</p>
         </div>
         
         <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) setEditingItem(null); }}>
           <DialogTrigger asChild>
-            <Button className="bg-primary text-white h-10 font-bold uppercase text-xs shadow-lg">
+            <Button className="bg-[#1c1c1c] text-white h-11 font-black uppercase text-xs shadow-xl border-b-4 border-primary">
               <Plus className="mr-2 h-4 w-4" /> Registrar Nuevo Equipo
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0 border-none rounded-2xl shadow-2xl">
             <form onSubmit={handleSaveEquipment}>
-              <DialogHeader>
-                <DialogTitle className="uppercase font-black text-primary">Ficha Técnica del Equipo</DialogTitle>
-                <DialogDescription className="text-[10px] font-bold uppercase">Ingrese los datos identificadores para la hoja de vida.</DialogDescription>
+              <DialogHeader className="p-8 bg-slate-50 border-b">
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 bg-primary rounded-xl flex items-center justify-center text-white">
+                    <Flame className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <DialogTitle className="uppercase font-black text-primary text-xl tracking-tighter">Ficha Técnica de Equipo</DialogTitle>
+                    <DialogDescription className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1">Requisito previo para emisión de certificados.</DialogDescription>
+                  </div>
+                </div>
               </DialogHeader>
-              <div className="grid gap-6 py-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid gap-8 p-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="grid gap-2">
-                    <Label className="text-[10px] font-bold uppercase">Cliente Propietario</Label>
+                    <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Cliente Propietario</Label>
                     <Select name="clientId" defaultValue={editingItem?.clientId} required>
-                      <SelectTrigger className="h-11">
+                      <SelectTrigger className="h-12 border-2 font-bold">
                         <SelectValue placeholder="Seleccione Cliente" />
                       </SelectTrigger>
                       <SelectContent>
                         {clients?.map(c => (
-                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                          <SelectItem key={c.id} value={c.id} className="font-bold">{c.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="grid gap-2">
-                    <Label className="text-[10px] font-bold uppercase">Tipo de Equipo</Label>
+                    <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Tipo de Dispositivo</Label>
                     <Select name="type" defaultValue={editingItem?.type || "Extintor"}>
-                      <SelectTrigger className="h-11">
+                      <SelectTrigger className="h-12 border-2 font-bold">
                         <SelectValue placeholder="Tipo" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Extintor">Extintor</SelectItem>
-                        <SelectItem value="Sensor de Humo">Sensor de Humo</SelectItem>
-                        <SelectItem value="Luces de Emergencia">Luces de Emergencia</SelectItem>
-                        <SelectItem value="Otros">Otros</SelectItem>
+                        <SelectItem value="Gabinete">Gabinete contra Incendio</SelectItem>
+                        <SelectItem value="Manguera">Manguera / Pitón</SelectItem>
+                        <SelectItem value="Detector">Detector de Humo</SelectItem>
+                        <SelectItem value="Emergencia">Luz de Emergencia</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="grid gap-2">
-                    <Label className="text-[10px] font-bold uppercase">N° Serie / Placa</Label>
-                    <Input name="serialNumber" defaultValue={editingItem?.serialNumber} required className="h-11 font-mono font-bold" />
+                    <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest">N° Serie / Placa NTP</Label>
+                    <Input name="serialNumber" defaultValue={editingItem?.serialNumber} required className="h-12 font-mono font-black border-2 border-primary/20 text-primary" />
                   </div>
                   <div className="grid gap-2">
-                    <Label className="text-[10px] font-bold uppercase">Marca</Label>
-                    <Input name="brand" defaultValue={editingItem?.brand} className="h-11 font-bold" />
+                    <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Marca / Fabricante</Label>
+                    <Input name="brand" defaultValue={editingItem?.brand} className="h-12 font-bold border-2" />
                   </div>
                   <div className="grid gap-2">
-                    <Label className="text-[10px] font-bold uppercase">Capacidad / Modelo</Label>
-                    <Input name="capacity" defaultValue={editingItem?.capacity} placeholder="Ej. 6kg / PQS" className="h-11 font-bold" />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label className="text-[10px] font-bold uppercase">Ubicación Exacta</Label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                      <Input name="location" defaultValue={editingItem?.location} placeholder="Ej. Pasillo Central, Piso 2" className="h-11 pl-10 font-bold" />
-                    </div>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label className="text-[10px] font-bold uppercase">Estado Operativo</Label>
-                    <Select name="status" defaultValue={editingItem?.status || "Operativo"}>
-                      <SelectTrigger className="h-11">
+                    <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Agente Extintor</Label>
+                    <Select name="agent" defaultValue={editingItem?.extinguishingAgent || "PQS"}>
+                      <SelectTrigger className="h-12 border-2 font-bold">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Operativo">Operativo</SelectItem>
-                        <SelectItem value="Mantenimiento">Mantenimiento</SelectItem>
-                        <SelectItem value="Vencido">Vencido</SelectItem>
-                        <SelectItem value="Baja">Baja / Retirado</SelectItem>
+                        <SelectItem value="PQS">PQS (ABC)</SelectItem>
+                        <SelectItem value="CO2">CO2 (Dióxido de Carbono)</SelectItem>
+                        <SelectItem value="Agua">Agua (H2O)</SelectItem>
+                        <SelectItem value="Acetato">Acetato de Potasio (K)</SelectItem>
+                        <SelectItem value="Halotron">Halotrón / Clean Agent</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="grid gap-2">
-                    <Label className="text-[10px] font-bold uppercase">Año de Fabricación</Label>
-                    <Input name="year" type="number" defaultValue={editingItem?.manufacturingYear || 2024} className="h-11 font-bold text-center" />
+                    <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Capacidad (kg/lb)</Label>
+                    <Input name="capacity" defaultValue={editingItem?.capacity} placeholder="Ej. 6kg / 10lb" className="h-12 font-bold border-2 text-center" />
                   </div>
-                  <div className="grid gap-2">
-                    <Label className="text-[10px] font-bold uppercase">Último Mantenimiento</Label>
-                    <Input name="lastService" type="date" defaultValue={editingItem?.lastServiceDate || new Date().toISOString().split('T')[0]} className="h-11 font-bold" />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label className="text-[10px] font-bold uppercase">Próximo Vencimiento</Label>
-                    <Input name="nextService" type="date" defaultValue={editingItem?.nextServiceDate} className="h-11 font-bold border-accent/30" />
+                  <div className="grid gap-2 md:col-span-2">
+                    <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Ubicación en Instalaciones</Label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Input name="location" defaultValue={editingItem?.location} placeholder="Ej. Pasillo Principal, Almacén Central" className="h-12 pl-10 font-bold border-2" />
+                    </div>
                   </div>
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="grid gap-2">
+                    <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Año Fab.</Label>
+                    <Input name="year" type="number" defaultValue={editingItem?.manufacturingYear || new Date().getFullYear()} className="h-12 font-black text-center border-2" />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Última Recarga</Label>
+                    <Input name="lastService" type="date" defaultValue={editingItem?.lastServiceDate || format(new Date(), "yyyy-MM-dd")} className="h-12 font-bold border-2" />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label className="text-[10px] font-black uppercase text-accent tracking-widest">Vencimiento Anual</Label>
+                    <Input name="nextService" type="date" defaultValue={editingItem?.nextServiceDate} className="h-12 font-black border-2 border-accent/30 text-accent" required />
+                  </div>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Estado de Operatividad</Label>
+                  <Select name="status" defaultValue={editingItem?.status || "Operativo"}>
+                    <SelectTrigger className="h-12 border-2 font-black">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Operativo">OPERATIVO (CONFORME)</SelectItem>
+                      <SelectItem value="Mantenimiento">EN MANTENIMIENTO</SelectItem>
+                      <SelectItem value="Vencido">VENCIDO / RECARGA PENDIENTE</SelectItem>
+                      <SelectItem value="Baja">BAJA DEFINITIVA</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <DialogFooter>
-                <Button type="submit" className="w-full h-12 bg-primary text-white font-black uppercase text-xs tracking-widest shadow-xl">
-                  {editingItem ? "Actualizar Hoja de Vida" : "Crear Registro de Activo"}
+              <DialogFooter className="p-8 bg-slate-50 border-t">
+                <Button type="submit" className="w-full h-14 bg-primary text-white font-black uppercase text-xs tracking-[0.2em] shadow-2xl rounded-xl transition-all hover:scale-[1.01] active:scale-[0.98]">
+                  {editingItem ? "Actualizar Hoja de Vida" : "Confirmar Registro Técnico"}
                 </Button>
               </DialogFooter>
             </form>
@@ -229,69 +257,81 @@ export default function ClientEquipmentPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-white border-none shadow-sm border-l-4 border-l-primary">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Total Activos en Campo</CardTitle>
+        <Card className="bg-white border-none shadow-sm border-l-4 border-l-primary overflow-hidden">
+          <CardHeader className="pb-2 bg-slate-50/50">
+            <CardTitle className="text-[9px] uppercase font-black text-muted-foreground tracking-widest flex items-center gap-2">
+              <Zap className="h-3 w-3 text-primary" /> Inventario General
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-black text-primary">{equipment?.length || 0}</div>
+          <CardContent className="pt-4">
+            <div className="text-3xl font-black text-primary tracking-tighter">{equipment?.length || 0}</div>
+            <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Unidades registradas</p>
           </CardContent>
         </Card>
-        <Card className="bg-white border-none shadow-sm border-l-4 border-l-status-success">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Operativos</CardTitle>
+        <Card className="bg-white border-none shadow-sm border-l-4 border-l-status-success overflow-hidden">
+          <CardHeader className="pb-2 bg-status-success/5">
+            <CardTitle className="text-[9px] uppercase font-black text-muted-foreground tracking-widest flex items-center gap-2">
+              <ShieldCheck className="h-3 w-3 text-status-success" /> Aptos Certificación
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-black text-status-success">{equipment?.filter(e => e.status === "Operativo").length || 0}</div>
+          <CardContent className="pt-4">
+            <div className="text-3xl font-black text-status-success tracking-tighter">{equipment?.filter(e => e.status === "Operativo").length || 0}</div>
+            <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">En estado conforme</p>
           </CardContent>
         </Card>
-        <Card className="bg-white border-none shadow-sm border-l-4 border-l-status-error">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Vencidos / Críticos</CardTitle>
+        <Card className="bg-white border-none shadow-sm border-l-4 border-l-status-error overflow-hidden">
+          <CardHeader className="pb-2 bg-status-error/5">
+            <CardTitle className="text-[9px] uppercase font-black text-muted-foreground tracking-widest flex items-center gap-2">
+              <AlertTriangle className="h-3 w-3 text-status-error" /> Críticos / Vencidos
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-black text-status-error">
+          <CardContent className="pt-4">
+            <div className="text-3xl font-black text-status-error tracking-tighter">
               {equipment?.filter(e => e.status === "Vencido" || (e.nextServiceDate && !isAfter(parseISO(e.nextServiceDate), new Date()))).length || 0}
             </div>
+            <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Acción inmediata req.</p>
           </CardContent>
         </Card>
-        <Card className="bg-white border-none shadow-sm border-l-4 border-l-accent">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Mantenimiento Pendiente</CardTitle>
+        <Card className="bg-white border-none shadow-sm border-l-4 border-l-accent overflow-hidden">
+          <CardHeader className="pb-2 bg-accent/5">
+            <CardTitle className="text-[9px] uppercase font-black text-muted-foreground tracking-widest flex items-center gap-2">
+              <History className="h-3 w-3 text-accent" /> Servicios Pendientes
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-black text-accent">{equipment?.filter(e => e.status === "Mantenimiento").length || 0}</div>
+          <CardContent className="pt-4">
+            <div className="text-3xl font-black text-accent tracking-tighter">{equipment?.filter(e => e.status === "Mantenimiento").length || 0}</div>
+            <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">En taller o ruta</p>
           </CardContent>
         </Card>
       </div>
 
-      <Card className="shadow-sm border-none overflow-hidden">
-        <CardHeader className="pb-3 border-b bg-white">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <Card className="shadow-sm border-none overflow-hidden bg-white">
+        <CardHeader className="pb-4 border-b bg-white p-6">
+          <div className="relative w-full max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input 
-              placeholder="Buscar por N° Serie, Cliente o Ubicación..." 
-              className="pl-9 h-10 text-xs font-bold uppercase" 
+              placeholder="BUSCAR POR SERIE, CLIENTE O UBICACIÓN..." 
+              className="pl-10 h-11 text-xs font-black uppercase border-2 focus:ring-primary" 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent className="p-0 overflow-x-auto">
           {isLoading ? (
-            <div className="flex items-center justify-center p-24">
+            <div className="flex items-center justify-center p-32">
               <Loader2 className="h-10 w-10 animate-spin text-primary" />
             </div>
           ) : (
-            <Table className="dense-table">
+            <Table className="dense-table min-w-[1000px]">
               <TableHeader className="bg-[#1c1c1c]">
                 <TableRow className="border-none">
-                  <TableHead className="text-white font-black uppercase text-[10px]">ID / N° Serie</TableHead>
-                  <TableHead className="text-white font-black uppercase text-[10px]">Cliente / Ubicación</TableHead>
-                  <TableHead className="text-white font-black uppercase text-[10px]">Ficha Técnica</TableHead>
-                  <TableHead className="text-white font-black uppercase text-[10px]">Próximo Vto.</TableHead>
-                  <TableHead className="text-white font-black uppercase text-[10px]">Estado</TableHead>
-                  <TableHead className="text-white text-right pr-6 font-black uppercase text-[10px]">Gestión</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px] py-4">Ficha Técnica / Serie</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px]">Cliente Solicitante</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px]">Especificaciones</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px]">Estado Operativo</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px] text-center">Próx. Vto.</TableHead>
+                  <TableHead className="text-white text-right pr-8 font-black uppercase text-[10px]">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -299,54 +339,64 @@ export default function ClientEquipmentPage() {
                   const client = clients?.find(c => c.id === item.clientId)
                   const isExpired = item.nextServiceDate && !isAfter(parseISO(item.nextServiceDate), new Date())
                   return (
-                    <TableRow key={item.id} className="hover:bg-muted/30 border-slate-100 transition-colors">
+                    <TableRow key={item.id} className="hover:bg-slate-50 border-slate-100 transition-colors">
                       <TableCell>
-                        <div className="flex flex-col">
-                          <span className="font-black text-primary uppercase tracking-tight">{item.serialNumber}</span>
-                          <span className="text-[8px] font-mono opacity-50">{item.id.split('-')[0]}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <span className="font-bold text-[11px] uppercase truncate max-w-[180px]">{client?.name || "---"}</span>
-                          <span className="text-[9px] text-slate-400 flex items-center gap-1 uppercase">
-                            <MapPin className="h-2 w-2" /> {item.location || "Sin ubicación"}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col text-[10px] font-bold text-slate-600 uppercase">
-                          <span>{item.type} • {item.brand}</span>
-                          <span className="text-[9px] opacity-60">{item.capacity} • FAB: {item.manufacturingYear}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <span className={cn(
-                            "text-[11px] font-black",
-                            isExpired ? "text-status-error" : "text-status-success"
+                        <div className="flex items-center gap-3">
+                          <div className={cn(
+                            "h-10 w-10 rounded-lg flex items-center justify-center border-2",
+                            item.status === "Operativo" ? "bg-status-success/5 border-status-success/20 text-status-success" : "bg-slate-50 border-slate-200 text-slate-400"
                           )}>
-                            {item.nextServiceDate || "---"}
-                          </span>
-                          {isExpired && <AlertTriangle className="h-3 w-3 text-status-error animate-pulse" />}
+                            <Flame className="h-5 w-5" />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="font-black text-primary uppercase text-[11px] leading-none mb-1">{item.serialNumber}</span>
+                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">FAB: {item.manufacturingYear} • ID: {item.id.split('-')[0]}</span>
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={cn(
-                          "text-[9px] font-black uppercase px-2 py-0.5",
-                          item.status === "Operativo" ? "bg-status-success/10 text-status-success border-status-success/20" : 
-                          item.status === "Vencido" ? "bg-status-error/10 text-status-error border-status-error/20" :
-                          "bg-slate-50 text-slate-600"
+                        <div className="flex flex-col">
+                          <span className="font-black text-[10px] uppercase truncate max-w-[200px]">{client?.name || "CLIENTE NO ASIGNADO"}</span>
+                          <span className="text-[9px] text-slate-400 flex items-center gap-1 uppercase font-bold">
+                            <MapPin className="h-2.5 w-2.5" /> {item.location || "S/U"}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col text-[10px] font-black text-slate-600 uppercase">
+                          <span>{item.type} • {item.brand}</span>
+                          <Badge variant="outline" className="text-[8px] mt-1 w-fit font-black bg-slate-50">
+                            {item.extinguishingAgent || "PQS"} • {item.capacity}
+                          </Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={cn(
+                          "text-[9px] font-black uppercase px-3 py-1 rounded-md",
+                          item.status === "Operativo" ? "bg-status-success text-white shadow-sm" : 
+                          item.status === "Vencido" ? "bg-status-error text-white animate-pulse" :
+                          "bg-slate-200 text-slate-600"
                         )}>
                           {item.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right pr-6">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => { setEditingItem(item); setIsAdding(true); }}>
+                      <TableCell className="text-center">
+                        <div className="flex flex-col items-center justify-center">
+                          <span className={cn(
+                            "text-[11px] font-black tracking-tighter px-2 py-1 rounded",
+                            isExpired ? "text-status-error bg-status-error/5 border border-status-error/20" : "text-status-success font-bold"
+                          )}>
+                            {item.nextServiceDate ? format(parseISO(item.nextServiceDate), "dd MMM yyyy", { locale: require("date-fns/locale/es") }).toUpperCase() : "---"}
+                          </span>
+                          {isExpired && <span className="text-[7px] font-black text-status-error uppercase mt-1">¡REQUERIDO!</span>}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right pr-8">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="icon" className="h-9 w-9 text-primary hover:bg-primary/5" onClick={() => { setEditingItem(item); setIsAdding(true); }}>
                             <Edit2 className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(item.id)}>
+                          <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:bg-destructive/5" onClick={() => handleDelete(item.id)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -356,10 +406,13 @@ export default function ClientEquipmentPage() {
                 })}
                 {filteredEquipment?.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-24 text-muted-foreground">
-                      <div className="flex flex-col items-center gap-2 opacity-40">
-                        <HardDrive className="h-12 w-12" />
-                        <p className="text-[10px] font-black uppercase">No se han registrado equipos en campo aún</p>
+                    <TableCell colSpan={6} className="text-center py-32">
+                      <div className="flex flex-col items-center gap-4 opacity-20">
+                        <HardDrive className="h-16 w-16 text-primary" />
+                        <div className="space-y-1">
+                          <p className="text-sm font-black uppercase tracking-[0.3em]">No hay activos en inventario</p>
+                          <p className="text-[10px] font-bold uppercase">Comience registrando los equipos de sus clientes para emitir certificados.</p>
+                        </div>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -370,21 +423,25 @@ export default function ClientEquipmentPage() {
         </CardContent>
       </Card>
 
-      <Card className="bg-primary text-white shadow-xl border-none">
-        <CardContent className="p-6 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-              <Factory className="h-6 w-6 text-accent" />
+      <Card className="bg-primary text-white shadow-2xl border-none rounded-[2rem] overflow-hidden relative">
+        <div className="absolute right-0 top-0 h-full w-1/3 bg-white/5 skew-x-12 transform origin-top"></div>
+        <CardContent className="p-10 flex flex-col md:flex-row items-center justify-between gap-8 relative z-10">
+          <div className="flex items-center gap-8">
+            <div className="h-20 w-20 rounded-3xl bg-white/10 flex items-center justify-center shrink-0 border border-white/20 shadow-inner">
+              <Factory className="h-10 w-10 text-accent" />
             </div>
-            <div>
-              <h3 className="font-bold text-lg uppercase tracking-tight">Trazabilidad Total de Activos</h3>
-              <p className="text-sm opacity-80 font-medium">
-                Gestione la hoja de vida de cada extintor para garantizar inspecciones exitosas y seguridad real.
+            <div className="space-y-2">
+              <h3 className="font-black text-2xl uppercase tracking-tighter leading-none">Hoja de Vida e Inventario Técnico</h3>
+              <p className="text-sm opacity-70 font-bold uppercase text-[11px] tracking-wider max-w-xl">
+                Este módulo alimenta automáticamente el generador de certificados. Mantenga la información de recarga y PH actualizada para una gestión legal impecable.
               </p>
             </div>
           </div>
-          <div className="text-[10px] font-black uppercase text-accent bg-white px-4 py-1.5 rounded-full shadow-lg">
-            Módulo de Hoja de Vida v1.0
+          <div className="flex flex-col items-end gap-2 shrink-0">
+            <div className="text-[10px] font-black uppercase text-accent bg-white px-6 py-2 rounded-full shadow-lg border-b-2 border-accent">
+              Motor de Cumplimiento NTP v2.0
+            </div>
+            <p className="text-[8px] font-black uppercase opacity-40 mr-4">Seguridad Industrial Certificada</p>
           </div>
         </CardContent>
       </Card>
