@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "Company": {
@@ -69,14 +68,16 @@
         "id": { "type": "string" },
         "companyId": { "type": "string" },
         "clientId": { "type": "string" },
-        "type": { "type": "string", "enum": ["PQS", "CO2", "Agua", "Acetato de Potasio", "Sensor de Humo", "Luces de Emergencia", "Otros"] },
+        "type": { "type": "string", "enum": ["Extintor", "Gabinete", "Agua", "CO2", "PQS", "Sensor de Humo", "Luces de Emergencia", "Otros"] },
         "serialNumber": { "type": "string" },
         "brand": { "type": "string" },
         "capacity": { "type": "string" },
+        "extinguishingAgent": { "type": "string" },
         "location": { "type": "string" },
         "manufacturingYear": { "type": "integer" },
         "lastServiceDate": { "type": "string", "format": "date" },
         "nextServiceDate": { "type": "string", "format": "date" },
+        "nextHydrostaticTestDate": { "type": "string", "format": "date", "description": "Fecha de la próxima prueba hidrostática (cada 5 años)." },
         "status": { "type": "string", "enum": ["Operativo", "Mantenimiento", "Vencido", "Baja"] }
       },
       "required": ["id", "companyId", "clientId", "serialNumber"]

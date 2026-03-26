@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState } from "react"
@@ -24,7 +23,8 @@ import {
   Factory,
   Flame,
   ShieldCheck,
-  Zap
+  Zap,
+  Droplets
 } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, useUser } from "@/firebase"
 import { collection, doc, query, where } from "firebase/firestore"
@@ -42,7 +42,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { format, isAfter, parseISO } from "date-fns"
+import { format, isAfter, parseISO, addYears } from "date-fns"
 import { es } from "date-fns/locale"
 
 export default function ClientEquipmentPage() {
@@ -88,6 +88,7 @@ export default function ClientEquipmentPage() {
       manufacturingYear: Number(formData.get("year")),
       lastServiceDate: formData.get("lastService") as string,
       nextServiceDate: formData.get("nextService") as string,
+      nextHydrostaticTestDate: formData.get("nextHydrostatic") as string,
       status: formData.get("status") as string || "Operativo",
       updatedAt: new Date().toISOString()
     }
@@ -117,6 +118,11 @@ export default function ClientEquipmentPage() {
            client?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
            item.location?.toLowerCase().includes(searchTerm.toLowerCase())
   })
+
+  // Sugerir fecha de PH (5 años después del año de fab o última PH)
+  const suggestPHDate = (year: number) => {
+    return format(addYears(new Date(year, 0, 1), 5), "yyyy-MM-dd")
+  }
 
   return (
     <div className="space-y-6">
@@ -217,7 +223,7 @@ export default function ClientEquipmentPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="grid gap-2">
                     <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Año Fab.</Label>
                     <Input name="year" type="number" defaultValue={editingItem?.manufacturingYear || new Date().getFullYear()} className="h-12 font-black text-center border-2" />
@@ -226,9 +232,16 @@ export default function ClientEquipmentPage() {
                     <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Última Recarga</Label>
                     <Input name="lastService" type="date" defaultValue={editingItem?.lastServiceDate || format(new Date(), "yyyy-MM-dd")} className="h-12 font-bold border-2" />
                   </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="grid gap-2">
                     <Label className="text-[10px] font-black uppercase text-accent tracking-widest">Vencimiento Anual</Label>
                     <Input name="nextService" type="date" defaultValue={editingItem?.nextServiceDate} className="h-12 font-black border-2 border-accent/30 text-accent" required />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label className="text-[10px] font-black uppercase text-blue-600 tracking-widest">Próxima Prueba Hidrostática (5 Años)</Label>
+                    <Input name="nextHydrostatic" type="date" defaultValue={editingItem?.nextHydrostaticTestDate || (editingItem?.manufacturingYear ? suggestPHDate(editingItem.manufacturingYear) : "")} className="h-12 font-black border-2 border-blue-200 text-blue-600" required />
                   </div>
                 </div>
 
@@ -293,15 +306,17 @@ export default function ClientEquipmentPage() {
             <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Acción inmediata req.</p>
           </CardContent>
         </Card>
-        <Card className="bg-white border-none shadow-sm border-l-4 border-l-accent overflow-hidden">
-          <CardHeader className="pb-2 bg-accent/5">
+        <Card className="bg-white border-none shadow-sm border-l-4 border-l-blue-600 overflow-hidden">
+          <CardHeader className="pb-2 bg-blue-50">
             <CardTitle className="text-[9px] uppercase font-black text-muted-foreground tracking-widest flex items-center gap-2">
-              <History className="h-3 w-3 text-accent" /> Servicios Pendientes
+              <Droplets className="h-3 w-3 text-blue-600" /> Pruebas H. (5A)
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-4">
-            <div className="text-3xl font-black text-accent tracking-tighter">{equipment?.filter(e => e.status === "Mantenimiento").length || 0}</div>
-            <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">En taller o ruta</p>
+            <div className="text-3xl font-black text-blue-600 tracking-tighter">
+              {equipment?.filter(e => e.nextHydrostaticTestDate && !isAfter(parseISO(e.nextHydrostaticTestDate), new Date())).length || 0}
+            </div>
+            <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Pruebas pendientes</p>
           </CardContent>
         </Card>
       </div>
@@ -324,14 +339,15 @@ export default function ClientEquipmentPage() {
               <Loader2 className="h-10 w-10 animate-spin text-primary" />
             </div>
           ) : (
-            <Table className="dense-table min-w-[1000px]">
+            <Table className="dense-table min-w-[1200px]">
               <TableHeader className="bg-[#1c1c1c]">
                 <TableRow className="border-none">
                   <TableHead className="text-white font-black uppercase text-[10px] py-4">Ficha Técnica / Serie</TableHead>
                   <TableHead className="text-white font-black uppercase text-[10px]">Cliente Solicitante</TableHead>
                   <TableHead className="text-white font-black uppercase text-[10px]">Especificaciones</TableHead>
                   <TableHead className="text-white font-black uppercase text-[10px]">Estado Operativo</TableHead>
-                  <TableHead className="text-white font-black uppercase text-[10px] text-center">Próx. Vto.</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px] text-center">Vto. Anual</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px] text-center">Vto. P.H. (5A)</TableHead>
                   <TableHead className="text-white text-right pr-8 font-black uppercase text-[10px]">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
@@ -339,6 +355,7 @@ export default function ClientEquipmentPage() {
                 {filteredEquipment?.map((item) => {
                   const client = clients?.find(c => c.id === item.clientId)
                   const isExpired = item.nextServiceDate && !isAfter(parseISO(item.nextServiceDate), new Date())
+                  const isPHExpired = item.nextHydrostaticTestDate && !isAfter(parseISO(item.nextHydrostaticTestDate), new Date())
                   return (
                     <TableRow key={item.id} className="hover:bg-slate-50 border-slate-100 transition-colors">
                       <TableCell>
@@ -389,7 +406,18 @@ export default function ClientEquipmentPage() {
                           )}>
                             {item.nextServiceDate ? format(parseISO(item.nextServiceDate), "dd MMM yyyy", { locale: es }).toUpperCase() : "---"}
                           </span>
-                          {isExpired && <span className="text-[7px] font-black text-status-error uppercase mt-1">¡REQUERIDO!</span>}
+                          {isExpired && <span className="text-[7px] font-black text-status-error uppercase mt-1">¡RECARGA!</span>}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex flex-col items-center justify-center">
+                          <span className={cn(
+                            "text-[11px] font-black tracking-tighter px-2 py-1 rounded",
+                            isPHExpired ? "text-blue-600 bg-blue-50 border border-blue-200" : "text-slate-500 font-bold"
+                          )}>
+                            {item.nextHydrostaticTestDate ? format(parseISO(item.nextHydrostaticTestDate), "dd MMM yyyy", { locale: es }).toUpperCase() : "---"}
+                          </span>
+                          {isPHExpired && <span className="text-[7px] font-black text-blue-600 uppercase mt-1">¡PRUEBA REQ!</span>}
                         </div>
                       </TableCell>
                       <TableCell className="text-right pr-8">
@@ -407,7 +435,7 @@ export default function ClientEquipmentPage() {
                 })}
                 {filteredEquipment?.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-32">
+                    <TableCell colSpan={7} className="text-center py-32">
                       <div className="flex flex-col items-center gap-4 opacity-20">
                         <HardDrive className="h-16 w-16 text-primary" />
                         <div className="space-y-1">
@@ -434,13 +462,13 @@ export default function ClientEquipmentPage() {
             <div className="space-y-2">
               <h3 className="font-black text-2xl uppercase tracking-tighter leading-none">Hoja de Vida e Inventario Técnico</h3>
               <p className="text-sm opacity-70 font-bold uppercase text-[11px] tracking-wider max-w-xl">
-                Este módulo alimenta automáticamente el generador de certificados. Mantenga la información de recarga y PH actualizada para una gestión legal impecable.
+                Este módulo gestiona el ciclo de vida completo: Recarga Anual y Prueba Hidrostática (cada 5 años). Cumpla con la NTP 350.043-1 de forma automatizada.
               </p>
             </div>
           </div>
           <div className="flex flex-col items-end gap-2 shrink-0">
             <div className="text-[10px] font-black uppercase text-accent bg-white px-6 py-2 rounded-full shadow-lg border-b-2 border-accent">
-              Motor de Cumplimiento NTP v2.0
+              Motor de Cumplimiento NTP v2.5
             </div>
             <p className="text-[8px] font-black uppercase opacity-40 mr-4">Seguridad Industrial Certificada</p>
           </div>
