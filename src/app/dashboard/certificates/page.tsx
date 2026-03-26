@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useMemo, useCallback } from "react"
+import React, { useState, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -45,15 +45,14 @@ import { toast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 
-// Componente interno para manejar el formulario y evitar re-renderizados del padre
-function CertificateForm({ 
+// Componente interno memoizado para evitar re-renderizados del padre que causan bucles
+const CertificateForm = React.memo(({ 
   companyId, 
   editingCert, 
   suggestedCertNumber, 
   clients, 
-  onSave, 
-  onCancel 
-}: any) {
+  onSave 
+}: any) => {
   const db = useFirestore()
   const [selectedClientId, setSelectedClientId] = useState<string | null>(editingCert?.clienteId || null)
   const [selectedEquipmentIds, setSelectedEquipmentIds] = useState<string[]>(editingCert?.servicedEquipmentIds || [])
@@ -220,25 +219,30 @@ function CertificateForm({
       </DialogFooter>
     </form>
   )
-}
+})
+
+CertificateForm.displayName = "CertificateForm"
 
 export default function CertificatesRegistryPage() {
   const db = useFirestore()
   const { user } = useUser()
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState("")
-  const [isAdding, setIsAdding] = useState(false)
-  const [editingCert, setEditingCert] = useState<any | null>(null)
+  
+  // Unificar estados para evitar bucles de actualización en Dialog
+  const [modalState, setModalState] = useState<{ open: boolean, editing: any | null }>({
+    open: false,
+    editing: null
+  })
 
-  // Profile and Company Context
+  // Perfil estable
   const userProfileQuery = useMemoFirebase(() => 
     user?.email ? query(collection(db, "company_users"), where("email", "==", user.email)) : null,
   [db, user?.email])
   const { data: profiles } = useCollection(userProfileQuery)
-  
   const companyId = useMemo(() => profiles?.[0]?.companyId, [profiles])
 
-  // Data Collections
+  // Colecciones estables
   const certsRef = useMemoFirebase(() => 
     companyId ? query(collection(db, "certificates"), where("companyId", "==", companyId)) : null,
   [db, companyId])
@@ -249,7 +253,7 @@ export default function CertificatesRegistryPage() {
   [db, companyId])
   const { data: clients } = useCollection(clientsRef)
 
-  // Auto-generation of Certificate Number
+  // Generación estable de número
   const suggestedCertNumber = useMemo(() => {
     const currentYear = new Date().getFullYear()
     if (!certificates || certificates.length === 0) return `CERT-${currentYear}-001`
@@ -269,8 +273,8 @@ export default function CertificatesRegistryPage() {
       updatedAt: new Date().toISOString()
     }
 
-    if (editingCert) {
-      updateDocumentNonBlocking(doc(db, "certificates", editingCert.id), finalData)
+    if (modalState.editing) {
+      updateDocumentNonBlocking(doc(db, "certificates", modalState.editing.id), finalData)
       toast({ title: "Certificado actualizado" })
     } else {
       addDocumentNonBlocking(collection(db, "certificates"), { 
@@ -281,9 +285,8 @@ export default function CertificatesRegistryPage() {
       toast({ title: "Certificado Emitido Correctamente" })
     }
 
-    setIsAdding(false)
-    setEditingCert(null)
-  }, [companyId, editingCert, db])
+    setModalState({ open: false, editing: null })
+  }, [companyId, modalState.editing, db])
 
   const handleDelete = (id: string) => {
     if(!confirm("¿Desea anular este certificado de forma permanente?")) return
@@ -292,19 +295,17 @@ export default function CertificatesRegistryPage() {
   }
 
   const openEdit = (cert: any) => {
-    setEditingCert(cert)
-    setIsAdding(true)
+    setModalState({ open: true, editing: cert })
   }
+
+  const handleOpenChange = useCallback((open: boolean) => {
+    setModalState(prev => ({ open, editing: open ? prev.editing : null }))
+  }, [])
 
   const filteredCerts = useMemo(() => certificates?.filter(c => 
     c.certificadoNumero?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.clienteNombre?.toLowerCase().includes(searchTerm.toLowerCase())
   ), [certificates, searchTerm])
-
-  const handleOpenChange = useCallback((open: boolean) => {
-    setIsAdding(open)
-    if (!open) setEditingCert(null)
-  }, [])
 
   return (
     <div className="space-y-6">
@@ -314,9 +315,9 @@ export default function CertificatesRegistryPage() {
           <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest">Protocolos de operatividad y mantenimiento de equipos.</p>
         </div>
         
-        <Dialog open={isAdding} onOpenChange={handleOpenChange}>
+        <Dialog open={modalState.open} onOpenChange={handleOpenChange}>
           <DialogTrigger asChild>
-            <Button className="bg-primary text-white h-10 font-bold uppercase text-[11px] shadow-lg px-6">
+            <Button className="bg-primary text-white h-10 font-bold uppercase text-[11px] shadow-lg px-6" onClick={() => setModalState({ open: true, editing: null })}>
               <Plus className="mr-2 h-4 w-4" /> Emitir Nuevo Folio
             </Button>
           </DialogTrigger>
@@ -326,14 +327,13 @@ export default function CertificatesRegistryPage() {
               <DialogDescription className="text-[10px] font-bold uppercase">Sugerido: {suggestedCertNumber}</DialogDescription>
             </DialogHeader>
             
-            {isAdding && (
+            {modalState.open && (
               <CertificateForm 
                 companyId={companyId}
-                editingCert={editingCert}
+                editingCert={modalState.editing}
                 suggestedCertNumber={suggestedCertNumber}
                 clients={clients}
                 onSave={handleSaveCertificate}
-                onCancel={() => setIsAdding(false)}
               />
             )}
           </DialogContent>
@@ -438,7 +438,7 @@ export default function CertificatesRegistryPage() {
             </div>
           </div>
           <div className="text-[10px] font-black uppercase text-accent bg-white px-4 py-1.5 rounded-full shadow-lg">
-            Sistema de Certificación v4.0
+            Sistema de Certificación v4.5
           </div>
         </CardContent>
       </Card>

@@ -47,6 +47,9 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
   if (!cert) return <div className="p-20 text-center font-bold uppercase">Folio no encontrado</div>
 
   const formattedDate = cert.fechaEmision ? format(parseISO(cert.fechaEmision), "dd 'de' MMMM 'del' yyyy", { locale: es }) : "---"
+  
+  // Limpiar el prefijo CERT- para mostrar solo N° 2025-001
+  const displayCertNumber = cert.certificadoNumero?.replace('CERT-', '') || "---"
 
   return (
     <div className="space-y-6 pb-20">
@@ -85,7 +88,7 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
               NORMA TÉCNICA PERUANA NTP 350.043-1
             </p>
             <div className="bg-[#1c1c1c] text-white px-6 py-2 rounded font-black text-xs tracking-widest inline-block shadow-sm border-b-2 border-slate-400">
-              FOLIO N° {cert.certificadoNumero}
+              CERT N° {displayCertNumber}
             </div>
           </div>
         </div>
@@ -159,7 +162,7 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
                       <td className="p-3 font-black text-primary border-r border-slate-100">{item.ns}</td>
                       <td className="p-3 font-bold text-slate-600 uppercase border-r border-slate-100">{item.tipo} {item.cap}</td>
                       <td className="p-3 text-center font-bold text-slate-500 border-r border-slate-100">{item.vctoRecarga}</td>
-                      <td className="p-3 text-center font-bold text-slate-500">{item.vctoPH || "PENDIENTE"}</td>
+                      <td className="p-3 text-center font-bold text-slate-500">{item.vctoPH || "---"}</td>
                     </tr>
                   ))}
                 </tbody>
