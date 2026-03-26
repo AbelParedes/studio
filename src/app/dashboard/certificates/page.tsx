@@ -45,73 +45,36 @@ import { toast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 
-export default function CertificatesRegistryPage() {
+// Componente interno para manejar el formulario y evitar re-renderizados del padre
+function CertificateForm({ 
+  companyId, 
+  editingCert, 
+  suggestedCertNumber, 
+  clients, 
+  onSave, 
+  onCancel 
+}: any) {
   const db = useFirestore()
-  const { user } = useUser()
-  const router = useRouter()
-  const [searchTerm, setSearchTerm] = useState("")
-  const [isAdding, setIsAdding] = useState(false)
-  const [editingCert, setEditingCert] = useState<any | null>(null)
-  
-  // States for equipment selection
-  const [selectedClientId, setSelectedClientId] = useState<string | null>(null)
-  const [selectedEquipmentIds, setSelectedEquipmentIds] = useState<string[]>([])
-
-  // Profile and Company Context
-  const userProfileQuery = useMemoFirebase(() => 
-    user?.email ? query(collection(db, "company_users"), where("email", "==", user.email)) : null,
-  [db, user?.email])
-  const { data: profiles } = useCollection(userProfileQuery)
-  
-  // Memoize companyId to stabilize dependencies (primitive string is safe)
-  const companyId = useMemo(() => profiles?.[0]?.companyId, [profiles?.[0]?.companyId])
-
-  // Data Collections
-  const certsRef = useMemoFirebase(() => 
-    companyId ? query(collection(db, "certificates"), where("companyId", "==", companyId)) : null,
-  [db, companyId])
-  const { data: certificates, isLoading } = useCollection(certsRef)
-
-  const clientsRef = useMemoFirebase(() => 
-    companyId ? query(collection(db, "clients"), where("companyId", "==", companyId)) : null,
-  [db, companyId])
-  const { data: clients } = useCollection(clientsRef)
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(editingCert?.clienteId || null)
+  const [selectedEquipmentIds, setSelectedEquipmentIds] = useState<string[]>(editingCert?.servicedEquipmentIds || [])
 
   const equipmentRef = useMemoFirebase(() => 
     (companyId && selectedClientId) ? query(collection(db, "client_equipment"), where("clientId", "==", selectedClientId)) : null,
   [db, companyId, selectedClientId])
-  const { data: clientEquipment } = useCollection(equipmentRef)
+  const { data: clientEquipment, isLoading: loadingEquip } = useCollection(equipmentRef)
 
-  // Auto-generation of Certificate Number
-  const currentYear = useMemo(() => new Date().getFullYear(), [])
-  const suggestedCertNumber = useMemo(() => {
-    if (!certificates || certificates.length === 0) return `CERT-${currentYear}-001`
-    const yearCerts = certificates.filter(c => c.certificadoNumero?.includes(`-${currentYear}-`))
-    const lastNum = yearCerts.length > 0 
-      ? Math.max(...yearCerts.map(c => parseInt(c.certificadoNumero.split("-").pop() || "0"))) 
-      : 0
-    return `CERT-${currentYear}-${(lastNum + 1).toString().padStart(3, '0')}`
-  }, [certificates, currentYear])
+  const toggleEquipment = (id: string) => {
+    setSelectedEquipmentIds(prev => 
+      prev.includes(id) ? prev.filter(eid => eid !== id) : [...prev, id]
+    )
+  }
 
-  // Stable handler for dialog open state to prevent render loops
-  const handleOpenChange = useCallback((open: boolean) => {
-    setIsAdding(open)
-    if (!open) {
-      setEditingCert(null)
-      setSelectedClientId(null)
-      setSelectedEquipmentIds([])
-    }
-  }, [])
-
-  const handleSaveCertificate = useCallback((e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    if (!companyId) return
-
     const formData = new FormData(e.currentTarget)
     const clientId = formData.get("clienteId") as string
-    const client = clients?.find(c => c.id === clientId)
+    const client = clients?.find((c: any) => c.id === clientId)
 
-    // Build technical extinguisher data from selection
     const technicalData = selectedEquipmentIds.map(id => {
       const equip = clientEquipment?.find(e => e.id === id)
       return {
@@ -126,7 +89,6 @@ export default function CertificatesRegistryPage() {
     })
 
     const certData = {
-      companyId,
       clienteId: clientId,
       clienteNombre: client?.name || "Desconocido",
       certificadoNumero: formData.get("number") as string || suggestedCertNumber,
@@ -138,20 +100,190 @@ export default function CertificatesRegistryPage() {
       normativa: "NTP 350.043",
       datosExtintor: technicalData,
       servicedEquipmentIds: selectedEquipmentIds,
-      status: "Emitido",
+      status: "Emitido"
+    }
+
+    onSave(certData)
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col h-full overflow-hidden">
+      <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid gap-2">
+            <Label className="text-[10px] font-black uppercase text-slate-500">Cliente Beneficiario</Label>
+            <Select 
+              name="clienteId" 
+              defaultValue={selectedClientId || ""} 
+              onValueChange={(val) => { setSelectedClientId(val); setSelectedEquipmentIds([]); }} 
+              required
+            >
+              <SelectTrigger className="h-11 border-2 font-bold uppercase text-xs">
+                <SelectValue placeholder="Seleccione Cliente" />
+              </SelectTrigger>
+              <SelectContent>
+                {clients?.map((c: any) => (
+                  <SelectItem key={c.id} value={c.id} className="font-bold text-xs uppercase">{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-2">
+            <Label className="text-[10px] font-black uppercase text-slate-500">N° Folio / Certificado</Label>
+            <Input name="number" defaultValue={editingCert?.certificadoNumero || suggestedCertNumber} className="h-11 border-2 font-black uppercase text-xs" />
+          </div>
+          <div className="grid gap-2">
+            <Label className="text-[10px] font-black uppercase text-slate-500">Fecha Emisión</Label>
+            <Input name="date" type="date" defaultValue={editingCert?.fechaEmision || format(new Date(), "yyyy-MM-dd")} className="h-11 border-2 font-bold" />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid gap-2">
+            <Label className="text-[10px] font-black uppercase text-slate-500">Tipo Agente</Label>
+            <Select name="tipo" defaultValue={editingCert?.tipoExtintor || "PQS"}>
+              <SelectTrigger className="h-10 border-2 text-xs font-bold"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="PQS">PQS - ABC</SelectItem>
+                <SelectItem value="CO2">CO2</SelectItem>
+                <SelectItem value="H2O">AGUA (H2O)</SelectItem>
+                <SelectItem value="K">POTASIO (K)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-2">
+            <Label className="text-[10px] font-black uppercase text-slate-500">P. Prueba</Label>
+            <Input name="presionPrueba" defaultValue={editingCert?.presionPrueba || "KPA 3400"} className="h-10 border-2 font-bold text-xs" />
+          </div>
+          <div className="grid gap-2">
+            <Label className="text-[10px] font-black uppercase text-slate-500">P. Trabajo</Label>
+            <Input name="presionTrabajo" defaultValue={editingCert?.presionTrabajo || "KPA 1345"} className="h-10 border-2 font-bold text-xs" />
+          </div>
+          <div className="grid gap-2">
+            <Label className="text-[10px] font-black uppercase text-slate-500">Rating</Label>
+            <Input name="rating" defaultValue={editingCert?.rating || "4A - 40 BC"} className="h-10 border-2 font-bold text-xs" />
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between border-b-2 border-slate-100 pb-2">
+            <h3 className="text-[11px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
+              <HardDrive className="h-4 w-4" /> Equipos a Certificar (Hoja de Vida)
+            </h3>
+            <Badge variant="outline" className="text-[9px] font-black">{selectedEquipmentIds.length} Seleccionados</Badge>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+            {loadingEquip ? (
+              <div className="col-span-2 py-10 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+            ) : clientEquipment && clientEquipment.length > 0 ? (
+              clientEquipment.map(item => (
+                <div 
+                  key={item.id} 
+                  onClick={() => toggleEquipment(item.id)}
+                  className={cn(
+                    "flex items-center justify-between p-3 border-2 rounded-xl transition-all cursor-pointer",
+                    selectedEquipmentIds.includes(item.id) ? "border-primary bg-primary/5 shadow-sm" : "border-slate-100 hover:border-slate-200 bg-slate-50/50"
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <Checkbox 
+                      checked={selectedEquipmentIds.includes(item.id)} 
+                      onCheckedChange={() => toggleEquipment(item.id)}
+                      onClick={(e) => e.stopPropagation()} 
+                    />
+                    <div className="flex flex-col">
+                      <span className="text-[11px] font-black uppercase text-primary">{item.serialNumber}</span>
+                      <span className="text-[9px] font-bold text-slate-400 uppercase">{item.type} • {item.capacity}</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <Badge variant="outline" className="text-[8px] font-black uppercase bg-white">{item.location || "S/U"}</Badge>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-2 py-10 text-center bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
+                <p className="text-[10px] font-black uppercase text-slate-400">
+                  {selectedClientId ? "No hay equipos registrados para este cliente" : "Seleccione un cliente para ver sus equipos"}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <DialogFooter className="p-6 border-t bg-slate-50 shrink-0">
+        <Button type="submit" className="w-full h-14 bg-primary text-white font-black uppercase text-xs tracking-[0.2em] shadow-xl">
+          {editingCert ? "Guardar Cambios" : "Emitir Protocolo de Operatividad"}
+        </Button>
+      </DialogFooter>
+    </form>
+  )
+}
+
+export default function CertificatesRegistryPage() {
+  const db = useFirestore()
+  const { user } = useUser()
+  const router = useRouter()
+  const [searchTerm, setSearchTerm] = useState("")
+  const [isAdding, setIsAdding] = useState(false)
+  const [editingCert, setEditingCert] = useState<any | null>(null)
+
+  // Profile and Company Context
+  const userProfileQuery = useMemoFirebase(() => 
+    user?.email ? query(collection(db, "company_users"), where("email", "==", user.email)) : null,
+  [db, user?.email])
+  const { data: profiles } = useCollection(userProfileQuery)
+  
+  const companyId = useMemo(() => profiles?.[0]?.companyId, [profiles])
+
+  // Data Collections
+  const certsRef = useMemoFirebase(() => 
+    companyId ? query(collection(db, "certificates"), where("companyId", "==", companyId)) : null,
+  [db, companyId])
+  const { data: certificates, isLoading } = useCollection(certsRef)
+
+  const clientsRef = useMemoFirebase(() => 
+    companyId ? query(collection(db, "clients"), where("companyId", "==", companyId)) : null,
+  [db, companyId])
+  const { data: clients } = useCollection(clientsRef)
+
+  // Auto-generation of Certificate Number
+  const currentYear = useMemo(() => new Date().getFullYear(), [])
+  const suggestedCertNumber = useMemo(() => {
+    if (!certificates || certificates.length === 0) return `CERT-${currentYear}-001`
+    const yearCerts = certificates.filter(c => c.certificadoNumero?.includes(`-${currentYear}-`))
+    const lastNum = yearCerts.length > 0 
+      ? Math.max(...yearCerts.map(c => parseInt(c.certificadoNumero.split("-").pop() || "0"))) 
+      : 0
+    return `CERT-${currentYear}-${(lastNum + 1).toString().padStart(3, '0')}`
+  }, [certificates, currentYear])
+
+  const handleSaveCertificate = useCallback((certData: any) => {
+    if (!companyId) return
+
+    const finalData = {
+      ...certData,
+      companyId,
       updatedAt: new Date().toISOString()
     }
 
     if (editingCert) {
-      updateDocumentNonBlocking(doc(db, "certificates", editingCert.id), certData)
+      updateDocumentNonBlocking(doc(db, "certificates", editingCert.id), finalData)
       toast({ title: "Certificado actualizado" })
     } else {
-      addDocumentNonBlocking(collection(db, "certificates"), { ...certData, id: crypto.randomUUID(), createdAt: new Date().toISOString() })
+      addDocumentNonBlocking(collection(db, "certificates"), { 
+        ...finalData, 
+        id: crypto.randomUUID(), 
+        createdAt: new Date().toISOString() 
+      })
       toast({ title: "Certificado Emitido Correctamente" })
     }
 
-    handleOpenChange(false)
-  }, [companyId, clients, selectedEquipmentIds, clientEquipment, suggestedCertNumber, editingCert, db, handleOpenChange])
+    setIsAdding(false)
+    setEditingCert(null)
+  }, [companyId, editingCert, db])
 
   const handleDelete = (id: string) => {
     if(!confirm("¿Desea anular este certificado de forma permanente?")) return
@@ -161,8 +293,6 @@ export default function CertificatesRegistryPage() {
 
   const openEdit = (cert: any) => {
     setEditingCert(cert)
-    setSelectedClientId(cert.clienteId)
-    setSelectedEquipmentIds(cert.servicedEquipmentIds || [])
     setIsAdding(true)
   }
 
@@ -170,12 +300,6 @@ export default function CertificatesRegistryPage() {
     c.certificadoNumero?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.clienteNombre?.toLowerCase().includes(searchTerm.toLowerCase())
   ), [certificates, searchTerm])
-
-  const toggleEquipment = (id: string) => {
-    setSelectedEquipmentIds(prev => 
-      prev.includes(id) ? prev.filter(eid => eid !== id) : [...prev, id]
-    )
-  }
 
   return (
     <div className="space-y-6">
@@ -185,119 +309,28 @@ export default function CertificatesRegistryPage() {
           <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest">Protocolos de operatividad y mantenimiento de equipos.</p>
         </div>
         
-        <Dialog open={isAdding} onOpenChange={handleOpenChange}>
+        <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if(!open) setEditingCert(null); }}>
           <DialogTrigger asChild>
             <Button className="bg-primary text-white h-10 font-bold uppercase text-[11px] shadow-lg px-6">
               <Plus className="mr-2 h-4 w-4" /> Emitir Nuevo Folio
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
-            <form onSubmit={handleSaveCertificate} className="flex flex-col h-full overflow-hidden">
-              <DialogHeader className="p-6 border-b bg-slate-50 shrink-0">
-                <DialogTitle className="uppercase font-black text-primary text-xl">Protocolo de Operatividad NTP</DialogTitle>
-                <DialogDescription className="text-[10px] font-bold uppercase">Sugerido: {suggestedCertNumber}</DialogDescription>
-              </DialogHeader>
-              
-              <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="grid gap-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-500">Cliente Beneficiario</Label>
-                    <Select name="clienteId" value={selectedClientId || ""} onValueChange={(val) => { setSelectedClientId(val); setSelectedEquipmentIds([]); }} required>
-                      <SelectTrigger className="h-11 border-2 font-bold uppercase text-xs">
-                        <SelectValue placeholder="Seleccione Cliente" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {clients?.map(c => (
-                          <SelectItem key={c.id} value={c.id} className="font-bold text-xs uppercase">{c.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-500">N° Folio / Certificado</Label>
-                    <Input name="number" defaultValue={editingCert?.certificadoNumero || suggestedCertNumber} className="h-11 border-2 font-black uppercase text-xs" />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-500">Fecha Emisión</Label>
-                    <Input name="date" type="date" defaultValue={editingCert?.fechaEmision || format(new Date(), "yyyy-MM-dd")} className="h-11 border-2 font-bold" />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="grid gap-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-500">Tipo Agente</Label>
-                    <Select name="tipo" defaultValue={editingCert?.tipoExtintor || "PQS"}>
-                      <SelectTrigger className="h-10 border-2 text-xs font-bold"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="PQS">PQS - ABC</SelectItem>
-                        <SelectItem value="CO2">CO2</SelectItem>
-                        <SelectItem value="H2O">AGUA (H2O)</SelectItem>
-                        <SelectItem value="K">POTASIO (K)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-500">P. Prueba</Label>
-                    <Input name="presionPrueba" defaultValue={editingCert?.presionPrueba || "KPA 3400"} className="h-10 border-2 font-bold text-xs" />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-500">P. Trabajo</Label>
-                    <Input name="presionTrabajo" defaultValue={editingCert?.presionTrabajo || "KPA 1345"} className="h-10 border-2 font-bold text-xs" />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-500">Rating</Label>
-                    <Input name="rating" defaultValue={editingCert?.rating || "4A - 40 BC"} className="h-10 border-2 font-bold text-xs" />
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between border-b-2 border-slate-100 pb-2">
-                    <h3 className="text-[11px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
-                      <HardDrive className="h-4 w-4" /> Equipos a Certificar (Hoja de Vida)
-                    </h3>
-                    <Badge variant="outline" className="text-[9px] font-black">{selectedEquipmentIds.length} Seleccionados</Badge>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                    {clientEquipment && clientEquipment.length > 0 ? (
-                      clientEquipment.map(item => (
-                        <div 
-                          key={item.id} 
-                          onClick={() => toggleEquipment(item.id)}
-                          className={cn(
-                            "flex items-center justify-between p-3 border-2 rounded-xl transition-all cursor-pointer",
-                            selectedEquipmentIds.includes(item.id) ? "border-primary bg-primary/5 shadow-sm" : "border-slate-100 hover:border-slate-200 bg-slate-50/50"
-                          )}
-                        >
-                          <div className="flex items-center gap-3">
-                            <Checkbox checked={selectedEquipmentIds.includes(item.id)} onCheckedChange={() => toggleEquipment(item.id)} />
-                            <div className="flex flex-col">
-                              <span className="text-[11px] font-black uppercase text-primary">{item.serialNumber}</span>
-                              <span className="text-[9px] font-bold text-slate-400 uppercase">{item.type} • {item.capacity}</span>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <Badge variant="outline" className="text-[8px] font-black uppercase bg-white">{item.location || "S/U"}</Badge>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="col-span-2 py-10 text-center bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
-                        <p className="text-[10px] font-black uppercase text-slate-400">
-                          {selectedClientId ? "No hay equipos registrados para este cliente" : "Seleccione un cliente para ver sus equipos"}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <DialogFooter className="p-6 border-t bg-slate-50 shrink-0">
-                <Button type="submit" className="w-full h-14 bg-primary text-white font-black uppercase text-xs tracking-[0.2em] shadow-xl">
-                  {editingCert ? "Guardar Cambios" : "Emitir Protocolo de Operatividad"}
-                </Button>
-              </DialogFooter>
-            </form>
+            <DialogHeader className="p-6 border-b bg-slate-50 shrink-0">
+              <DialogTitle className="uppercase font-black text-primary text-xl">Protocolo de Operatividad NTP</DialogTitle>
+              <DialogDescription className="text-[10px] font-bold uppercase">Sugerido: {suggestedCertNumber}</DialogDescription>
+            </DialogHeader>
+            
+            {isAdding && (
+              <CertificateForm 
+                companyId={companyId}
+                editingCert={editingCert}
+                suggestedCertNumber={suggestedCertNumber}
+                clients={clients}
+                onSave={handleSaveCertificate}
+                onCancel={() => setIsAdding(false)}
+              />
+            )}
           </DialogContent>
         </Dialog>
       </div>
