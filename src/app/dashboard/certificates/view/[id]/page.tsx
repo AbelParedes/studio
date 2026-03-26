@@ -84,6 +84,9 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
             <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">
               NORMA TÉCNICA PERUANA NTP 350.043-1
             </p>
+            <div className="bg-[#1c1c1c] text-white px-6 py-2 rounded font-black text-xs tracking-widest inline-block shadow-sm border-b-2 border-slate-400">
+              FOLIO N° {cert.certificadoNumero}
+            </div>
           </div>
         </div>
 

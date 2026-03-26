@@ -63,11 +63,11 @@ function CertificateForm({
   [db, companyId, selectedClientId])
   const { data: clientEquipment, isLoading: loadingEquip } = useCollection(equipmentRef)
 
-  const toggleEquipment = (id: string) => {
+  const toggleEquipment = useCallback((id: string) => {
     setSelectedEquipmentIds(prev => 
       prev.includes(id) ? prev.filter(eid => eid !== id) : [...prev, id]
     )
-  }
+  }, [])
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -250,15 +250,15 @@ export default function CertificatesRegistryPage() {
   const { data: clients } = useCollection(clientsRef)
 
   // Auto-generation of Certificate Number
-  const currentYear = useMemo(() => new Date().getFullYear(), [])
   const suggestedCertNumber = useMemo(() => {
+    const currentYear = new Date().getFullYear()
     if (!certificates || certificates.length === 0) return `CERT-${currentYear}-001`
     const yearCerts = certificates.filter(c => c.certificadoNumero?.includes(`-${currentYear}-`))
     const lastNum = yearCerts.length > 0 
       ? Math.max(...yearCerts.map(c => parseInt(c.certificadoNumero.split("-").pop() || "0"))) 
       : 0
     return `CERT-${currentYear}-${(lastNum + 1).toString().padStart(3, '0')}`
-  }, [certificates, currentYear])
+  }, [certificates])
 
   const handleSaveCertificate = useCallback((certData: any) => {
     if (!companyId) return
@@ -301,6 +301,11 @@ export default function CertificatesRegistryPage() {
     c.clienteNombre?.toLowerCase().includes(searchTerm.toLowerCase())
   ), [certificates, searchTerm])
 
+  const handleOpenChange = useCallback((open: boolean) => {
+    setIsAdding(open)
+    if (!open) setEditingCert(null)
+  }, [])
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -309,7 +314,7 @@ export default function CertificatesRegistryPage() {
           <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest">Protocolos de operatividad y mantenimiento de equipos.</p>
         </div>
         
-        <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if(!open) setEditingCert(null); }}>
+        <Dialog open={isAdding} onOpenChange={handleOpenChange}>
           <DialogTrigger asChild>
             <Button className="bg-primary text-white h-10 font-bold uppercase text-[11px] shadow-lg px-6">
               <Plus className="mr-2 h-4 w-4" /> Emitir Nuevo Folio
