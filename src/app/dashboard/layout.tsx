@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection, useAuth } from "@/firebase"
 import { doc, collection, query, where, limit } from "firebase/firestore"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from "@/components/ui/sheet"
 import { signOut } from "firebase/auth"
 import Image from "next/image"
 
@@ -163,6 +163,10 @@ export default function DashboardLayout({
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="p-0 w-64 bg-sidebar border-none">
+                <SheetHeader className="sr-only">
+                  <SheetTitle>Menú de Navegación</SheetTitle>
+                  <SheetDescription>Acceso móvil a los módulos de gestión de extintores.</SheetDescription>
+                </SheetHeader>
                 <DashboardNav 
                   onNavItemClick={() => setIsMobileMenuOpen(false)} 
                   companyName={companyName} 

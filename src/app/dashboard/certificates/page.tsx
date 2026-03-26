@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useMemo, useCallback } from "react"
+import { useState, useMemo, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -15,9 +15,7 @@ import {
   Trash2, 
   Edit2, 
   Printer, 
-  FileText,
   ShieldCheck,
-  CheckCircle2,
   HardDrive
 } from "lucide-react"
 import { 
@@ -64,7 +62,9 @@ export default function CertificatesPage() {
     user?.email ? query(collection(db, "company_users"), where("email", "==", user.email)) : null,
   [db, user?.email])
   const { data: profiles } = useCollection(userProfileQuery)
-  const companyId = profiles?.[0]?.companyId
+  
+  // Memoize companyId to stabilize dependencies
+  const companyId = useMemo(() => profiles?.[0]?.companyId, [profiles])
 
   // Data Collections
   const certsRef = useMemoFirebase(() => 
@@ -93,6 +93,15 @@ export default function CertificatesPage() {
     return `CERT-${currentYear}-${(lastNum + 1).toString().padStart(3, '0')}`
   }, [certificates, currentYear])
 
+  // Cleanup effect to prevent infinite loop by moving state resets out of onOpenChange
+  useEffect(() => {
+    if (!isAdding) {
+      setEditingCert(null)
+      setSelectedEquipmentIds([])
+      setSelectedClientId(null)
+    }
+  }, [isAdding])
+
   const handleSaveCertificate = useCallback((e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!companyId) return
@@ -111,7 +120,7 @@ export default function CertificatesPage() {
         cap: equip?.capacity || "---",
         recarga: equip?.lastServiceDate || "---",
         vctoRecarga: equip?.nextServiceDate || "---",
-        vctoPH: "---" // Placeholder for Hydrostatic Test
+        vctoPH: "---"
       }
     })
 
@@ -141,9 +150,6 @@ export default function CertificatesPage() {
     }
 
     setIsAdding(false)
-    setEditingCert(null)
-    setSelectedEquipmentIds([])
-    setSelectedClientId(null)
   }, [companyId, clients, selectedEquipmentIds, clientEquipment, suggestedCertNumber, editingCert, db])
 
   const handleDelete = (id: string) => {
@@ -178,10 +184,7 @@ export default function CertificatesPage() {
           <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest">Protocolos de operatividad y mantenimiento de equipos.</p>
         </div>
         
-        <Dialog open={isAdding} onOpenChange={(open) => { 
-          setIsAdding(open); 
-          if (!open) { setEditingCert(null); setSelectedEquipmentIds([]); setSelectedClientId(null); }
-        }}>
+        <Dialog open={isAdding} onOpenChange={setIsAdding}>
           <DialogTrigger asChild>
             <Button className="bg-primary text-white h-10 font-bold uppercase text-[11px] shadow-lg px-6">
               <Plus className="mr-2 h-4 w-4" /> Emitir Nuevo Folio
