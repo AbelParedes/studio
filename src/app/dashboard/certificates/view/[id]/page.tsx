@@ -150,9 +150,24 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
         </div>
 
         <div className="mt-auto shrink-0 flex flex-col items-center justify-center py-8 print-footer" style={{ backgroundColor: company?.footerBgColor || '#f8fafc', borderTop: '1px solid #e2e8f0' } as any}>
-          <div className="px-12 w-full flex flex-col items-center text-center gap-3 text-slate-600">
-            <div className="flex flex-wrap justify-center gap-x-12 text-[10px] font-black uppercase">{company?.address && <p>{company.address}</p>}{company?.phone && <p>{company.phone}</p>}</div>
-            <div className="mt-1 pt-3 border-t border-slate-200/50 w-full max-w-lg"><p className="text-[10px] font-black opacity-50 uppercase tracking-[0.4em] flex items-center justify-center gap-3"><Globe className="h-3.5 w-3.5" /> {company?.website || "WWW.SERVIFUMIGAPRO.PE"}</p></div>
+          <div className="px-12 w-full flex flex-row items-center justify-between gap-3 text-slate-600">
+            <div className="flex flex-col items-start gap-1">
+              <div className="flex flex-wrap justify-start gap-x-12 text-[10px] font-black uppercase">
+                {company?.address && <p>{company.address}</p>}
+                {company?.phone && <p>{company.phone}</p>}
+              </div>
+              <div className="mt-1 pt-3 border-t border-slate-200/50 w-full max-w-lg">
+                <p className="text-[10px] font-black opacity-50 uppercase tracking-[0.4em] flex items-center justify-start gap-3">
+                  <Globe className="h-3.5 w-3.5" /> {company?.website || "WWW.SERVIFUMIGAPRO.PE"}
+                </p>
+              </div>
+            </div>
+            <div className="shrink-0 flex flex-col items-center gap-1">
+              <div className="relative h-16 w-16 bg-white p-1 border rounded shadow-sm">
+                <Image src={qrValidationUrl} alt="QR Validation" fill className="object-contain" unoptimized />
+              </div>
+              <p className="text-[7px] font-black uppercase opacity-40">Validación Digital</p>
+            </div>
           </div>
         </div>
       </div>

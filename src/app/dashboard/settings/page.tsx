@@ -22,7 +22,8 @@ import {
   Paintbrush,
   Zap,
   CreditCard,
-  PenTool
+  PenTool,
+  CheckCircle2
 } from "lucide-react"
 import { useUser, useFirestore, useDoc, useMemoFirebase, useAuth, useCollection } from "@/firebase"
 import { doc, setDoc, collection, query, where, limit } from "firebase/firestore"
