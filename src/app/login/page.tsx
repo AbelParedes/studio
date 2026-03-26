@@ -47,7 +47,7 @@ export default function LoginPage() {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password)
         const newUser = userCredential.user
 
-        // Crear empresa con Plan Demo por defecto
+        // Crear empresa con Plan Demo por defecto bajo la marca EXTINTOPRO
         const companyRef = await addDoc(collection(db, "companies"), {
           name: companyName || "Nueva Empresa de Extintores",
           taxId: "Pendiente",
@@ -57,7 +57,7 @@ export default function LoginPage() {
           primaryColor: "#1a2b3c",
           accentColor: "#d9534f",
           themeMode: "light",
-          logoUrl: "https://picsum.photos/seed/fire-logo/200/200" // Logo temporal enfocado en fuego
+          logoUrl: "https://picsum.photos/seed/extintopro-logo/200/200"
         })
 
         await setDoc(doc(db, "company_users", newUser.uid), {
