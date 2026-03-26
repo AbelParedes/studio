@@ -43,6 +43,7 @@ import { toast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { format, isAfter, parseISO } from "date-fns"
+import { es } from "date-fns/locale"
 
 export default function ClientEquipmentPage() {
   const db = useFirestore()
@@ -386,7 +387,7 @@ export default function ClientEquipmentPage() {
                             "text-[11px] font-black tracking-tighter px-2 py-1 rounded",
                             isExpired ? "text-status-error bg-status-error/5 border border-status-error/20" : "text-status-success font-bold"
                           )}>
-                            {item.nextServiceDate ? format(parseISO(item.nextServiceDate), "dd MMM yyyy", { locale: require("date-fns/locale/es") }).toUpperCase() : "---"}
+                            {item.nextServiceDate ? format(parseISO(item.nextServiceDate), "dd MMM yyyy", { locale: es }).toUpperCase() : "---"}
                           </span>
                           {isExpired && <span className="text-[7px] font-black text-status-error uppercase mt-1">¡REQUERIDO!</span>}
                         </div>
