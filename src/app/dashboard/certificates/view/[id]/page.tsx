@@ -1,4 +1,3 @@
-
 "use client"
 
 import { use, useMemo } from "react"
@@ -102,7 +101,7 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
           <div className="grid grid-cols-2 gap-16">
             <div className="space-y-4">
               <div className="flex items-center gap-4">
-                <h3 className="text-[10px] font-black text-slate-400 uppercase shrink-0">ENTIDAD BENEFICIARIA</h3>
+                <h3 className="text-[10px] font-black text-slate-400 uppercase shrink-0">EMPRESA</h3>
                 <div className="h-[1px] bg-slate-100 w-full"></div>
               </div>
               <div className="space-y-1 pt-1">
