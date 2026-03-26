@@ -125,7 +125,7 @@ const CertificateForm = React.memo(({
             <Label className="text-[10px] font-black uppercase text-slate-500">Técnico Certificador</Label>
             <Select name="technicianId" defaultValue={editingCert?.technicianId} required>
               <SelectTrigger className="h-11 border-2 text-xs uppercase font-bold"><SelectValue placeholder="Seleccione Técnico" /></SelectTrigger>
-              <SelectContent>{technicians?.map((t: any) => (<SelectItem key={t.id} value={t.id} className="font-bold text-xs uppercase">{t.name}</SelectItem>))}</SelectContent>
+              <SelectContent>{technicians?.map((t: any) => (<SelectItem key={t.id} value={t.id} className="font-bold text-xs uppercase">{t.name} {t.signatureUrl ? '✓' : '(Sin Firma)'}</SelectItem>))}</SelectContent>
             </Select>
           </div>
           <div className="grid gap-2">
@@ -215,8 +215,22 @@ export default function CertificatesRegistryPage() {
   const clientsRef = useMemoFirebase(() => companyId ? query(collection(db, "clients"), where("companyId", "==", companyId)) : null, [db, companyId])
   const { data: clients } = useCollection(clientsRef)
 
-  const techniciansRef = useMemoFirebase(() => companyId ? query(collection(db, "company_users"), where("companyId", "==", companyId)) : null, [db, companyId])
-  const { data: companyUsers } = useCollection(techniciansRef)
+  // Obtener roles para filtrar técnicos
+  const rolesRef = useMemoFirebase(() => collection(db, "system_roles"), [db])
+  const { data: allRoles } = useCollection(rolesRef)
+  const techRoleIds = useMemo(() => allRoles?.filter(r => 
+    r.title.toLowerCase().includes("técnico") || 
+    r.title.toLowerCase().includes("campo") ||
+    r.permissions?.field_operations === true
+  ).map(r => r.id) || [], [allRoles])
+
+  const usersRef = useMemoFirebase(() => companyId ? query(collection(db, "company_users"), where("companyId", "==", companyId)) : null, [db, companyId])
+  const { data: companyUsers } = useCollection(usersRef)
+
+  // Filtrar solo usuarios con roles técnicos
+  const technicians = useMemo(() => 
+    companyUsers?.filter(u => techRoleIds.includes(u.roleId)) || [], 
+  [companyUsers, techRoleIds])
 
   const suggestedCertNumber = useMemo(() => {
     const currentYear = new Date().getFullYear()
@@ -255,7 +269,7 @@ export default function CertificatesRegistryPage() {
           <DialogTrigger asChild><Button className="bg-primary text-white h-10 font-bold uppercase text-[11px] shadow-lg px-6" onClick={() => setModalState({ open: true, editing: null })}><Plus className="mr-2 h-4 w-4" /> Emitir Nuevo Protocolo</Button></DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
             <DialogHeader className="p-6 border-b bg-slate-50"><DialogTitle className="uppercase font-black text-primary text-xl">Protocolo de Operatividad</DialogTitle><DialogDescription className="text-[10px] font-bold uppercase">Correlativo sugerido: {suggestedCertNumber}</DialogDescription></DialogHeader>
-            {modalState.open && <CertificateForm companyId={companyId} editingCert={modalState.editing} suggestedCertNumber={suggestedCertNumber} clients={clients} technicians={companyUsers} onSave={handleSaveCertificate} />}
+            {modalState.open && <CertificateForm companyId={companyId} editingCert={modalState.editing} suggestedCertNumber={suggestedCertNumber} clients={clients} technicians={technicians} onSave={handleSaveCertificate} />}
           </DialogContent>
         </Dialog>
       </div>

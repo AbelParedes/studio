@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState } from "react"
@@ -18,20 +19,33 @@ import {
   Mail,
   Phone,
   ShieldCheck,
-  Award
+  Award,
+  Save
 } from "lucide-react"
-import { useCollection, useFirestore, useMemoFirebase, useUser, deleteDocumentNonBlocking } from "@/firebase"
-import { collection, query, where } from "firebase/firestore"
+import { useCollection, useFirestore, useMemoFirebase, useUser, deleteDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase"
+import { collection, query, where, doc } from "firebase/firestore"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { toast } from "@/hooks/use-toast"
 
 export default function TechniciansPage() {
   const db = useFirestore()
   const { user } = useUser()
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState("")
+  const [editingTech, setEditingTech] = useState<any | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
 
   // 1. Obtener perfil para companyId
   const userProfileQuery = useMemoFirebase(() => 
@@ -68,6 +82,29 @@ export default function TechniciansPage() {
   const handleDelete = (id: string) => {
     if (!confirm("¿Eliminar este perfil técnico? Esto no borrará su cuenta de acceso, solo su ficha en esta empresa.")) return
     deleteDocumentNonBlocking(doc(db, "company_users", id))
+    toast({ variant: "destructive", title: "Técnico removido" })
+  }
+
+  const handleUpdateSignature = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    if (!editingTech) return
+    setIsSaving(true)
+
+    const formData = new FormData(e.currentTarget)
+    const signatureUrl = formData.get("signatureUrl") as string
+
+    try {
+      updateDocumentNonBlocking(doc(db, "company_users", editingTech.id), {
+        signatureUrl,
+        updatedAt: new Date().toISOString()
+      })
+      toast({ title: "Firma actualizada", description: `Se ha vinculado la firma para ${editingTech.name}` })
+      setEditingTech(null)
+    } catch (err) {
+      toast({ variant: "destructive", title: "Error al actualizar" })
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
@@ -94,13 +131,13 @@ export default function TechniciansPage() {
         </Card>
         <Card className="shadow-sm border-none bg-white">
           <CardHeader className="pb-2">
-            <CardTitle className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Firmas Digitales</CardTitle>
+            <CardTitle className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Aptos para Certificar</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-black text-status-success">
               {technicians?.filter(t => t.signatureUrl).length || 0}
             </div>
-            <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Aptos para certificar</p>
+            <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Con firma digital activa</p>
           </CardContent>
         </Card>
         <Card className="shadow-sm border-none bg-white">
@@ -193,7 +230,7 @@ export default function TechniciansPage() {
                     </TableCell>
                     <TableCell className="text-right pr-8">
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="h-9 w-9 text-primary" onClick={() => router.push('/dashboard/settings')}>
+                        <Button variant="ghost" size="icon" className="h-9 w-9 text-primary" onClick={() => setEditingTech(tech)}>
                           <PenTool className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive" onClick={() => handleDelete(tech.id)}>
@@ -217,6 +254,46 @@ export default function TechniciansPage() {
         </CardContent>
       </Card>
 
+      <Dialog open={!!editingTech} onOpenChange={(open) => !open && setEditingTech(null)}>
+        <DialogContent className="max-w-md">
+          <form onSubmit={handleUpdateSignature}>
+            <DialogHeader>
+              <DialogTitle className="uppercase font-black text-primary">Gestionar Firma Digital</DialogTitle>
+              <DialogDescription className="text-[10px] font-bold uppercase">Configure la firma autorizada para {editingTech?.name}.</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-6 py-6">
+              <div className="flex flex-col items-center gap-4">
+                <div className="relative h-24 w-48 border-2 border-dashed rounded-xl bg-slate-50 flex items-center justify-center overflow-hidden">
+                  {editingTech?.signatureUrl ? (
+                    <Image src={editingTech.signatureUrl} alt="Previsualización" fill className="object-contain p-2" unoptimized />
+                  ) : (
+                    <PenTool className="h-10 w-10 text-slate-200" />
+                  )}
+                </div>
+                <p className="text-[9px] font-bold text-slate-400 uppercase text-center">Se recomienda imagen PNG con fondo transparente.</p>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="signatureUrl" className="text-[10px] font-black uppercase text-slate-500">URL de la Imagen de Firma</Label>
+                <Input 
+                  id="signatureUrl" 
+                  name="signatureUrl" 
+                  defaultValue={editingTech?.signatureUrl} 
+                  placeholder="https://servidor.com/firma-tecnico.png"
+                  className="h-11 font-bold text-xs"
+                  required
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="submit" className="w-full h-12 bg-primary text-white font-black uppercase text-xs" disabled={isSaving}>
+                {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                Guardar Firma del Especialista
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <Card className="bg-[#1c1c1c] text-white shadow-2xl border-none rounded-[2rem] overflow-hidden">
         <CardContent className="p-10 flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="flex items-center gap-8">
@@ -226,13 +303,14 @@ export default function TechniciansPage() {
             <div className="space-y-2">
               <h3 className="font-black text-2xl uppercase tracking-tighter">Certificación de Personal NTP</h3>
               <p className="text-sm opacity-70 font-bold uppercase text-[11px] tracking-wider max-w-xl">
-                Los certificados de operatividad requieren la firma de un técnico acreditado. Asegúrese de que cada especialista tenga su firma digital transparente configurada en los ajustes.
+                Los certificados de operatividad requieren la firma de un técnico acreditado. Puedes gestionar las firmas de todo tu equipo desde este panel para agilizar la emisión de documentos.
               </p>
             </div>
           </div>
-          <Button variant="outline" className="h-14 border-2 border-white/20 text-white hover:bg-white hover:text-black font-black uppercase text-[11px] px-10 rounded-xl" onClick={() => router.push('/dashboard/settings')}>
-            Configurar Firmas
-          </Button>
+          <div className="flex flex-col items-end gap-2">
+            <Badge className="bg-accent text-white px-4 py-1 font-black text-[10px] uppercase">Multifirma Habilitada</Badge>
+            <p className="text-[8px] font-bold uppercase opacity-40">Seguridad Industrial Pro</p>
+          </div>
         </CardContent>
       </Card>
     </div>
