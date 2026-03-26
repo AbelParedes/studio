@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useMemo, useCallback, useEffect } from "react"
+import { useState, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -45,7 +45,7 @@ import { toast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 
-export default function CertificatesPage() {
+export default function CertificatesRegistryPage() {
   const db = useFirestore()
   const { user } = useUser()
   const router = useRouter()
@@ -63,8 +63,8 @@ export default function CertificatesPage() {
   [db, user?.email])
   const { data: profiles } = useCollection(userProfileQuery)
   
-  // Memoize companyId to stabilize dependencies
-  const companyId = useMemo(() => profiles?.[0]?.companyId, [profiles])
+  // Memoize companyId to stabilize dependencies (primitive string is safe)
+  const companyId = useMemo(() => profiles?.[0]?.companyId, [profiles?.[0]?.companyId])
 
   // Data Collections
   const certsRef = useMemoFirebase(() => 
@@ -93,14 +93,15 @@ export default function CertificatesPage() {
     return `CERT-${currentYear}-${(lastNum + 1).toString().padStart(3, '0')}`
   }, [certificates, currentYear])
 
-  // Cleanup effect to prevent infinite loop by moving state resets out of onOpenChange
-  useEffect(() => {
-    if (!isAdding) {
+  // Stable handler for dialog open state to prevent render loops
+  const handleOpenChange = useCallback((open: boolean) => {
+    setIsAdding(open)
+    if (!open) {
       setEditingCert(null)
-      setSelectedEquipmentIds([])
       setSelectedClientId(null)
+      setSelectedEquipmentIds([])
     }
-  }, [isAdding])
+  }, [])
 
   const handleSaveCertificate = useCallback((e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -149,8 +150,8 @@ export default function CertificatesPage() {
       toast({ title: "Certificado Emitido Correctamente" })
     }
 
-    setIsAdding(false)
-  }, [companyId, clients, selectedEquipmentIds, clientEquipment, suggestedCertNumber, editingCert, db])
+    handleOpenChange(false)
+  }, [companyId, clients, selectedEquipmentIds, clientEquipment, suggestedCertNumber, editingCert, db, handleOpenChange])
 
   const handleDelete = (id: string) => {
     if(!confirm("¿Desea anular este certificado de forma permanente?")) return
@@ -165,10 +166,10 @@ export default function CertificatesPage() {
     setIsAdding(true)
   }
 
-  const filteredCerts = certificates?.filter(c => 
+  const filteredCerts = useMemo(() => certificates?.filter(c => 
     c.certificadoNumero?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.clienteNombre?.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  ), [certificates, searchTerm])
 
   const toggleEquipment = (id: string) => {
     setSelectedEquipmentIds(prev => 
@@ -184,7 +185,7 @@ export default function CertificatesPage() {
           <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest">Protocolos de operatividad y mantenimiento de equipos.</p>
         </div>
         
-        <Dialog open={isAdding} onOpenChange={setIsAdding}>
+        <Dialog open={isAdding} onOpenChange={handleOpenChange}>
           <DialogTrigger asChild>
             <Button className="bg-primary text-white h-10 font-bold uppercase text-[11px] shadow-lg px-6">
               <Plus className="mr-2 h-4 w-4" /> Emitir Nuevo Folio
