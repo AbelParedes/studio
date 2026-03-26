@@ -1,6 +1,7 @@
+
 "use client"
 
-import { use, useMemo } from "react"
+import { use, useMemo, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useDoc, useFirestore, useMemoFirebase } from "@/firebase"
 import { doc } from "firebase/firestore"
@@ -15,7 +16,6 @@ import {
   Phone,
   Mail,
   Globe,
-  QrCode,
   FileText,
   Scale,
   Award
@@ -28,6 +28,13 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
   const { id } = use(params)
   const router = useRouter()
   const db = useFirestore()
+  const [currentUrl, setCurrentUrl] = useState("")
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setCurrentUrl(window.location.href)
+    }
+  }, [])
 
   const certRef = useMemoFirebase(() => id ? doc(db, "certificates", id) : null, [db, id])
   const { data: cert, isLoading } = useDoc(certRef)
@@ -47,8 +54,10 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
 
   const formattedDate = cert.fechaEmision ? format(parseISO(cert.fechaEmision), "dd 'de' MMMM 'del' yyyy", { locale: es }) : "---"
   
-  // Limpiar el prefijo CERT- para mostrar solo N° 2025-001
   const displayCertNumber = cert.certificadoNumero?.replace('CERT-', '') || "---"
+
+  // Generar URL de QR dinámica para validación
+  const qrValidationUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(currentUrl)}`
 
   return (
     <div className="space-y-6 pb-20">
@@ -179,8 +188,16 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
                 </div>
               </div>
               <div className="flex flex-col justify-end items-center space-y-3">
-                <div className="bg-white p-3 border-4 border-slate-100 rounded shadow-xl">
-                  <QrCode className="h-20 w-24 text-slate-800" />
+                <div className="bg-white p-2 border-4 border-slate-100 rounded shadow-xl relative h-28 w-28">
+                  {currentUrl && (
+                    <Image 
+                      src={qrValidationUrl} 
+                      alt="QR de Validación" 
+                      fill 
+                      className="object-contain"
+                      unoptimized
+                    />
+                  )}
                 </div>
                 <p className="text-[9px] font-black uppercase text-slate-400 tracking-[0.3em]">VALIDACIÓN DIGITAL</p>
               </div>
