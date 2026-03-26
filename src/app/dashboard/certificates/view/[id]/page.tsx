@@ -103,8 +103,20 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
 
         <div className="p-12 space-y-10 flex-1 relative z-10">
           {/* MARCA DE AGUA */}
-          <div className="absolute inset-0 flex items-center justify-center opacity-[0.02] pointer-events-none -rotate-45">
-            <Award className="h-[500px] w-[500px]" />
+          <div className="absolute inset-0 flex items-center justify-center opacity-[0.04] pointer-events-none -rotate-12">
+            {company?.logoUrl ? (
+              <div className="relative h-[500px] w-[500px]">
+                <Image 
+                  src={company.logoUrl} 
+                  alt="Watermark" 
+                  fill 
+                  className="object-contain"
+                  unoptimized
+                />
+              </div>
+            ) : (
+              <Award className="h-[500px] w-[500px]" />
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-16">
@@ -245,3 +257,4 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
     </div>
   )
 }
+    
