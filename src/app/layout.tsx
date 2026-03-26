@@ -4,8 +4,8 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'Servifumiga Pro - Gestión de Seguridad y Plagas en Perú',
-  description: 'Sistema integral para la gestión de extintores y servicios de fumigación profesional en el mercado peruano.',
+  title: 'EXTINTOPRO - Gestión Técnica de Extintores en Perú',
+  description: 'Sistema integral especializado para la gestión de extintores y cumplimiento de la normativa NTP 350.043-1.',
 };
 
 export default function RootLayout({

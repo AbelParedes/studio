@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -46,7 +45,7 @@ const automatedServiceReminderPrompt = ai.definePrompt({
   name: 'automatedServiceReminderPrompt',
   input: {schema: AutomatedServiceReminderInputSchema},
   output: {schema: AutomatedServiceReminderOutputSchema},
-  prompt: `You are an AI assistant for Servifumiga Pro, specializing ONLY in fire extinguisher management (NTP 350.043-1). Your goal is to analyze client extinguisher history and generate reminders for upcoming maintenance, inspection, or recharge.\n\nThe current date is {{{currentDate}}}.\n\nPrioritize reminders:\n- 'High' for services due within 7 days.\n- 'Medium' for 8-30 days.\n- 'Low' for 31-60 days.\n\nClient: {{{clientName}}}\nLocation: {{{serviceLocation}}}\n\nHistory:\n{{#each serviceHistory}}\n- Date: {{{date}}}\n  Type: {{{type}}}\n  Notes: {{{lastTechnicianNotes}}}\n  Next Due: {{{nextRecommendedDate}}}\n{{/each}}`
+  prompt: `You are an AI assistant for EXTINTOPRO, specializing ONLY in fire extinguisher management (NTP 350.043-1). Your goal is to analyze client extinguisher history and generate reminders for upcoming maintenance, inspection, or recharge.\n\nThe current date is {{{currentDate}}}.\n\nPrioritize reminders:\n- 'High' for services due within 7 days.\n- 'Medium' for 8-30 days.\n- 'Low' for 31-60 days.\n\nClient: {{{clientName}}}\nLocation: {{{serviceLocation}}}\n\nHistory:\n{{#each serviceHistory}}\n- Date: {{{date}}}\n  Type: {{{type}}}\n  Notes: {{{lastTechnicianNotes}}}\n  Next Due: {{{nextRecommendedDate}}}\n{{/each}}`
 });
 
 const automatedServiceReminderFlow = ai.defineFlow(

@@ -1,10 +1,9 @@
-
 "use client"
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { DashboardNav } from "@/components/dashboard-nav"
-import { Bell, Loader2, Menu, Building2, Clock, ShieldAlert, LogOut, ShieldCheck, CreditCard } from "lucide-react"
+import { Bell, Loader2, Menu, Building2, Clock, ShieldAlert, LogOut, ShieldCheck, CreditCard, Flame } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useUser, useFirestore, useDoc, useMemoFirebase, useCollection, useAuth } from "@/firebase"
@@ -44,7 +43,7 @@ export default function DashboardLayout({
   [db, profile?.roleId])
   const { data: roleData } = useDoc(roleRef)
 
-  // Super Admin check: Title or explicit manage_saas permission
+  // Super Admin check
   const isMasterAdmin = roleData?.title === "Super Administrador" || roleData?.permissions?.manage_saas === true
 
   // Dynamic theme and colors
@@ -77,7 +76,7 @@ export default function DashboardLayout({
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-background gap-4">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        <p className="text-sm font-bold text-primary uppercase tracking-widest">Sincronizando Entorno SaaS...</p>
+        <p className="text-sm font-bold text-primary uppercase tracking-widest">Iniciando EXTINTOPRO...</p>
       </div>
     )
   }
@@ -92,10 +91,10 @@ export default function DashboardLayout({
           </div>
           <h1 className="text-2xl font-bold uppercase tracking-tight text-status-error mb-4">Servicio Suspendido</h1>
           <p className="text-sm text-muted-foreground leading-relaxed mb-8 font-medium">
-            Hola, <span className="text-primary font-bold">{profile?.name}</span>. El acceso para <span className="text-primary font-bold">{company?.name}</span> ha sido restringido por falta de pago o vencimiento de plan.
+            Hola, <span className="text-primary font-bold">{profile?.name}</span>. El acceso para <span className="text-primary font-bold">{company?.name}</span> ha sido restringido.
           </p>
           <div className="p-4 bg-muted/30 rounded-lg text-[11px] text-muted-foreground uppercase font-bold mb-8">
-            Comuníquese con el departamento de cobranzas para regularizar su cuenta.
+            Regularice su suscripción EXTINTOPRO para continuar operando.
           </div>
           <Button 
             variant="outline" 
@@ -119,11 +118,11 @@ export default function DashboardLayout({
           </div>
           <h1 className="text-2xl font-bold uppercase tracking-tight text-primary mb-4">Acceso en Verificación</h1>
           <p className="text-sm text-muted-foreground leading-relaxed mb-8 font-medium">
-            Hola, <span className="text-primary font-bold">{profile?.name}</span>. Tu cuenta y la organización <span className="text-primary font-bold">{company?.name || "solicitada"}</span> están siendo revisadas por nuestro equipo de soporte maestro.
+            Hola, <span className="text-primary font-bold">{profile?.name}</span>. Tu entorno EXTINTOPRO para <span className="text-primary font-bold">{company?.name || "tu empresa"}</span> está siendo activado.
           </p>
           <div className="p-4 bg-muted/30 rounded-lg text-[11px] text-muted-foreground uppercase font-bold mb-8 flex items-center gap-3">
             <ShieldAlert className="h-5 w-5 text-accent shrink-0" />
-            Recibirás un correo una vez que tu entorno SaaS sea activado.
+            Recibirás una notificación cuando tu base de datos esté lista.
           </div>
           <Button 
             variant="outline" 
@@ -138,9 +137,9 @@ export default function DashboardLayout({
   }
 
   const displayName = profile?.name || user?.email?.split('@')[0] || "Usuario"
-  const displayRole = roleData?.title || "Colaborador"
+  const displayRole = roleData?.title || "Técnico"
   const companyLogo = company?.logoUrl || null
-  const companyName = company?.name || "SERVIFUMIGA PRO"
+  const companyName = company?.name || "EXTINTOPRO"
 
   return (
     <div className="flex h-screen bg-background dark:bg-slate-950 overflow-hidden text-foreground">
@@ -164,8 +163,8 @@ export default function DashboardLayout({
               </SheetTrigger>
               <SheetContent side="left" className="p-0 w-64 bg-sidebar border-none">
                 <SheetHeader className="sr-only">
-                  <SheetTitle>Menú de Navegación</SheetTitle>
-                  <SheetDescription>Acceso móvil a los módulos de gestión de extintores.</SheetDescription>
+                  <SheetTitle>Navegación EXTINTOPRO</SheetTitle>
+                  <SheetDescription>Acceso a módulos técnicos de seguridad.</SheetDescription>
                 </SheetHeader>
                 <DashboardNav 
                   onNavItemClick={() => setIsMobileMenuOpen(false)} 
@@ -184,7 +183,7 @@ export default function DashboardLayout({
                 </div>
               ) : (
                 <div className="h-8 w-8 bg-primary/10 rounded flex items-center justify-center border border-primary/20">
-                  <ShieldCheck className="h-5 w-5 text-primary" />
+                  <Flame className="h-5 w-5 text-primary" />
                 </div>
               )}
               <span className="text-xs font-bold uppercase hidden sm:block truncate max-w-[300px] tracking-tight text-primary">

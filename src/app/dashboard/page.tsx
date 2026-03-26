@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useMemo } from "react"
@@ -14,7 +13,8 @@ import {
   Calendar,
   ShieldCheck,
   Coins,
-  HardDrive
+  HardDrive,
+  Flame
 } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
@@ -57,8 +57,8 @@ export default function DashboardPage() {
     return [
       { title: "Ingresos en Riesgo", value: `S/ ${(expiredCount * 150).toLocaleString()}`, icon: Coins, color: "text-accent", desc: `${expiredCount} equipos por vencer` },
       { title: "Servicios Hoy", value: todayApts.length.toString(), icon: CheckCircle2, color: "text-status-success", desc: "Visitas de campo" },
-      { title: "Flota Total", value: `${equipment.length}`, icon: HardDrive, color: "text-primary", desc: "Extintores registrados" },
-      { title: "Cartera Pro", value: clients.length.toString(), icon: Users, color: "text-blue-600", desc: "Clientes industriales" },
+      { title: "Flota Técnica", value: `${equipment.length}`, icon: HardDrive, color: "text-primary", desc: "Extintores registrados" },
+      { title: "Cartera Industrial", value: clients.length.toString(), icon: Users, color: "text-blue-600", desc: "Clientes corporativos" },
     ]
   }, [clients, appointments, equipment, todayStr])
 
@@ -68,8 +68,11 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-1">
         <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-          <h2 className="text-xl sm:text-2xl font-black tracking-tight uppercase text-primary">Centro de Mando Técnico</h2>
-          <Badge className="bg-primary/5 text-primary border-primary/20 font-black uppercase text-[8px] sm:text-[9px] px-3">{company?.name || "SERVIFUMIGA PRO"}</Badge>
+          <div className="flex items-center gap-2 text-primary">
+            <Flame className="h-6 w-6 text-accent" />
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight uppercase">Panel Técnico EXTINTOPRO</h2>
+          </div>
+          <Badge className="bg-primary/5 text-primary border-primary/20 font-black uppercase text-[8px] sm:text-[9px] px-3">{company?.name || "EXTINTOPRO"}</Badge>
         </div>
         <p className="text-muted-foreground text-[9px] sm:text-[10px] uppercase font-bold tracking-widest flex items-center gap-2">
           <Calendar className="h-3 w-3" /> {format(new Date(), "PPPP", { locale: es }).toUpperCase()}
@@ -94,14 +97,14 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2 shadow-sm border-none bg-white overflow-hidden">
           <CardHeader className="border-b bg-slate-50/50 p-4 sm:p-6">
-            <CardTitle className="text-xs font-black flex items-center uppercase tracking-widest text-primary"><Clock className="mr-2 h-4 w-4 text-accent" /> Servicios Recientes</CardTitle>
+            <CardTitle className="text-xs font-black flex items-center uppercase tracking-widest text-primary"><Clock className="mr-2 h-4 w-4 text-accent" /> Últimas Operaciones Técnicas</CardTitle>
           </CardHeader>
           <CardContent className="p-0 overflow-x-auto custom-scrollbar">
             <Table className="dense-table min-w-[600px]">
               <TableHeader className="bg-white border-b">
                 <TableRow>
                   <TableHead className="text-slate-400 font-black uppercase text-[9px] tracking-widest">Cliente</TableHead>
-                  <TableHead className="text-slate-400 font-black uppercase text-[9px] tracking-widest">Servicio</TableHead>
+                  <TableHead className="text-slate-400 font-black uppercase text-[9px] tracking-widest">Trabajo</TableHead>
                   <TableHead className="text-slate-400 font-black uppercase text-[9px] tracking-widest">Estado</TableHead>
                   <TableHead className="text-slate-400 font-black uppercase text-[9px] tracking-widest text-right pr-6">Gestión</TableHead>
                 </TableRow>
@@ -127,10 +130,10 @@ export default function DashboardPage() {
               {equipment?.filter(e => e.status === "Vencido" || (e.nextServiceDate && isBefore(parseISO(e.nextServiceDate), new Date()))).length > 0 ? (
                 <div className="p-3 bg-white/5 rounded-xl border border-white/10">
                   <p className="text-[9px] font-black uppercase text-accent mb-1">Vencimientos Activos</p>
-                  <p className="text-[10px] text-white/70 font-bold uppercase leading-tight">Revise el inventario de campo inmediatamente.</p>
+                  <p className="text-[10px] text-white/70 font-bold uppercase leading-tight">Acción requerida inmediata en base de datos técnica.</p>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-10 opacity-40"><ShieldCheck className="h-10 w-10 mb-3 text-status-success" /><p className="text-[9px] font-black uppercase tracking-widest text-center">Protocolos en Orden</p></div>
+                <div className="flex flex-col items-center justify-center py-10 opacity-40"><ShieldCheck className="h-10 w-10 mb-3 text-status-success" /><p className="text-[9px] font-black uppercase tracking-widest text-center">Protección Activa</p></div>
               )}
             </CardContent>
           </Card>

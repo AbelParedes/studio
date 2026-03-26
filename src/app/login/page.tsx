@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from "react"
@@ -7,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ShieldCheck, Loader2, AlertCircle, Building2, UserPlus, LogIn, Clock, Gift } from "lucide-react"
+import { ShieldCheck, Loader2, AlertCircle, Building2, UserPlus, LogIn, Clock, Gift, Flame } from "lucide-react"
 import { useAuth, useUser, useFirestore } from "@/firebase"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth"
@@ -48,16 +47,17 @@ export default function LoginPage() {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password)
         const newUser = userCredential.user
 
-        // Crear empresa con Plan Demo por defecto - Único plan permitido por registro directo
+        // Crear empresa con Plan Demo por defecto
         const companyRef = await addDoc(collection(db, "companies"), {
-          name: companyName || "Mi Nueva Empresa",
+          name: companyName || "Nueva Empresa de Extintores",
           taxId: "Pendiente",
           status: "Pending",
           plan: "Demo",
           createdAt: new Date().toISOString(),
           primaryColor: "#1a2b3c",
           accentColor: "#d9534f",
-          themeMode: "light"
+          themeMode: "light",
+          logoUrl: "https://picsum.photos/seed/fire-logo/200/200" // Logo temporal enfocado en fuego
         })
 
         await setDoc(doc(db, "company_users", newUser.uid), {
@@ -65,14 +65,14 @@ export default function LoginPage() {
           companyId: companyRef.id,
           name: fullName || email.split('@')[0],
           email: email,
-          roleId: "Administrador", // Rol inicial para el creador
+          roleId: "Administrador",
           status: "Pending",
           createdAt: new Date().toISOString()
         })
 
         toast({ 
-          title: "Registro exitoso", 
-          description: "Tu solicitud con Plan Demo ha sido enviada para aprobación." 
+          title: "Registro de EXTINTOPRO exitoso", 
+          description: "Tu solicitud de acceso técnico ha sido enviada para aprobación." 
         })
         setMode("login")
       }
@@ -102,15 +102,15 @@ export default function LoginPage() {
     <div className="h-screen w-screen flex items-center justify-center bg-[#f4f7f6] p-4">
       <Card className="w-full max-w-md shadow-2xl border-none">
         <CardHeader className="space-y-2 text-center pb-6">
-          <div className="mx-auto h-16 w-16 bg-primary rounded-full flex items-center justify-center mb-4 shadow-lg">
-            <ShieldCheck className="h-10 w-10 text-white" />
+          <div className="mx-auto h-16 w-16 bg-primary rounded-full flex items-center justify-center mb-4 shadow-lg border-b-4 border-accent">
+            <Flame className="h-10 w-10 text-white" />
           </div>
-          <CardTitle className="text-2xl font-bold tracking-tighter uppercase text-primary">
-            SERVIFUMIGA <span className="text-accent-foreground/50">PRO</span>
+          <CardTitle className="text-3xl font-black tracking-tighter uppercase text-primary">
+            EXTINTO<span className="text-accent">PRO</span>
           </CardTitle>
           <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex flex-col items-center gap-2">
             {mode === "login" ? (
-              "Plataforma SaaS de Gestión Operativa"
+              "SISTEMA DE GESTIÓN TÉCNICA DE EXTINTORES"
             ) : (
               <>
                 <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 animate-pulse">
@@ -140,7 +140,7 @@ export default function LoginPage() {
                   <Label htmlFor="companyName" className="text-xs font-bold uppercase">Nombre de la Empresa</Label>
                   <div className="relative">
                     <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input id="companyName" placeholder="Ej. Fumigaciones Perú SAC" required value={companyName} onChange={(e) => setCompanyName(e.target.value)} className="pl-9" />
+                    <Input id="companyName" placeholder="Ej. Seguridad Contra Incendios SAC" required value={companyName} onChange={(e) => setCompanyName(e.target.value)} className="pl-9" />
                   </div>
                 </div>
               </>
@@ -159,9 +159,9 @@ export default function LoginPage() {
               {isSubmitting ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : mode === "login" ? (
-                <><LogIn className="mr-2 h-4 w-4" /> Entrar al Sistema</>
+                <><LogIn className="mr-2 h-4 w-4" /> Acceder al Panel</>
               ) : (
-                <><UserPlus className="mr-2 h-4 w-4" /> Activar Plan Demo</>
+                <><UserPlus className="mr-2 h-4 w-4" /> Registrar mi Empresa</>
               )}
             </Button>
           </form>
@@ -171,7 +171,7 @@ export default function LoginPage() {
               <Clock className="h-4 w-4 text-primary" />
               <AlertTitle className="text-[10px] font-bold uppercase">Términos de Prueba</AlertTitle>
               <AlertDescription className="text-[9px] text-muted-foreground uppercase leading-tight">
-                El Plan Demo incluye 10 clientes, 1 usuario y vigencia de 15 días. Sujeto a aprobación por el SaaS Master.
+                El Plan Demo incluye 10 clientes, 1 usuario y vigencia de 15 días. Sujeto a aprobación técnica.
               </AlertDescription>
             </Alert>
           )}
@@ -181,13 +181,13 @@ export default function LoginPage() {
               onClick={() => setMode(mode === "login" ? "register" : "login")}
               className="text-[11px] font-bold uppercase text-primary hover:underline"
             >
-              {mode === "login" ? "¿Nuevo? Prueba el Plan Demo Gratis" : "Ya tengo una cuenta, ir al login"}
+              {mode === "login" ? "¿Nueva empresa? Pruebe EXTINTOPRO gratis" : "Ya tengo cuenta, iniciar sesión"}
             </button>
           </div>
         </CardContent>
         <CardFooter className="flex flex-col border-t bg-muted/20 py-4">
           <p className="text-[9px] text-center text-muted-foreground font-bold uppercase tracking-tighter">
-            Servifumiga Pro SaaS v2.5 
+            EXTINTOPRO Technical Suite v3.0
           </p>
         </CardFooter>
       </Card>

@@ -1,4 +1,3 @@
-
 "use client"
 
 import { use, useEffect, useState } from "react"
@@ -44,8 +43,8 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
   const techRef = useMemoFirebase(() => cert?.technicianId ? doc(db, "company_users", cert.technicianId) : null, [db, cert?.technicianId])
   const { data: technician } = useDoc(techRef)
 
-  if (isLoading) return <div className="p-20 text-center font-bold uppercase animate-pulse text-primary">Generando Protocolo...</div>
-  if (!cert) return <div className="p-20 text-center font-bold uppercase">Folio no encontrado</div>
+  if (isLoading) return <div className="p-20 text-center font-bold uppercase animate-pulse text-primary">Generando Protocolo EXTINTOPRO...</div>
+  if (!cert) return <div className="p-20 text-center font-bold uppercase">Protocolo no encontrado</div>
 
   const formattedDate = cert.fechaEmision ? format(parseISO(cert.fechaEmision), "dd 'de' MMMM 'del' yyyy", { locale: es }) : "---"
   const displayCertNumber = cert.certificadoNumero?.replace('CERT-', '') || "---"
@@ -57,7 +56,7 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
         <Button variant="ghost" onClick={() => router.back()} className="font-black uppercase text-[10px] tracking-widest"><ArrowLeft className="mr-2 h-3 w-3" /> Regresar</Button>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => window.print()} className="font-black uppercase text-[10px] tracking-widest border-2"><Printer className="mr-2 h-3.5 w-3.5" /> Imprimir</Button>
-          <Button size="sm" className="bg-primary text-white font-black uppercase text-[10px] tracking-widest shadow-xl px-6"><Download className="mr-2 h-3.5 w-3.5" /> PDF</Button>
+          <Button size="sm" className="bg-primary text-white font-black uppercase text-[10px] tracking-widest shadow-xl px-6"><Download className="mr-2 h-3.5 w-3.5" /> Descargar</Button>
         </div>
       </div>
 
@@ -70,7 +69,7 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
           </div>
           <div className="text-right">
             <h1 className="text-sm font-black text-primary uppercase tracking-tighter mb-1">CERTIFICADO DE OPERATIVIDAD</h1>
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">NTP 350.043-1</p>
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">CONFORME NTP 350.043-1</p>
             <div className="bg-[#1c1c1c] text-white px-6 py-2 rounded font-black text-xs tracking-widest inline-block border-b-2 border-slate-400">CERT N° {displayCertNumber}</div>
           </div>
         </div>
@@ -128,7 +127,7 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
                   <div className="border-4 border-primary/10 text-primary/10 p-2 rounded-xl rotate-12 font-black text-[11px] uppercase border-double absolute">VALIDADO POR<br/>INGENIERÍA TÉCNICA</div>
                 )}
               </div>
-              <p className="text-[10px] font-black uppercase text-primary">{company?.name || "SERVIFUMIGA PRO"}</p>
+              <p className="text-[10px] font-black uppercase text-primary">{company?.name || "EXTINTOPRO"}</p>
               <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">FIRMA Y SELLO AUTORIZADO</p>
             </div>
 
@@ -158,7 +157,7 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
               </div>
               <div className="mt-1 pt-3 border-t border-slate-200/50 w-full max-w-lg">
                 <p className="text-[10px] font-black opacity-50 uppercase tracking-[0.4em] flex items-center justify-start gap-3">
-                  <Globe className="h-3.5 w-3.5" /> {company?.website || "WWW.SERVIFUMIGAPRO.PE"}
+                  <Globe className="h-3.5 w-3.5" /> {company?.website || "WWW.EXTINTOPRO.PE"}
                 </p>
               </div>
             </div>
