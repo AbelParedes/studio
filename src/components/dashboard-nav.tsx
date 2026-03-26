@@ -31,7 +31,7 @@ const navItems = [
   { name: "Resumen", href: "/dashboard", icon: LayoutDashboard },
   { name: "Empresas", href: "/dashboard/companies", icon: Building2, superAdminOnly: true },
   { name: "Clientes", href: "/dashboard/clients", icon: Users },
-  { name: "Hoja de Vida", href: "/dashboard/equipment", icon: HardDrive },
+  { name: "Extintores", href: "/dashboard/equipment", icon: HardDrive },
   { name: "Certificados", href: "/dashboard/certificates", icon: Award },
   { name: "Cotizaciones", href: "/dashboard/quotations", icon: FileText },
   { name: "Órdenes de Servicio", href: "/dashboard/service-orders", icon: ClipboardList },

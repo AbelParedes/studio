@@ -117,8 +117,8 @@ export default function ClientEquipmentPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase text-primary">Inventario de Campo (Hoja de Vida)</h2>
-          <p className="text-muted-foreground text-sm font-medium uppercase text-[10px] tracking-widest">Gestión individual de activos desplegados por cliente.</p>
+          <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase text-primary">Gestión de Extintores</h2>
+          <p className="text-muted-foreground text-sm font-medium uppercase text-[10px] tracking-widest">Inventario detallado y hoja de vida de equipos en campo.</p>
         </div>
         
         <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) setEditingItem(null); }}>
