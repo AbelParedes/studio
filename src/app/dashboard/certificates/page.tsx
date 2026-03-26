@@ -82,11 +82,11 @@ const CertificateForm = React.memo(({
       return {
         ns: equip?.serialNumber || "---",
         ff: equip?.manufacturingYear?.toString() || "---",
-        tipo: equip?.type || "---",
+        tipo: equip?.extinguishingAgent || equip?.type || "---",
         cap: equip?.capacity || "---",
         recarga: equip?.lastServiceDate || "---",
         vctoRecarga: equip?.nextServiceDate || "---",
-        vctoPH: "---"
+        vctoPH: equip?.nextHydrostaticTestDate || "---"
       }
     })
 
@@ -178,7 +178,7 @@ const CertificateForm = React.memo(({
                 <div key={item.id} onClick={() => toggleEquipment(item.id)} className={cn("flex items-center justify-between p-3 border-2 rounded-xl transition-all cursor-pointer", selectedEquipmentIds.includes(item.id) ? "border-primary bg-primary/5 shadow-sm" : "border-slate-100 hover:border-slate-200 bg-slate-50/50")}>
                   <div className="flex items-center gap-3">
                     <Checkbox checked={selectedEquipmentIds.includes(item.id)} onCheckedChange={() => toggleEquipment(item.id)} onClick={(e) => e.stopPropagation()} />
-                    <div className="flex flex-col"><span className="text-[11px] font-black uppercase text-primary">{item.serialNumber}</span><span className="text-[9px] font-bold text-slate-400 uppercase">{item.type} • {item.capacity}</span></div>
+                    <div className="flex flex-col"><span className="text-[11px] font-black uppercase text-primary">{item.serialNumber}</span><span className="text-[9px] font-bold text-slate-400 uppercase">{item.type} • {item.capacity} • PH: {item.nextHydrostaticTestDate || 'S/F'}</span></div>
                   </div>
                   <Badge variant="outline" className="text-[8px] font-black uppercase bg-white">{item.location || "S/U"}</Badge>
                 </div>
@@ -221,7 +221,9 @@ export default function CertificatesRegistryPage() {
   const suggestedCertNumber = useMemo(() => {
     const currentYear = new Date().getFullYear()
     if (!certificates || certificates.length === 0) return `CERT-${currentYear}-001`
-    const lastNum = Math.max(...certificates.map(c => parseInt(c.certificadoNumero?.split("-").pop() || "0"))) || 0
+    const yearCerts = certificates.filter(c => c.certificadoNumero?.includes(`-${currentYear}-`))
+    if (yearCerts.length === 0) return `CERT-${currentYear}-001`
+    const lastNum = Math.max(...yearCerts.map(c => parseInt(c.certificadoNumero?.split("-").pop() || "0"))) || 0
     return `CERT-${currentYear}-${(lastNum + 1).toString().padStart(3, '0')}`
   }, [certificates])
 
@@ -252,7 +254,7 @@ export default function CertificatesRegistryPage() {
         <Dialog open={modalState.open} onOpenChange={handleOpenChange}>
           <DialogTrigger asChild><Button className="bg-primary text-white h-10 font-bold uppercase text-[11px] shadow-lg px-6" onClick={() => setModalState({ open: true, editing: null })}><Plus className="mr-2 h-4 w-4" /> Emitir Nuevo Protocolo</Button></DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
-            <DialogHeader className="p-6 border-b bg-slate-50"><DialogTitle className="uppercase font-black text-primary text-xl">Protocolo de Operatividad</DialogTitle><DialogDescription className="text-[10px] font-bold uppercase">Correlativo: {suggestedCertNumber}</DialogDescription></DialogHeader>
+            <DialogHeader className="p-6 border-b bg-slate-50"><DialogTitle className="uppercase font-black text-primary text-xl">Protocolo de Operatividad</DialogTitle><DialogDescription className="text-[10px] font-bold uppercase">Correlativo sugerido: {suggestedCertNumber}</DialogDescription></DialogHeader>
             {modalState.open && <CertificateForm companyId={companyId} editingCert={modalState.editing} suggestedCertNumber={suggestedCertNumber} clients={clients} technicians={companyUsers} onSave={handleSaveCertificate} />}
           </DialogContent>
         </Dialog>
@@ -263,7 +265,7 @@ export default function CertificatesRegistryPage() {
         <CardContent className="p-0 overflow-x-auto">
           {isLoading ? (<div className="flex items-center justify-center p-24"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>) : (
             <Table className="dense-table min-w-[800px]">
-              <TableHeader className="bg-[#1c1c1c]"><TableRow className="border-none"><TableHead className="text-white font-black uppercase text-[10px]">Folio NTP</TableHead><TableHead className="text-white font-black uppercase text-[10px]">Beneficiario</TableHead><TableHead className="text-white font-black uppercase text-[10px]">Técnico</TableHead><TableHead className="text-white font-black uppercase text-[10px]">Estado</TableHead><TableHead className="text-white text-right pr-6 font-black uppercase text-[10px]">Acciones</TableHead></TableRow></TableHeader>
+              <TableHeader className="bg-[#1c1c1c]"><TableRow className="border-none"><TableHead className="text-white font-black uppercase text-[10px]">Certificado NTP</TableHead><TableHead className="text-white font-black uppercase text-[10px]">Beneficiario</TableHead><TableHead className="text-white font-black uppercase text-[10px]">Técnico</TableHead><TableHead className="text-white font-black uppercase text-[10px]">Estado</TableHead><TableHead className="text-white text-right pr-6 font-black uppercase text-[10px]">Acciones</TableHead></TableRow></TableHeader>
               <TableBody>
                 {certificates?.filter(c => c.certificadoNumero?.toLowerCase().includes(searchTerm.toLowerCase()) || c.clienteNombre?.toLowerCase().includes(searchTerm.toLowerCase())).map((cert) => (
                   <TableRow key={cert.id} className="hover:bg-muted/30 transition-colors">
