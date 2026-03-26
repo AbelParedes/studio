@@ -19,7 +19,8 @@ import {
   Package,
   Zap,
   ClipboardList,
-  HardDrive
+  HardDrive,
+  Award
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/firebase"
@@ -30,11 +31,12 @@ const navItems = [
   { name: "Resumen", href: "/dashboard", icon: LayoutDashboard },
   { name: "Empresas", href: "/dashboard/companies", icon: Building2, superAdminOnly: true },
   { name: "Clientes", href: "/dashboard/clients", icon: Users },
-  { name: "Equipos de Clientes", href: "/dashboard/equipment", icon: HardDrive },
+  { name: "Hoja de Vida", href: "/dashboard/equipment", icon: HardDrive },
+  { name: "Certificados", href: "/dashboard/certificates", icon: Award },
   { name: "Cotizaciones", href: "/dashboard/quotations", icon: FileText },
   { name: "Órdenes de Servicio", href: "/dashboard/service-orders", icon: ClipboardList },
   { name: "Calendario", href: "/dashboard/calendar", icon: Calendar },
-  { name: "Productos y Servicios", href: "/dashboard/inventory", icon: Package },
+  { name: "Catálogo Técnico", href: "/dashboard/inventory", icon: Package },
   { name: "Recordatorios IA", href: "/dashboard/reminders", icon: Bell },
   { name: "Usuarios", href: "/dashboard/users", icon: UserCheck },
   { name: "Roles y Permisos", href: "/dashboard/roles", icon: ShieldCheck, adminOnly: true },

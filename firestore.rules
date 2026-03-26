@@ -11,6 +11,10 @@ service cloud.firestore {
       allow read, write: if isSignedIn();
     }
 
+    match /certificates/{id} {
+      allow read, write: if isSignedIn();
+    }
+
     match /clients/{clientId} {
       match /contactPersons/{personId} {
         allow create, update: if isSignedIn() && request.resource.data.clientId == clientId;

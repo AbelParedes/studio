@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Company": {
@@ -77,6 +78,42 @@
         "status": { "type": "string", "enum": ["Operativo", "Mantenimiento", "Vencido", "Baja"] }
       },
       "required": ["id", "companyId", "clientId", "serialNumber"]
+    },
+    "Certificate": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Certificate",
+      "type": "object",
+      "description": "Certificado de operatividad técnica para extintores.",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "clienteId": { "type": "string" },
+        "clienteNombre": { "type": "string" },
+        "certificadoNumero": { "type": "string" },
+        "fechaEmision": { "type": "string", "format": "date" },
+        "tipoExtintor": { "type": "string", "enum": ["PQS", "CO2", "H2O", "K", "Otros"] },
+        "datosExtintor": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "ns": { "type": "string", "description": "N° Serie" },
+              "ff": { "type": "string", "description": "Año Fab." },
+              "tipo": { "type": "string" },
+              "cap": { "type": "string" },
+              "recarga": { "type": "string" },
+              "vctoRecarga": { "type": "string" },
+              "vctoPH": { "type": "string" }
+            }
+          }
+        },
+        "presionPrueba": { "type": "string" },
+        "presionTrabajo": { "type": "string" },
+        "rating": { "type": "string" },
+        "normativa": { "type": "string", "default": "NTP 350.043" },
+        "urlCertificado": { "type": "string" },
+        "status": { "type": "string", "enum": ["Borrador", "Emitido", "Anulado"] }
+      }
     },
     "Quotation": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -175,6 +212,10 @@
     "service_orders": {
       "schema": { "$ref": "#/backend/entities/ServiceOrder" },
       "description": "Órdenes de servicio activas."
+    },
+    "certificates": {
+      "schema": { "$ref": "#/backend/entities/Certificate" },
+      "description": "Certificados de operatividad técnica."
     },
     "all_extinguishers": {
       "schema": { "$ref": "#/backend/entities/CatalogItem" },
