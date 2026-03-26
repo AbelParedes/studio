@@ -1,4 +1,3 @@
-
 "use client"
 
 import Link from "next/link"
@@ -36,7 +35,7 @@ const navItems = [
   { name: "Cotizaciones", href: "/dashboard/quotations", icon: FileText },
   { name: "Órdenes de Servicio", href: "/dashboard/service-orders", icon: ClipboardList },
   { name: "Calendario", href: "/dashboard/calendar", icon: Calendar },
-  { name: "Catálogo Técnico", href: "/dashboard/inventory", icon: Package },
+  { name: "Productos", href: "/dashboard/inventory", icon: Package },
   { name: "Recordatorios IA", href: "/dashboard/reminders", icon: Bell },
   { name: "Usuarios", href: "/dashboard/users", icon: UserCheck },
   { name: "Roles y Permisos", href: "/dashboard/roles", icon: ShieldCheck, adminOnly: true },

@@ -102,8 +102,8 @@ export default function InventoryPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase text-primary">Catálogo Maestro de Extintores</h2>
-          <p className="text-muted-foreground text-sm uppercase font-bold text-[10px] tracking-wider">Productos y servicios especializados.</p>
+          <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase text-primary">Catálogo de Productos y Servicios</h2>
+          <p className="text-muted-foreground text-sm uppercase font-bold text-[10px] tracking-wider">Gestión especializada de inventario y tarifas.</p>
         </div>
         <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) setEditingItem(null); }}>
           <DialogTrigger asChild>
@@ -188,7 +188,7 @@ export default function InventoryPage() {
 
               <DialogFooter className="p-6 border-t bg-slate-50 shrink-0">
                 <Button type="submit" className="w-full bg-primary text-white font-black uppercase text-xs h-12 shadow-xl">
-                  {editingItem ? "Actualizar Catálogo" : "Registrar en Almacén"}
+                  {editingItem ? "Actualizar Producto" : "Registrar Producto"}
                 </Button>
               </DialogFooter>
             </form>
