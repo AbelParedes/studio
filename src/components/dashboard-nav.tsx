@@ -19,7 +19,8 @@ import {
   Zap,
   ClipboardList,
   HardDrive,
-  Award
+  Award,
+  Wrench
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/firebase"
@@ -32,6 +33,7 @@ const navItems = [
   { name: "Clientes", href: "/dashboard/clients", icon: Users },
   { name: "Extintores", href: "/dashboard/equipment", icon: HardDrive },
   { name: "Certificados", href: "/dashboard/certificates", icon: Award },
+  { name: "Técnicos", href: "/dashboard/technicians", icon: Wrench },
   { name: "Cotizaciones", href: "/dashboard/quotations", icon: FileText },
   { name: "Órdenes de Servicio", href: "/dashboard/service-orders", icon: ClipboardList },
   { name: "Calendario", href: "/dashboard/calendar", icon: Calendar },
