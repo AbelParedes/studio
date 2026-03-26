@@ -82,7 +82,7 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
           </div>
           <div className="text-right">
             <h1 className="text-sm font-black text-primary uppercase tracking-tighter leading-none mb-1">
-              CERTIFICADO DE OPERATIVIDAD Y MANTENIMIENTO
+              CERTIFICADO DE OPERATIVIDAD
             </h1>
             <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">
               NORMA TÉCNICA PERUANA NTP 350.043-1
