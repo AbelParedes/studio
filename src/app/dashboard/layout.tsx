@@ -76,7 +76,7 @@ export default function DashboardLayout({
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-background gap-4">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        <p className="text-sm font-bold text-primary uppercase tracking-widest">Iniciando EXTINTOPRO...</p>
+        <p className="text-sm font-bold text-primary uppercase tracking-widest">Iniciando EXTINPRO...</p>
       </div>
     )
   }
@@ -94,7 +94,7 @@ export default function DashboardLayout({
             Hola, <span className="text-primary font-bold">{profile?.name}</span>. El acceso para <span className="text-primary font-bold">{company?.name}</span> ha sido restringido.
           </p>
           <div className="p-4 bg-muted/30 rounded-lg text-[11px] text-muted-foreground uppercase font-bold mb-8">
-            Regularice su suscripción EXTINTOPRO para continuar operando.
+            Regularice su suscripción EXTINPRO para continuar operando.
           </div>
           <Button 
             variant="outline" 
@@ -118,7 +118,7 @@ export default function DashboardLayout({
           </div>
           <h1 className="text-2xl font-bold uppercase tracking-tight text-primary mb-4">Acceso en Verificación</h1>
           <p className="text-sm text-muted-foreground leading-relaxed mb-8 font-medium">
-            Hola, <span className="text-primary font-bold">{profile?.name}</span>. Tu entorno EXTINTOPRO para <span className="text-primary font-bold">{company?.name || "tu empresa"}</span> está siendo activado.
+            Hola, <span className="text-primary font-bold">{profile?.name}</span>. Tu entorno EXTINPRO para <span className="text-primary font-bold">{company?.name || "tu empresa"}</span> está siendo activado.
           </p>
           <div className="p-4 bg-muted/30 rounded-lg text-[11px] text-muted-foreground uppercase font-bold mb-8 flex items-center gap-3">
             <ShieldAlert className="h-5 w-5 text-accent shrink-0" />
@@ -139,7 +139,7 @@ export default function DashboardLayout({
   const displayName = profile?.name || user?.email?.split('@')[0] || "Usuario"
   const displayRole = roleData?.title || "Técnico"
   const companyLogo = company?.logoUrl || null
-  const companyName = company?.name || "EXTINTOPRO"
+  const companyName = company?.name || "EXTINPRO"
 
   return (
     <div className="flex h-screen bg-background dark:bg-slate-950 overflow-hidden text-foreground">
@@ -163,7 +163,7 @@ export default function DashboardLayout({
               </SheetTrigger>
               <SheetContent side="left" className="p-0 w-64 bg-sidebar border-none">
                 <SheetHeader className="sr-only">
-                  <SheetTitle>Navegación EXTINTOPRO</SheetTitle>
+                  <SheetTitle>Navegación EXTINPRO</SheetTitle>
                   <SheetDescription>Acceso a módulos técnicos de seguridad.</SheetDescription>
                 </SheetHeader>
                 <DashboardNav 

@@ -84,7 +84,7 @@ export function DashboardNav({ onNavItemClick, companyName, logoUrl, userRole, i
         )}
         <div className="flex flex-col">
           <h1 className="text-xs font-bold tracking-wider text-white uppercase truncate max-w-[140px]">
-            {companyName || "EXTINTOPRO"}
+            {companyName || "EXTINPRO"}
           </h1>
           <span className="text-[9px] font-bold uppercase text-accent tracking-tighter opacity-80">
             {isSuperAdmin ? "SAAS MASTER CONTROL" : "SISTEMA TÉCNICO"}

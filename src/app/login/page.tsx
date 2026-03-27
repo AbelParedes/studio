@@ -47,7 +47,7 @@ export default function LoginPage() {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password)
         const newUser = userCredential.user
 
-        // Crear empresa con Plan Demo por defecto bajo la marca EXTINTOPRO
+        // Crear empresa con Plan Demo por defecto bajo la marca EXTINPRO
         const companyRef = await addDoc(collection(db, "companies"), {
           name: companyName || "Nueva Empresa de Extintores",
           taxId: "Pendiente",
@@ -57,7 +57,7 @@ export default function LoginPage() {
           primaryColor: "#1a2b3c",
           accentColor: "#d9534f",
           themeMode: "light",
-          logoUrl: "https://picsum.photos/seed/extintopro-logo/200/200"
+          logoUrl: "https://picsum.photos/seed/extinpro-logo/200/200"
         })
 
         await setDoc(doc(db, "company_users", newUser.uid), {
@@ -71,7 +71,7 @@ export default function LoginPage() {
         })
 
         toast({ 
-          title: "Registro de EXTINTOPRO exitoso", 
+          title: "Registro de EXTINPRO exitoso", 
           description: "Tu solicitud de acceso técnico ha sido enviada para aprobación." 
         })
         setMode("login")
@@ -106,7 +106,7 @@ export default function LoginPage() {
             <Flame className="h-10 w-10 text-white" />
           </div>
           <CardTitle className="text-3xl font-black tracking-tighter uppercase text-primary">
-            EXTINTO<span className="text-accent">PRO</span>
+            EXTIN<span className="text-accent">PRO</span>
           </CardTitle>
           <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex flex-col items-center gap-2">
             {mode === "login" ? (
@@ -181,13 +181,13 @@ export default function LoginPage() {
               onClick={() => setMode(mode === "login" ? "register" : "login")}
               className="text-[11px] font-bold uppercase text-primary hover:underline"
             >
-              {mode === "login" ? "¿Nueva empresa? Pruebe EXTINTOPRO gratis" : "Ya tengo cuenta, iniciar sesión"}
+              {mode === "login" ? "¿Nueva empresa? Pruebe EXTINPRO gratis" : "Ya tengo cuenta, iniciar sesión"}
             </button>
           </div>
         </CardContent>
         <CardFooter className="flex flex-col border-t bg-muted/20 py-4">
           <p className="text-[9px] text-center text-muted-foreground font-bold uppercase tracking-tighter">
-            EXTINTOPRO Technical Suite v3.0
+            EXTINPRO Technical Suite v3.0
           </p>
         </CardFooter>
       </Card>

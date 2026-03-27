@@ -43,7 +43,7 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
   const techRef = useMemoFirebase(() => cert?.technicianId ? doc(db, "company_users", cert.technicianId) : null, [db, cert?.technicianId])
   const { data: technician } = useDoc(techRef)
 
-  if (isLoading) return <div className="p-20 text-center font-bold uppercase animate-pulse text-primary">Generando Protocolo EXTINTOPRO...</div>
+  if (isLoading) return <div className="p-20 text-center font-bold uppercase animate-pulse text-primary">Generando Protocolo EXTINPRO...</div>
   if (!cert) return <div className="p-20 text-center font-bold uppercase">Protocolo no encontrado</div>
 
   const formattedDate = cert.fechaEmision ? format(parseISO(cert.fechaEmision), "dd 'de' MMMM 'del' yyyy", { locale: es }) : "---"
@@ -127,7 +127,7 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
                   <div className="border-4 border-primary/10 text-primary/10 p-2 rounded-xl rotate-12 font-black text-[11px] uppercase border-double absolute">VALIDADO POR<br/>INGENIERÍA TÉCNICA</div>
                 )}
               </div>
-              <p className="text-[10px] font-black uppercase text-primary">{company?.name || "EXTINTOPRO"}</p>
+              <p className="text-[10px] font-black uppercase text-primary">{company?.name || "EXTINPRO"}</p>
               <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">FIRMA Y SELLO AUTORIZADO</p>
             </div>
 
@@ -157,7 +157,7 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
               </div>
               <div className="mt-1 pt-3 border-t border-slate-200/50 w-full max-w-lg">
                 <p className="text-[10px] font-black opacity-50 uppercase tracking-[0.4em] flex items-center justify-start gap-3">
-                  <Globe className="h-3.5 w-3.5" /> {company?.website || "WWW.EXTINTOPRO.PE"}
+                  <Globe className="h-3.5 w-3.5" /> {company?.website || "WWW.EXTINPRO.PE"}
                 </p>
               </div>
             </div>

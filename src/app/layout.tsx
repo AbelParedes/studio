@@ -4,7 +4,7 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'EXTINTOPRO - Gestión Técnica de Extintores en Perú',
+  title: 'EXTINPRO - Gestión Técnica de Extintores en Perú',
   description: 'Sistema integral especializado para la gestión de extintores y cumplimiento de la normativa NTP 350.043-1.',
 };
 

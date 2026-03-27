@@ -70,9 +70,9 @@ export default function DashboardPage() {
         <div className="flex flex-col sm:flex-row sm:items-center gap-2">
           <div className="flex items-center gap-2 text-primary">
             <Flame className="h-6 w-6 text-accent" />
-            <h2 className="text-xl sm:text-2xl font-black tracking-tight uppercase">Panel Técnico EXTINTOPRO</h2>
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight uppercase">Panel Técnico EXTINPRO</h2>
           </div>
-          <Badge className="bg-primary/5 text-primary border-primary/20 font-black uppercase text-[8px] sm:text-[9px] px-3">{company?.name || "EXTINTOPRO"}</Badge>
+          <Badge className="bg-primary/5 text-primary border-primary/20 font-black uppercase text-[8px] sm:text-[9px] px-3">{company?.name || "EXTINPRO"}</Badge>
         </div>
         <p className="text-muted-foreground text-[9px] sm:text-[10px] uppercase font-bold tracking-widest flex items-center gap-2">
           <Calendar className="h-3 w-3" /> {format(new Date(), "PPPP", { locale: es }).toUpperCase()}
