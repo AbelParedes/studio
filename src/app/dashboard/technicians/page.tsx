@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -20,14 +20,20 @@ import {
   Phone,
   ShieldCheck,
   Award,
-  Save
+  Save,
+  UserPlus,
+  Key,
+  Shield
 } from "lucide-react"
-import { useCollection, useFirestore, useMemoFirebase, useUser, deleteDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase"
+import { useCollection, useFirestore, useMemoFirebase, useUser, deleteDocumentNonBlocking, updateDocumentNonBlocking, addDocumentNonBlocking } from "@/firebase"
 import { collection, query, where, doc } from "firebase/firestore"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
+import { initializeApp, deleteApp } from "firebase/app"
+import { getAuth, createUserWithEmailAndPassword, signOut } from "firebase/auth"
+import { firebaseConfig } from "@/firebase/config"
 import {
   Dialog,
   DialogContent,
@@ -35,8 +41,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "@/hooks/use-toast"
 
 export default function TechniciansPage() {
@@ -45,44 +53,89 @@ export default function TechniciansPage() {
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState("")
   const [editingTech, setEditingTech] = useState<any | null>(null)
+  const [isAdding, setIsAdding] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
-  // 1. Obtener perfil para companyId
+  // 1. Perfil para companyId
   const userProfileQuery = useMemoFirebase(() => 
     user?.email ? query(collection(db, "company_users"), where("email", "==", user.email)) : null,
   [db, user?.email])
   const { data: profiles } = useCollection(userProfileQuery)
   const companyId = profiles?.[0]?.companyId
 
-  // 2. Obtener Roles para identificar cuáles son técnicos
+  // 2. Roles técnicos
   const rolesRef = useMemoFirebase(() => collection(db, "system_roles"), [db])
   const { data: roles } = useCollection(rolesRef)
   
-  const techRoleIds = roles?.filter(r => 
+  const technicalRoles = useMemo(() => roles?.filter(r => 
     r.title.toLowerCase().includes("técnico") || 
     r.title.toLowerCase().includes("campo") ||
     r.permissions?.field_operations === true
-  ).map(r => r.id) || []
+  ) || [], [roles])
 
-  // 3. Obtener Usuarios de la empresa que sean técnicos
+  const techRoleIds = useMemo(() => technicalRoles.map(r => r.id), [technicalRoles])
+
+  // 3. Usuarios técnicos
   const techniciansQuery = useMemoFirebase(() => {
     if (!companyId) return null
     return query(collection(db, "company_users"), where("companyId", "==", companyId))
   }, [db, companyId])
   const { data: allUsers, isLoading } = useCollection(techniciansQuery)
 
-  // Filtrar solo los que tienen rol técnico
-  const technicians = allUsers?.filter(u => techRoleIds.includes(u.roleId))
+  const technicians = useMemo(() => allUsers?.filter(u => techRoleIds.includes(u.roleId)) || [], [allUsers, techRoleIds])
 
-  const filteredTechs = technicians?.filter(t => 
+  const filteredTechs = technicians.filter(t => 
     t.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     t.email?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  const handleDelete = (id: string) => {
-    if (!confirm("¿Eliminar este perfil técnico? Esto no borrará su cuenta de acceso, solo su ficha en esta empresa.")) return
-    deleteDocumentNonBlocking(doc(db, "company_users", id))
-    toast({ variant: "destructive", title: "Técnico removido" })
+  const handleCreateTechnician = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    if (!companyId) return
+    setIsSaving(true)
+
+    const formData = new FormData(e.currentTarget)
+    const email = formData.get("email") as string
+    const password = formData.get("password") as string
+    const name = formData.get("name") as string
+    const roleId = formData.get("roleId") as string
+
+    try {
+      const techData = {
+        id: crypto.randomUUID(),
+        companyId,
+        name,
+        email,
+        roleId,
+        status: "Active",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+
+      // Crear documento en Firestore
+      await addDocumentNonBlocking(collection(db, "company_users"), techData)
+
+      // Crear cuenta en Auth sin cerrar sesión actual
+      const secondaryAppName = `TechCreator_${Date.now()}`
+      const secondaryApp = initializeApp(firebaseConfig, secondaryAppName)
+      const secondaryAuth = getAuth(secondaryApp)
+
+      try {
+        await createUserWithEmailAndPassword(secondaryAuth, email, password)
+        await signOut(secondaryAuth)
+        await deleteApp(secondaryApp)
+        toast({ title: "Técnico Creado", description: `Acceso habilitado para ${name}.` })
+      } catch (authErr: any) {
+        console.error(authErr)
+        toast({ variant: "destructive", title: "Aviso", description: "Perfil guardado, pero hubo un error al crear las credenciales de acceso." })
+      }
+
+      setIsAdding(false)
+    } catch (err) {
+      toast({ variant: "destructive", title: "Error", description: "No se pudo registrar al técnico." })
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const handleUpdateSignature = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -107,16 +160,68 @@ export default function TechniciansPage() {
     }
   }
 
+  const handleDelete = (id: string) => {
+    if (!confirm("¿Eliminar este perfil técnico? El acceso seguirá existiendo en el sistema pero ya no pertenecerá a su empresa.")) return
+    deleteDocumentNonBlocking(doc(db, "company_users", id))
+    toast({ variant: "destructive", title: "Técnico removido" })
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black tracking-tight mb-1 uppercase text-primary">Personal Técnico NTP</h2>
-          <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest">Gestión de especialistas y firmas autorizadas.</p>
+          <h2 className="text-2xl font-black tracking-tight mb-1 uppercase text-primary">Personal Técnico EXTINPRO</h2>
+          <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest">Gestión de especialistas y firmas autorizadas NTP.</p>
         </div>
-        <Button className="bg-primary text-white h-10 font-bold uppercase text-[11px] shadow-lg" onClick={() => router.push('/dashboard/users')}>
-          <Plus className="mr-2 h-4 w-4" /> Registrar Nuevo Técnico
-        </Button>
+        
+        <Dialog open={isAdding} onOpenChange={setIsAdding}>
+          <DialogTrigger asChild>
+            <Button className="bg-primary text-white h-10 font-bold uppercase text-[11px] shadow-lg px-6">
+              <UserPlus className="mr-2 h-4 w-4" /> Registrar Nuevo Técnico
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md">
+            <form onSubmit={handleCreateTechnician}>
+              <DialogHeader>
+                <DialogTitle className="uppercase font-black text-primary">Alta de Personal Operativo</DialogTitle>
+                <DialogDescription className="text-[10px] font-bold uppercase">Cree el perfil y las credenciales de acceso para el nuevo técnico.</DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-6">
+                <div className="grid gap-2">
+                  <Label htmlFor="name" className="text-[10px] font-black uppercase text-slate-500">Nombre Completo</Label>
+                  <Input id="name" name="name" placeholder="Ej. Juan Pérez" required className="h-11 font-bold text-xs" />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="email" className="text-[10px] font-black uppercase text-slate-500">Correo Corporativo</Label>
+                  <Input id="email" name="email" type="email" placeholder="juan.perez@empresa.com" required className="h-11 font-bold text-xs" />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="password" name="password" className="text-[10px] font-black uppercase text-slate-500">Contraseña de Acceso</Label>
+                  <Input id="password" name="password" type="password" required placeholder="Mínimo 6 caracteres" className="h-11 font-bold text-xs" />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="roleId" className="text-[10px] font-black uppercase text-slate-500">Rol Técnico</Label>
+                  <Select name="roleId" required>
+                    <SelectTrigger className="h-11 font-bold text-xs uppercase">
+                      <SelectValue placeholder="Seleccione especialidad" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {technicalRoles.map(role => (
+                        <SelectItem key={role.id} value={role.id} className="text-xs uppercase font-bold">{role.title}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="submit" className="w-full h-12 bg-primary text-white font-black uppercase text-xs" disabled={isSaving}>
+                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Shield className="h-4 w-4 mr-2" />}
+                  Habilitar Técnico en EXTINPRO
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -125,7 +230,7 @@ export default function TechniciansPage() {
             <CardTitle className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Especialistas Activos</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-black text-primary">{technicians?.length || 0}</div>
+            <div className="text-3xl font-black text-primary">{technicians.length}</div>
             <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Personal en campo</p>
           </CardContent>
         </Card>
@@ -135,7 +240,7 @@ export default function TechniciansPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-black text-status-success">
-              {technicians?.filter(t => t.signatureUrl).length || 0}
+              {technicians.filter(t => t.signatureUrl).length}
             </div>
             <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Con firma digital activa</p>
           </CardContent>
@@ -146,7 +251,7 @@ export default function TechniciansPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-black text-accent">
-              {(technicians?.length || 0) - (technicians?.filter(t => t.signatureUrl).length || 0)}
+              {technicians.length - technicians.filter(t => t.signatureUrl).length}
             </div>
             <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Acción requerida</p>
           </CardContent>
@@ -183,7 +288,7 @@ export default function TechniciansPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredTechs?.map((tech) => (
+                {filteredTechs.map((tech) => (
                   <TableRow key={tech.id} className="hover:bg-slate-50 transition-colors">
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -230,17 +335,17 @@ export default function TechniciansPage() {
                     </TableCell>
                     <TableCell className="text-right pr-8">
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="h-9 w-9 text-primary" onClick={() => setEditingTech(tech)}>
+                        <Button variant="ghost" size="icon" className="h-9 w-9 text-primary hover:bg-primary/5" onClick={() => setEditingTech(tech)}>
                           <PenTool className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive" onClick={() => handleDelete(tech.id)}>
+                        <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:bg-destructive/5" onClick={() => handleDelete(tech.id)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>
                   </TableRow>
                 ))}
-                {(!filteredTechs || filteredTechs.length === 0) && (
+                {filteredTechs.length === 0 && !isLoading && (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-24 text-muted-foreground opacity-40">
                       <Wrench className="h-12 w-12 mx-auto mb-4" />
