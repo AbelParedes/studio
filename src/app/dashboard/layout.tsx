@@ -13,6 +13,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTr
 import { signOut } from "firebase/auth"
 import Image from "next/image"
 
+const DEFAULT_EXTINPRO_LOGO = "https://img.freepik.com/vector-gratis/estilo-plano-llama_78370-7477.jpg?semt=ais_incoming&w=740&q=80"
+
 export default function DashboardLayout({
   children,
 }: {
@@ -139,7 +141,7 @@ export default function DashboardLayout({
 
   const displayName = profile?.name || user?.email?.split('@')[0] || "Usuario"
   const displayRole = roleData?.title || "Técnico"
-  const companyLogo = company?.logoUrl || null
+  const companyLogo = company?.logoUrl || DEFAULT_EXTINPRO_LOGO
   const companyName = company?.name || "EXTINPRO"
 
   return (
@@ -178,15 +180,9 @@ export default function DashboardLayout({
             </Sheet>
 
             <div className="flex items-center gap-2">
-              {companyLogo ? (
-                <div className="relative h-8 w-8 rounded overflow-hidden border bg-white shadow-sm">
-                  <Image src={companyLogo} alt="Logo" fill className="object-contain p-1" unoptimized />
-                </div>
-              ) : (
-                <div className="h-8 w-8 bg-primary/10 rounded flex items-center justify-center border border-primary/20">
-                  <Flame className="h-5 w-5 text-primary" />
-                </div>
-              )}
+              <div className="relative h-8 w-8 rounded overflow-hidden border bg-white shadow-sm">
+                <Image src={companyLogo} alt="Logo" fill className="object-contain p-1" unoptimized />
+              </div>
               <span className="text-xs font-bold uppercase hidden sm:block truncate max-w-[300px] tracking-tight text-primary">
                 {companyName}
               </span>

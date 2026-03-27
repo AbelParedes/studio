@@ -1,3 +1,4 @@
+
 "use client"
 
 import Link from "next/link"
@@ -26,6 +27,8 @@ import { cn } from "@/lib/utils"
 import { useAuth } from "@/firebase"
 import { signOut } from "firebase/auth"
 import Image from "next/image"
+
+const DEFAULT_EXTINPRO_LOGO = "https://img.freepik.com/vector-gratis/estilo-plano-llama_78370-7477.jpg?semt=ais_incoming&w=740&q=80"
 
 const navItems = [
   { name: "Resumen", href: "/dashboard", icon: LayoutDashboard },
@@ -70,18 +73,14 @@ export function DashboardNav({ onNavItemClick, companyName, logoUrl, userRole, i
     return true
   })
 
+  const displayLogo = logoUrl || DEFAULT_EXTINPRO_LOGO
+
   return (
     <div className="flex flex-col h-full text-sidebar-foreground">
       <div className="p-6 flex items-center gap-3">
-        {logoUrl ? (
-          <div className="relative h-10 w-10 bg-white rounded border overflow-hidden shrink-0">
-            <Image src={logoUrl} alt="Logo" fill className="object-contain p-1" unoptimized />
-          </div>
-        ) : (
-          <div className="h-10 w-10 bg-white/10 rounded flex items-center justify-center shrink-0 border border-white/10">
-            <ShieldCheck className="h-6 w-6 text-white" />
-          </div>
-        )}
+        <div className="relative h-10 w-10 bg-white rounded border overflow-hidden shrink-0 shadow-sm">
+          <Image src={displayLogo} alt="Logo" fill className="object-contain p-1" unoptimized />
+        </div>
         <div className="flex flex-col">
           <h1 className="text-xs font-bold tracking-wider text-white uppercase truncate max-w-[140px]">
             {companyName || "EXTINPRO"}

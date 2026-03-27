@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -13,6 +14,9 @@ import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "fire
 import { doc, setDoc, collection, addDoc } from "firebase/firestore"
 import { toast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
+import Image from "next/image"
+
+const EXTINPRO_LOGO = "https://img.freepik.com/vector-gratis/estilo-plano-llama_78370-7477.jpg?semt=ais_incoming&w=740&q=80"
 
 export default function LoginPage() {
   const [mode, setMode] = useState<"login" | "register">("login")
@@ -57,7 +61,7 @@ export default function LoginPage() {
           primaryColor: "#1a2b3c",
           accentColor: "#d9534f",
           themeMode: "light",
-          logoUrl: "https://picsum.photos/seed/extinpro-logo/200/200"
+          logoUrl: EXTINPRO_LOGO
         })
 
         await setDoc(doc(db, "company_users", newUser.uid), {
@@ -102,8 +106,14 @@ export default function LoginPage() {
     <div className="h-screen w-screen flex items-center justify-center bg-[#f4f7f6] p-4">
       <Card className="w-full max-w-md shadow-2xl border-none">
         <CardHeader className="space-y-2 text-center pb-6">
-          <div className="mx-auto h-16 w-16 bg-primary rounded-full flex items-center justify-center mb-4 shadow-lg border-b-4 border-accent">
-            <Flame className="h-10 w-10 text-white" />
+          <div className="mx-auto h-20 w-20 relative mb-4">
+            <Image 
+              src={EXTINPRO_LOGO} 
+              alt="EXTINPRO Logo" 
+              fill 
+              className="object-contain rounded-full shadow-lg border-b-4 border-accent"
+              unoptimized
+            />
           </div>
           <CardTitle className="text-3xl font-black tracking-tighter uppercase text-primary">
             EXTIN<span className="text-accent">PRO</span>
