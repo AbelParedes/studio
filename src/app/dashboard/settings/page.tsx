@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -73,6 +73,17 @@ export default function SettingsPage() {
     profile?.companyId ? doc(db, "companies", profile.companyId) : null,
   [db, profile?.companyId])
   const { data: company, isLoading: loadingCompany } = useDoc(companyRef)
+
+  const roleRef = useMemoFirebase(() => 
+    profile?.roleId ? doc(db, "system_roles", profile.roleId) : null,
+  [db, profile?.roleId])
+  const { data: roleData } = useDoc(roleRef)
+
+  const isTechnicalUser = useMemo(() => {
+    if (!roleData) return false;
+    const title = roleData.title.toLowerCase();
+    return title.includes("técnico") || title.includes("campo") || roleData.permissions?.field_operations === true;
+  }, [roleData]);
 
   useEffect(() => {
     if (profile) {
@@ -200,8 +211,8 @@ export default function SettingsPage() {
           {activeTab === "profile" && (
             <Card className="shadow-sm border-none">
               <CardHeader>
-                <CardTitle className="text-sm font-bold uppercase tracking-wider">Información Personal y Firma</CardTitle>
-                <CardDescription className="text-[10px] font-bold uppercase">Configure su firma digital para protocolos técnicos.</CardDescription>
+                <CardTitle className="text-sm font-bold uppercase tracking-wider">Información Personal</CardTitle>
+                <CardDescription className="text-[10px] font-bold uppercase">Gestione sus datos de contacto en EXTINPRO.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -215,32 +226,40 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 text-[10px] font-black uppercase text-primary tracking-widest">
-                    <PenTool className="h-3 w-3" /> Firma Digital del Técnico (Transparente)
-                  </div>
-                  <div className="flex flex-col sm:flex-row items-center gap-6 p-6 border rounded-xl bg-slate-50 border-dashed">
-                    <div className="relative h-20 w-40 rounded border bg-white flex items-center justify-center overflow-hidden shadow-sm">
-                      {formData.signatureUrl ? (
-                        <Image src={formData.signatureUrl} alt="Firma Técnico" fill className="object-contain p-2" unoptimized />
-                      ) : (
-                        <span className="text-[8px] uppercase font-bold text-slate-300">Sin Firma</span>
-                      )}
+                {isTechnicalUser ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-[10px] font-black uppercase text-primary tracking-widest">
+                      <PenTool className="h-3 w-3" /> Firma Digital del Técnico (Personal)
                     </div>
-                    <div className="flex-1 w-full space-y-3">
-                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">URL de Imagen de Firma</Label>
-                      <Input 
-                        placeholder="https://ejemplo.com/firma-tecnico.png" 
-                        value={formData.signatureUrl} 
-                        onChange={(e) => setFormData({...formData, signatureUrl: e.target.value})} 
-                        className="h-11 font-bold text-xs"
-                      />
+                    <div className="flex flex-col sm:flex-row items-center gap-6 p-6 border rounded-xl bg-slate-50 border-dashed">
+                      <div className="relative h-20 w-40 rounded border bg-white flex items-center justify-center overflow-hidden shadow-sm">
+                        {formData.signatureUrl ? (
+                          <Image src={formData.signatureUrl} alt="Firma Técnico" fill className="object-contain p-2" unoptimized />
+                        ) : (
+                          <span className="text-[8px] uppercase font-bold text-slate-300">Sin Firma</span>
+                        )}
+                      </div>
+                      <div className="flex-1 w-full space-y-3">
+                        <Label className="text-[10px] font-bold uppercase text-muted-foreground">URL de Imagen de Firma</Label>
+                        <Input 
+                          placeholder="https://ejemplo.com/firma-tecnico.png" 
+                          value={formData.signatureUrl} 
+                          onChange={(e) => setFormData({...formData, signatureUrl: e.target.value})} 
+                          className="h-11 font-bold text-xs"
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="p-4 bg-slate-50 rounded-xl border-2 border-dashed">
+                    <p className="text-[10px] font-bold uppercase text-slate-400 italic">
+                      La firma digital personal está reservada únicamente para perfiles con roles técnicos.
+                    </p>
+                  </div>
+                )}
 
                 <Button className="bg-primary text-white font-black uppercase text-[11px] h-10 shadow-lg px-8" onClick={handleUpdateProfile} disabled={isSaving}>
-                  {isSaving ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <Save className="mr-2 h-3 w-3" />} Guardar Mi Perfil
+                  {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-3 w-3" />} Guardar Mi Perfil
                 </Button>
               </CardContent>
             </Card>
