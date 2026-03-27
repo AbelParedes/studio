@@ -215,9 +215,7 @@ export default function ServiceOrdersPage() {
           </div>
         </div>
 
-        {/* DOCUMENTO DE ORDEN DE SERVICIO */}
         <div className="proforma-container bg-white p-0 shadow-2xl mx-auto w-[210mm] min-h-[297mm] flex flex-col relative overflow-hidden text-[#1c1c1c] border print:shadow-none print:border-none print:m-0 print:w-full">
-          {/* HEADER TÉCNICO - ESTILO COTIZACIÓN */}
           <div className="pt-12 px-12 pb-8 shrink-0 flex items-center justify-between">
             <div className="relative h-20 w-64">
               {(company?.headerUrl || company?.logoUrl) ? (
@@ -230,7 +228,7 @@ export default function ServiceOrdersPage() {
             </div>
             <div className="text-right">
               <h1 className="text-sm font-black text-[#1c1c1c] uppercase tracking-tighter leading-none mb-1">
-                {company?.name || "SERVIFUMIGA PRO"}
+                {company?.name || "EXTINPRO"}
               </h1>
               <div className="flex flex-col items-end">
                 <span className="text-[10px] font-bold text-slate-600">RUC: {company?.taxId || "---"}</span>
@@ -262,7 +260,7 @@ export default function ServiceOrdersPage() {
                 </div>
                 <div className="text-[11px] space-y-1 pt-1 text-right">
                   <p className="font-bold text-slate-700 uppercase">FECHA DE REGISTRO: {formattedDate}</p>
-                  <p className="font-bold text-slate-700 uppercase">TIPO: SERVICIO TÉCNICO ESPECIALIZADO</p>
+                  <p className="font-bold text-slate-700 uppercase">TIPO: SERVICIO TÉCNICO NTP</p>
                   <div className="mt-2">
                     <Badge variant="outline" className="text-[9px] font-black uppercase bg-slate-50 text-slate-600 border-slate-200 px-3">
                       ESTADO: {viewingOrder.status}
@@ -340,7 +338,7 @@ export default function ServiceOrdersPage() {
               </div>
               <div className="mt-1">
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                  <Globe className="h-3.5 w-3.5" /> {company?.website || "WWW.TUEMPRESA.COM"}
+                  <Globe className="h-3.5 w-3.5" /> {company?.website || "WWW.EXTINPRO.PE"}
                 </p>
               </div>
             </div>

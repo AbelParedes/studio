@@ -52,7 +52,7 @@ const PLANS = [
     features: [
       "Clientes Ilimitados",
       "Hasta 10 Usuarios",
-      "Recordatorios IA (Genkit)",
+      "Recordatorios IA (EXTINPRO)",
       "Proformas Personalizadas",
       "Reportes Avanzados",
       "Soporte Prioritario"
@@ -246,7 +246,7 @@ export default function PlansPage() {
                       <><ShieldCheck className="mr-2 h-4 w-4" /> Mi Suscripción</>
                     ) : (
                       <a 
-                        href={`https://wa.me/51918790212?text=Hola,%20deseo%20solicitar%20una%20mejora%20de%20mi%20plan%20en%20Servifumiga%20Pro.%20Me%20interesa%20el%20plan%20${plan.name}.`} 
+                        href={`https://wa.me/51918790212?text=Hola,%20deseo%20solicitar%20una%20mejora%20de%20mi%20plan%20en%20EXTINPRO.%20Me%20interesa%20el%20plan%20${plan.name}.`} 
                         target="_blank" 
                         rel="noopener noreferrer"
                       >
@@ -270,7 +270,7 @@ export default function PlansPage() {
             <div className="space-y-1">
               <h3 className="text-2xl font-black uppercase tracking-tighter">¿Desea cambiar su plan?</h3>
               <p className="text-sm opacity-80 font-medium leading-relaxed max-w-md uppercase text-[11px] font-bold tracking-wider">
-                Las migraciones de suscripción son gestionadas por el equipo de Servifumiga Pro para garantizar la integridad de sus datos.
+                Las migraciones de suscripción son gestionadas por el equipo de EXTINPRO para garantizar la integridad de sus datos técnicos.
               </p>
             </div>
           </div>
@@ -280,7 +280,7 @@ export default function PlansPage() {
             asChild
           >
             <a 
-              href="https://wa.me/51918790212?text=Hola,%20necesito%20soporte%20para%20cambiar%20mi%20plan%20en%20Servifumiga%20Pro." 
+              href="https://wa.me/51918790212?text=Hola,%20necesito%20soporte%20para%20cambiar%20mi%20plan%20en%20EXTINPRO." 
               target="_blank" 
               rel="noopener noreferrer"
             >
