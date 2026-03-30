@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useMemo } from "react"
@@ -23,7 +22,8 @@ import {
   Save,
   UserPlus,
   Key,
-  Shield
+  Shield,
+  Briefcase
 } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, useUser, deleteDocumentNonBlocking, updateDocumentNonBlocking, addDocumentNonBlocking } from "@/firebase"
 import { collection, query, where, doc } from "firebase/firestore"
@@ -56,14 +56,12 @@ export default function TechniciansPage() {
   const [isAdding, setIsAdding] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
-  // 1. Perfil para companyId
   const userProfileQuery = useMemoFirebase(() => 
     user?.email ? query(collection(db, "company_users"), where("email", "==", user.email)) : null,
   [db, user?.email])
   const { data: profiles } = useCollection(userProfileQuery)
   const companyId = profiles?.[0]?.companyId
 
-  // 2. Roles técnicos
   const rolesRef = useMemoFirebase(() => collection(db, "system_roles"), [db])
   const { data: roles } = useCollection(rolesRef)
   
@@ -75,7 +73,6 @@ export default function TechniciansPage() {
 
   const techRoleIds = useMemo(() => technicalRoles.map(r => r.id), [technicalRoles])
 
-  // 3. Usuarios técnicos
   const techniciansQuery = useMemoFirebase(() => {
     if (!companyId) return null
     return query(collection(db, "company_users"), where("companyId", "==", companyId))
@@ -112,10 +109,8 @@ export default function TechniciansPage() {
         updatedAt: new Date().toISOString()
       }
 
-      // Crear documento en Firestore
       await addDocumentNonBlocking(collection(db, "company_users"), techData)
 
-      // Crear cuenta en Auth sin cerrar sesión actual
       const secondaryAppName = `TechCreator_${Date.now()}`
       const secondaryApp = initializeApp(firebaseConfig, secondaryAppName)
       const secondaryAuth = getAuth(secondaryApp)
@@ -124,15 +119,14 @@ export default function TechniciansPage() {
         await createUserWithEmailAndPassword(secondaryAuth, email, password)
         await signOut(secondaryAuth)
         await deleteApp(secondaryApp)
-        toast({ title: "Técnico Creado", description: `Acceso habilitado para ${name}.` })
+        toast({ title: "Técnico Habilitado", description: `Acceso creado para ${name}.` })
       } catch (authErr: any) {
-        console.error(authErr)
-        toast({ variant: "destructive", title: "Aviso", description: "Perfil guardado, pero hubo un error al crear las credenciales de acceso." })
+        toast({ variant: "destructive", title: "Aviso de Registro", description: "Perfil técnico guardado, pero hubo un error al crear la cuenta de acceso." })
       }
 
       setIsAdding(false)
     } catch (err) {
-      toast({ variant: "destructive", title: "Error", description: "No se pudo registrar al técnico." })
+      toast({ variant: "destructive", title: "Error", description: "No se pudo registrar al especialista." })
     } finally {
       setIsSaving(false)
     }
@@ -151,7 +145,7 @@ export default function TechniciansPage() {
         signatureUrl,
         updatedAt: new Date().toISOString()
       })
-      toast({ title: "Firma actualizada", description: `Se ha vinculado la firma para ${editingTech.name}` })
+      toast({ title: "Firma Actualizada", description: `Acreditación completa para ${editingTech.name}` })
       setEditingTech(null)
     } catch (err) {
       toast({ variant: "destructive", title: "Error al actualizar" })
@@ -161,17 +155,17 @@ export default function TechniciansPage() {
   }
 
   const handleDelete = (id: string) => {
-    if (!confirm("¿Eliminar este perfil técnico? El acceso seguirá existiendo en el sistema pero ya no pertenecerá a su empresa.")) return
+    if (!confirm("¿Eliminar este perfil técnico? El acceso seguirá existiendo pero ya no pertenecerá a su organización.")) return
     deleteDocumentNonBlocking(doc(db, "company_users", id))
-    toast({ variant: "destructive", title: "Técnico removido" })
+    toast({ variant: "destructive", title: "Técnico desvinculado" })
   }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black tracking-tight mb-1 uppercase text-primary">Personal Técnico EXTINPRO</h2>
-          <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest">Gestión de especialistas y firmas autorizadas NTP.</p>
+          <h2 className="text-2xl font-black tracking-tight mb-1 uppercase text-primary">Personal Técnico Acreditado</h2>
+          <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest">Gestión de especialistas y firmas autorizadas NTP para certificados.</p>
         </div>
         
         <Dialog open={isAdding} onOpenChange={setIsAdding}>
@@ -184,7 +178,7 @@ export default function TechniciansPage() {
             <form onSubmit={handleCreateTechnician}>
               <DialogHeader>
                 <DialogTitle className="uppercase font-black text-primary">Alta de Personal Operativo</DialogTitle>
-                <DialogDescription className="text-[10px] font-bold uppercase">Cree el perfil y las credenciales de acceso para el nuevo técnico.</DialogDescription>
+                <DialogDescription className="text-[10px] font-bold uppercase">Cree el perfil y las credenciales de acceso para el nuevo especialista.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-6">
                 <div className="grid gap-2">
@@ -200,10 +194,10 @@ export default function TechniciansPage() {
                   <Input id="password" name="password" type="password" required placeholder="Mínimo 6 caracteres" className="h-11 font-bold text-xs" />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="roleId" className="text-[10px] font-black uppercase text-slate-500">Rol Técnico</Label>
+                  <Label htmlFor="roleId" className="text-[10px] font-black uppercase text-slate-500">Rol / Especialidad</Label>
                   <Select name="roleId" required>
                     <SelectTrigger className="h-11 font-bold text-xs uppercase">
-                      <SelectValue placeholder="Seleccione especialidad" />
+                      <SelectValue placeholder="Seleccione cargo" />
                     </SelectTrigger>
                     <SelectContent>
                       {technicalRoles.map(role => (
@@ -215,7 +209,7 @@ export default function TechniciansPage() {
               </div>
               <DialogFooter>
                 <Button type="submit" className="w-full h-12 bg-primary text-white font-black uppercase text-xs" disabled={isSaving}>
-                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Shield className="h-4 w-4 mr-2" />}
+                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ShieldCheck className="h-4 w-4 mr-2" />}
                   Habilitar Técnico en EXTINPRO
                 </Button>
               </DialogFooter>
@@ -227,7 +221,9 @@ export default function TechniciansPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="shadow-sm border-none bg-white">
           <CardHeader className="pb-2">
-            <CardTitle className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Especialistas Activos</CardTitle>
+            <CardTitle className="text-[10px] font-black uppercase text-muted-foreground tracking-widest flex items-center gap-2">
+              <Briefcase className="h-3 w-3 text-primary" /> Especialistas Activos
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-black text-primary">{technicians.length}</div>
@@ -236,24 +232,28 @@ export default function TechniciansPage() {
         </Card>
         <Card className="shadow-sm border-none bg-white">
           <CardHeader className="pb-2">
-            <CardTitle className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Aptos para Certificar</CardTitle>
+            <CardTitle className="text-[10px] font-black uppercase text-muted-foreground tracking-widest flex items-center gap-2">
+              <ShieldCheck className="h-3 w-3 text-status-success" /> Aptos Certificación
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-black text-status-success">
               {technicians.filter(t => t.signatureUrl).length}
             </div>
-            <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Con firma digital activa</p>
+            <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Con firma digital registrada</p>
           </CardContent>
         </Card>
         <Card className="shadow-sm border-none bg-white">
           <CardHeader className="pb-2">
-            <CardTitle className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Pendientes de Firma</CardTitle>
+            <CardTitle className="text-[10px] font-black uppercase text-muted-foreground tracking-widest flex items-center gap-2">
+              <PenTool className="h-3 w-3 text-accent" /> Pendientes de Firma
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-black text-accent">
               {technicians.length - technicians.filter(t => t.signatureUrl).length}
             </div>
-            <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Acción requerida</p>
+            <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Sin acreditación digital</p>
           </CardContent>
         </Card>
       </div>
@@ -292,12 +292,12 @@ export default function TechniciansPage() {
                   <TableRow key={tech.id} className="hover:bg-slate-50 transition-colors">
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-black uppercase text-xs">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-black uppercase text-xs shadow-inner">
                           {tech.name?.[0] || "T"}
                         </div>
                         <div className="flex flex-col">
                           <span className="font-black text-primary uppercase text-[11px]">{tech.name}</span>
-                          <span className="text-[8px] font-bold text-slate-400 uppercase">ID: {tech.id.split('-')[0]}</span>
+                          <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">ID: {tech.id.split('-')[0]}</span>
                         </div>
                       </div>
                     </TableCell>
@@ -402,19 +402,19 @@ export default function TechniciansPage() {
       <Card className="bg-[#1c1c1c] text-white shadow-2xl border-none rounded-[2rem] overflow-hidden">
         <CardContent className="p-10 flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="flex items-center gap-8">
-            <div className="h-20 w-20 rounded-3xl bg-white/5 flex items-center justify-center shrink-0 border border-white/10 shadow-lg">
+            <div className="h-20 w-20 rounded-3xl bg-white/5 flex items-center justify-center shrink-0 border border-white/20 shadow-lg">
               <Award className="h-10 w-10 text-accent" />
             </div>
             <div className="space-y-2">
               <h3 className="font-black text-2xl uppercase tracking-tighter">Certificación de Personal NTP</h3>
               <p className="text-sm opacity-70 font-bold uppercase text-[11px] tracking-wider max-w-xl">
-                Los certificados de operatividad requieren la firma de un técnico acreditado. Puedes gestionar las firmas de todo tu equipo desde este panel para agilizar la emisión de documentos.
+                Los protocolos de operatividad de **EXTINPRO** requieren la firma de un técnico acreditado. Puede gestionar las firmas de todo su equipo desde este panel centralizado.
               </p>
             </div>
           </div>
           <div className="flex flex-col items-end gap-2">
             <Badge className="bg-accent text-white px-4 py-1 font-black text-[10px] uppercase">Multifirma Habilitada</Badge>
-            <p className="text-[8px] font-bold uppercase opacity-40">Seguridad Industrial Pro</p>
+            <p className="text-[8px] font-bold uppercase opacity-40">EXTINPRO Technical Suite</p>
           </div>
         </CardContent>
       </Card>

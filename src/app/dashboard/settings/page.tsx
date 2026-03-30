@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
@@ -74,16 +73,16 @@ export default function SettingsPage() {
   [db, profile?.companyId])
   const { data: company, isLoading: loadingCompany } = useDoc(companyRef)
 
-  const roleRef = useMemoFirebase(() => 
-    profile?.roleId ? doc(db, "system_roles", profile.roleId) : null,
-  [db, profile?.roleId])
-  const { data: roleData } = useDoc(roleRef)
+  const rolesRef = useMemoFirebase(() => collection(db, "system_roles"), [db])
+  const { data: roles } = useCollection(rolesRef)
 
   const isTechnicalUser = useMemo(() => {
-    if (!roleData) return false;
-    const title = roleData.title.toLowerCase();
-    return title.includes("técnico") || title.includes("campo") || roleData.permissions?.field_operations === true;
-  }, [roleData]);
+    if (!profile || !roles) return false;
+    const userRole = roles.find(r => r.id === profile.roleId);
+    if (!userRole) return false;
+    const title = userRole.title.toLowerCase();
+    return title.includes("técnico") || title.includes("campo") || userRole.permissions?.field_operations === true;
+  }, [profile, roles]);
 
   useEffect(() => {
     if (profile) {
@@ -138,7 +137,7 @@ export default function SettingsPage() {
       let targetCompanyId = profile?.companyId
 
       if (!targetCompanyId) {
-        toast({ variant: "destructive", title: "Error", description: "No tienes una empresa vinculada." })
+        toast({ variant: "destructive", title: "Error", description: "No tienes una organización vinculada." })
         return
       }
 
@@ -150,7 +149,7 @@ export default function SettingsPage() {
 
       toast({ 
         title: "Organización Actualizada", 
-        description: "Los recursos corporativos se han guardado exitosamente." 
+        description: "Los recursos corporativos de EXTINPRO se han guardado." 
       })
     } catch (error) {
       toast({ variant: "destructive", title: "Error de Guardado", description: "No se pudo actualizar la información." })
@@ -178,7 +177,7 @@ export default function SettingsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase text-primary">Ajustes del Sistema</h2>
-          <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest">Personalización de identidad y firmas digitales.</p>
+          <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest">Personalización de identidad y recursos técnicos de EXTINPRO.</p>
         </div>
       </div>
 
@@ -212,7 +211,7 @@ export default function SettingsPage() {
             <Card className="shadow-sm border-none">
               <CardHeader>
                 <CardTitle className="text-sm font-bold uppercase tracking-wider">Información Personal</CardTitle>
-                <CardDescription className="text-[10px] font-bold uppercase">Gestione sus datos de contacto en EXTINPRO.</CardDescription>
+                <CardDescription className="text-[10px] font-bold uppercase">Gestione sus datos de contacto en la suite técnica.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -229,14 +228,14 @@ export default function SettingsPage() {
                 {isTechnicalUser ? (
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 text-[10px] font-black uppercase text-primary tracking-widest">
-                      <PenTool className="h-3 w-3" /> Firma Digital del Técnico (Personal)
+                      <PenTool className="h-3 w-3" /> Firma Digital del Especialista (Campo)
                     </div>
                     <div className="flex flex-col sm:flex-row items-center gap-6 p-6 border rounded-xl bg-slate-50 border-dashed">
                       <div className="relative h-20 w-40 rounded border bg-white flex items-center justify-center overflow-hidden shadow-sm">
                         {formData.signatureUrl ? (
                           <Image src={formData.signatureUrl} alt="Firma Técnico" fill className="object-contain p-2" unoptimized />
                         ) : (
-                          <span className="text-[8px] uppercase font-bold text-slate-300">Sin Firma</span>
+                          <span className="text-[8px] uppercase font-bold text-slate-300">Sin Firma Cargada</span>
                         )}
                       </div>
                       <div className="flex-1 w-full space-y-3">
@@ -251,9 +250,10 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="p-4 bg-slate-50 rounded-xl border-2 border-dashed">
+                  <div className="p-6 bg-slate-50 rounded-xl border-2 border-dashed flex items-center gap-4">
+                    <ShieldCheck className="h-6 w-6 text-slate-300" />
                     <p className="text-[10px] font-bold uppercase text-slate-400 italic">
-                      La firma digital personal está reservada únicamente para perfiles con roles técnicos.
+                      Su perfil actual es administrativo. Las firmas digitales personales están reservadas exclusivamente para especialistas de campo que emiten certificados NTP.
                     </p>
                   </div>
                 )}
@@ -268,26 +268,26 @@ export default function SettingsPage() {
           {activeTab === "company" && (
             <Card className="shadow-sm border-none">
               <CardHeader>
-                <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary">Branding y Firma Autorizada</CardTitle>
-                <CardDescription className="text-[10px] font-bold uppercase">Configure los elementos visuales y el sello oficial de la empresa.</CardDescription>
+                <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary">Identidad Corporativa y Firma Autorizada</CardTitle>
+                <CardDescription className="text-[10px] font-bold uppercase">Configure los elementos visuales y el sello oficial de EXTINPRO para sus documentos.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-8">
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 text-[10px] font-black uppercase text-primary tracking-widest">
-                    <PenTool className="h-3 w-3" /> Firma y Sello Autorizado (Gerencia/Empresa)
+                    <PenTool className="h-3 w-3" /> Firma y Sello de Gerencia (Empresa)
                   </div>
                   <div className="flex flex-col sm:flex-row items-center gap-6 p-6 border rounded-xl bg-slate-50 border-dashed">
                     <div className="relative h-24 w-48 rounded border bg-white flex items-center justify-center overflow-hidden shadow-sm">
                       {companyData.signatureUrl ? (
                         <Image src={companyData.signatureUrl} alt="Sello Empresa" fill className="object-contain p-2" unoptimized />
                       ) : (
-                        <span className="text-[8px] uppercase font-bold text-slate-300">Sin Sello Oficial</span>
+                        <span className="text-[8px] uppercase font-bold text-slate-300">Sin Sello de Gerencia</span>
                       )}
                     </div>
                     <div className="flex-1 w-full space-y-3">
-                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">URL de Imagen de Sello/Firma</Label>
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">URL del Sello Autorizado</Label>
                       <Input 
-                        placeholder="https://ejemplo.com/sello-empresa.png" 
+                        placeholder="https://ejemplo.com/sello-gerencia.png" 
                         value={companyData.signatureUrl} 
                         onChange={(e) => setCompanyData({...companyData, signatureUrl: e.target.value})} 
                         className="h-11 font-bold text-xs"
@@ -300,7 +300,7 @@ export default function SettingsPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase">Color Principal</Label>
+                    <Label className="text-[10px] font-bold uppercase">Color Primario</Label>
                     <div className="flex gap-2">
                       <Input type="color" className="w-12 h-10 p-1" value={companyData.primaryColor} onChange={(e) => setCompanyData({...companyData, primaryColor: e.target.value})} />
                       <Input value={companyData.primaryColor} onChange={(e) => setCompanyData({...companyData, primaryColor: e.target.value})} className="font-mono text-xs font-bold" />
@@ -311,7 +311,7 @@ export default function SettingsPage() {
                     <Input type="color" className="w-full h-10 p-1" value={companyData.accentColor} onChange={(e) => setCompanyData({...companyData, accentColor: e.target.value})} />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase">Fondo Footer</Label>
+                    <Label className="text-[10px] font-bold uppercase">Fondo Documentos</Label>
                     <Input type="color" className="w-full h-10 p-1" value={companyData.footerBgColor} onChange={(e) => setCompanyData({...companyData, footerBgColor: e.target.value})} />
                   </div>
                 </div>
@@ -320,14 +320,14 @@ export default function SettingsPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-4">
-                    <Label className="text-[10px] font-black uppercase text-primary">Logotipo Principal</Label>
+                    <Label className="text-[10px] font-black uppercase text-primary">Logotipo del Sistema</Label>
                     <div className="relative h-20 w-full border rounded bg-white flex items-center justify-center overflow-hidden">
                       {companyData.logoUrl ? <Image src={companyData.logoUrl} alt="Logo" fill className="object-contain p-2" unoptimized /> : <span className="text-[8px] font-bold opacity-30 uppercase">Sin Logo</span>}
                     </div>
                     <Input placeholder="URL del Logotipo" value={companyData.logoUrl} onChange={(e) => setCompanyData({...companyData, logoUrl: e.target.value})} className="h-9 text-[10px] font-bold" />
                   </div>
                   <div className="space-y-4">
-                    <Label className="text-[10px] font-black uppercase text-primary">Cabecera Membrete</Label>
+                    <Label className="text-[10px] font-black uppercase text-primary">Cabecera de Protocolos</Label>
                     <div className="relative h-20 w-full border rounded bg-white flex items-center justify-center overflow-hidden">
                       {companyData.headerUrl ? <Image src={companyData.headerUrl} alt="Header" fill className="object-contain" unoptimized /> : <span className="text-[8px] font-bold opacity-30 uppercase">Sin Cabecera</span>}
                     </div>
@@ -338,7 +338,7 @@ export default function SettingsPage() {
               <CardFooter className="bg-muted/30 border-t flex justify-end p-6">
                 <Button className="bg-primary text-white font-black uppercase text-[11px] h-11 px-8 shadow-lg" onClick={handleUpdateCompany} disabled={isSaving}>
                   {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />} 
-                  Guardar Branding Corporativo
+                  Guardar Cambios Corporativos
                 </Button>
               </CardFooter>
             </Card>
@@ -348,7 +348,7 @@ export default function SettingsPage() {
             <Card className="shadow-sm border-none overflow-hidden">
               <CardHeader className="bg-primary text-white pb-8">
                 <CardTitle className="text-sm font-bold uppercase tracking-widest flex items-center gap-2">
-                  <Zap className="h-4 w-4 text-accent" /> Estado de Suscripción SaaS
+                  <Zap className="h-4 w-4 text-accent" /> Estado de Suscripción EXTINPRO
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-6">

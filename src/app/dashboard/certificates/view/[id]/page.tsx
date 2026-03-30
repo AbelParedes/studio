@@ -17,11 +17,14 @@ import {
   Globe,
   FileText,
   Scale,
-  Award
+  Award,
+  Flame
 } from "lucide-react"
 import { format, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
 import Image from "next/image"
+
+const EXTINPRO_DEFAULT_LOGO = "https://img.freepik.com/vector-gratis/estilo-plano-llama_78370-7477.jpg?semt=ais_incoming&w=740&q=80"
 
 export default function CertificateViewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
@@ -43,7 +46,7 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
   const techRef = useMemoFirebase(() => cert?.technicianId ? doc(db, "company_users", cert.technicianId) : null, [db, cert?.technicianId])
   const { data: technician } = useDoc(techRef)
 
-  if (isLoading) return <div className="p-20 text-center font-bold uppercase animate-pulse text-primary">Generando Protocolo EXTINPRO...</div>
+  if (isLoading) return <div className="p-20 text-center font-bold uppercase animate-pulse text-primary">Generando Protocolo Oficial...</div>
   if (!cert) return <div className="p-20 text-center font-bold uppercase">Protocolo no encontrado</div>
 
   const formattedDate = cert.fechaEmision ? format(parseISO(cert.fechaEmision), "dd 'de' MMMM 'del' yyyy", { locale: es }) : "---"
@@ -65,7 +68,7 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
         {/* HEADER */}
         <div className="pt-12 px-12 pb-8 shrink-0 flex items-center justify-between bg-slate-50/50 border-b">
           <div className="relative h-20 w-64">
-            {(company?.headerUrl || company?.logoUrl) ? (<Image src={company.headerUrl || company.logoUrl} alt="Logo" fill className="object-contain object-left" unoptimized />) : (<div className="h-full w-full bg-white border-2 border-dashed flex items-center justify-center"><ShieldCheck className="h-10 w-10 text-slate-300" /></div>)}
+            <Image src={company?.headerUrl || company?.logoUrl || EXTINPRO_DEFAULT_LOGO} alt="Logo" fill className="object-contain object-left" unoptimized />
           </div>
           <div className="text-right">
             <h1 className="text-sm font-black text-primary uppercase tracking-tighter mb-1">CERTIFICADO DE OPERATIVIDAD</h1>
@@ -77,7 +80,7 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
         <div className="p-12 space-y-10 flex-1 relative z-10">
           {/* MARCA DE AGUA */}
           <div className="absolute inset-0 flex items-center justify-center opacity-[0.04] pointer-events-none -rotate-12">
-            {company?.logoUrl ? (<div className="relative h-[500px] w-[500px]"><Image src={company.logoUrl} alt="Watermark" fill className="object-contain" unoptimized /></div>) : (<Award className="h-[500px] w-[500px]" />)}
+            <Image src={company?.logoUrl || EXTINPRO_DEFAULT_LOGO} alt="Watermark" fill className="object-contain" unoptimized />
           </div>
 
           <div className="grid grid-cols-2 gap-16">
@@ -94,9 +97,9 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
           <div className="space-y-8 pt-4">
             <div className="flex items-center gap-3 bg-slate-50 border p-3 rounded"><Scale className="h-4 w-4 text-primary" /><h3 className="text-[10px] font-black uppercase tracking-[0.15em]">ANEXO TÉCNICO DE EQUIPOS</h3></div>
             <div className="grid grid-cols-3 gap-4 mb-6">
-              <div className="p-3 bg-white border rounded-lg text-center"><p className="text-[8px] font-black text-slate-400 uppercase">P. PRUEBA</p><p className="text-xs font-black text-primary">{cert.presionPrueba}</p></div>
-              <div className="p-3 bg-white border rounded-lg text-center"><p className="text-[8px] font-black text-slate-400 uppercase">P. TRABAJO</p><p className="text-xs font-black text-primary">{cert.presionTrabajo}</p></div>
-              <div className="p-3 bg-white border rounded-lg text-center"><p className="text-[8px] font-black text-slate-400 uppercase">RATING</p><p className="text-xs font-black text-primary">{cert.rating}</p></div>
+              <div className="p-3 bg-white border rounded-lg text-center shadow-sm"><p className="text-[8px] font-black text-slate-400 uppercase">P. PRUEBA</p><p className="text-xs font-black text-primary">{cert.presionPrueba}</p></div>
+              <div className="p-3 bg-white border rounded-lg text-center shadow-sm"><p className="text-[8px] font-black text-slate-400 uppercase">P. TRABAJO</p><p className="text-xs font-black text-primary">{cert.presionTrabajo}</p></div>
+              <div className="p-3 bg-white border rounded-lg text-center shadow-sm"><p className="text-[8px] font-black text-slate-400 uppercase">RATING</p><p className="text-xs font-black text-primary">{cert.rating}</p></div>
             </div>
             <div className="border rounded-xl overflow-hidden shadow-sm">
               <table className="w-full text-[10px] border-collapse">
@@ -116,22 +119,20 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
           </div>
 
           <div className="pt-16 grid grid-cols-2 gap-24 text-center">
-            {/* FIRMA EMPRESA */}
             <div className="space-y-3 relative">
               <div className="h-24 w-full border-b-2 flex flex-col items-center justify-center bg-slate-50/30 rounded-t-lg relative">
                 {company?.signatureUrl ? (
                   <div className="relative h-20 w-40 z-20">
-                    <Image src={company.signatureUrl} alt="Firma Empresa" fill className="object-contain" unoptimized />
+                    <Image src={company.signatureUrl} alt="Sello Empresa" fill className="object-contain" unoptimized />
                   </div>
                 ) : (
-                  <div className="border-4 border-primary/10 text-primary/10 p-2 rounded-xl rotate-12 font-black text-[11px] uppercase border-double absolute">VALIDADO POR<br/>INGENIERÍA TÉCNICA</div>
+                  <div className="border-4 border-primary/10 text-primary/10 p-2 rounded-xl rotate-12 font-black text-[11px] uppercase border-double absolute">VALIDADO POR<br/>DEPARTAMENTO TÉCNICO</div>
                 )}
               </div>
               <p className="text-[10px] font-black uppercase text-primary">{company?.name || "EXTINPRO"}</p>
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">FIRMA Y SELLO AUTORIZADO</p>
+              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">SELLO Y FIRMA DE GERENCIA</p>
             </div>
 
-            {/* FIRMA TÉCNICO */}
             <div className="space-y-3 relative">
               <div className="h-24 w-full border-b-2 flex flex-col items-center justify-center bg-slate-50/30 rounded-t-lg relative">
                 {technician?.signatureUrl ? (
@@ -139,7 +140,7 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
                     <Image src={technician.signatureUrl} alt="Firma Técnico" fill className="object-contain" unoptimized />
                   </div>
                 ) : (
-                  <div className="text-2xl text-slate-300 italic opacity-50 font-medium">Firma Digital Técnico</div>
+                  <div className="text-2xl text-slate-200 italic opacity-50 font-medium">Firma Digital</div>
                 )}
               </div>
               <p className="text-[10px] font-black uppercase text-primary">{cert.technicianName}</p>

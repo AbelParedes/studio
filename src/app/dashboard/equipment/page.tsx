@@ -52,20 +52,17 @@ export default function ClientEquipmentPage() {
   const [isAdding, setIsAdding] = useState(false)
   const [editingItem, setEditingItem] = useState<any | null>(null)
 
-  // 1. Perfil para companyId
   const userProfileQuery = useMemoFirebase(() => 
     user?.email ? query(collection(db, "company_users"), where("email", "==", user.email)) : null,
   [db, user?.email])
   const { data: profiles } = useCollection(userProfileQuery)
   const companyId = profiles?.[0]?.companyId
 
-  // 2. Clientes de la empresa
   const clientsRef = useMemoFirebase(() => 
     companyId ? query(collection(db, "clients"), where("companyId", "==", companyId)) : null,
   [db, companyId])
   const { data: clients } = useCollection(clientsRef)
 
-  // 3. Equipos de los clientes
   const equipmentRef = useMemoFirebase(() => 
     companyId ? query(collection(db, "client_equipment"), where("companyId", "==", companyId)) : null,
   [db, companyId])
@@ -95,11 +92,11 @@ export default function ClientEquipmentPage() {
 
     if (editingItem) {
       updateDocumentNonBlocking(doc(db, "client_equipment", editingItem.id), equipmentData)
-      toast({ title: "Equipo actualizado en base de datos" })
+      toast({ title: "Ficha Técnica Actualizada" })
     } else {
       const newItem = { ...equipmentData, id: crypto.randomUUID(), createdAt: new Date().toISOString() }
       addDocumentNonBlocking(collection(db, "client_equipment"), newItem)
-      toast({ title: "Nuevo activo registrado con éxito" })
+      toast({ title: "Equipo Registrado con Éxito" })
     }
 
     setIsAdding(false)
@@ -109,7 +106,7 @@ export default function ClientEquipmentPage() {
   const handleDelete = (id: string) => {
     if (!confirm("¿Eliminar este registro de forma permanente? Se borrará de la hoja de vida.")) return
     deleteDocumentNonBlocking(doc(db, "client_equipment", id))
-    toast({ variant: "destructive", title: "Activo eliminado de la base" })
+    toast({ variant: "destructive", title: "Activo removido de la base" })
   }
 
   const filteredEquipment = equipment?.filter(item => {
@@ -119,8 +116,8 @@ export default function ClientEquipmentPage() {
            item.location?.toLowerCase().includes(searchTerm.toLowerCase())
   })
 
-  // Sugerir fecha de PH (5 años después del año de fab o última PH)
   const suggestPHDate = (year: number) => {
+    if (!year) return ""
     return format(addYears(new Date(year, 0, 1), 5), "yyyy-MM-dd")
   }
 
@@ -241,7 +238,7 @@ export default function ClientEquipmentPage() {
                   </div>
                   <div className="grid gap-2">
                     <Label className="text-[10px] font-black uppercase text-blue-600 tracking-widest">Próxima Prueba Hidrostática (5 Años)</Label>
-                    <Input name="nextHydrostatic" type="date" defaultValue={editingItem?.nextHydrostaticTestDate || (editingItem?.manufacturingYear ? suggestPHDate(editingItem.manufacturingYear) : "")} className="h-12 font-black border-2 border-blue-200 text-blue-600" required />
+                    <Input name="nextHydrostatic" type="date" defaultValue={editingItem?.nextHydrostaticTestDate} className="h-12 font-black border-2 border-blue-200 text-blue-600" required />
                   </div>
                 </div>
 
@@ -279,7 +276,7 @@ export default function ClientEquipmentPage() {
           </CardHeader>
           <CardContent className="pt-4">
             <div className="text-3xl font-black text-primary tracking-tighter">{equipment?.length || 0}</div>
-            <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Unidades registradas</p>
+            <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Unidades en sistema</p>
           </CardContent>
         </Card>
         <Card className="bg-white border-none shadow-sm border-l-4 border-l-status-success overflow-hidden">
@@ -290,33 +287,33 @@ export default function ClientEquipmentPage() {
           </CardHeader>
           <CardContent className="pt-4">
             <div className="text-3xl font-black text-status-success tracking-tighter">{equipment?.filter(e => e.status === "Operativo").length || 0}</div>
-            <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">En estado conforme</p>
+            <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Estado conforme</p>
           </CardContent>
         </Card>
         <Card className="bg-white border-none shadow-sm border-l-4 border-l-status-error overflow-hidden">
           <CardHeader className="pb-2 bg-status-error/5">
             <CardTitle className="text-[9px] uppercase font-black text-muted-foreground tracking-widest flex items-center gap-2">
-              <AlertTriangle className="h-3 w-3 text-status-error" /> Críticos / Vencidos
+              <AlertTriangle className="h-3 w-3 text-status-error" /> Recargas Pendientes
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-4">
             <div className="text-3xl font-black text-status-error tracking-tighter">
               {equipment?.filter(e => e.status === "Vencido" || (e.nextServiceDate && !isAfter(parseISO(e.nextServiceDate), new Date()))).length || 0}
             </div>
-            <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Acción inmediata req.</p>
+            <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Vencimiento anual</p>
           </CardContent>
         </Card>
         <Card className="bg-white border-none shadow-sm border-l-4 border-l-blue-600 overflow-hidden">
           <CardHeader className="pb-2 bg-blue-50">
             <CardTitle className="text-[9px] uppercase font-black text-muted-foreground tracking-widest flex items-center gap-2">
-              <Droplets className="h-3 w-3 text-blue-600" /> Pruebas H. (5A)
+              <Droplets className="h-3 w-3 text-blue-600" /> Vto. Prueba H. (5A)
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-4">
             <div className="text-3xl font-black text-blue-600 tracking-tighter">
               {equipment?.filter(e => e.nextHydrostaticTestDate && !isAfter(parseISO(e.nextHydrostaticTestDate), new Date())).length || 0}
             </div>
-            <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Pruebas pendientes</p>
+            <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Presión requerida</p>
           </CardContent>
         </Card>
       </div>
@@ -342,9 +339,9 @@ export default function ClientEquipmentPage() {
             <Table className="dense-table min-w-[1200px]">
               <TableHeader className="bg-[#1c1c1c]">
                 <TableRow className="border-none">
-                  <TableHead className="text-white font-black uppercase text-[10px] py-4">Ficha Técnica / Serie</TableHead>
-                  <TableHead className="text-white font-black uppercase text-[10px]">Cliente Solicitante</TableHead>
-                  <TableHead className="text-white font-black uppercase text-[10px]">Especificaciones</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px] py-4">Serie / Identificador</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px]">Propietario</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px]">Ficha Técnica</TableHead>
                   <TableHead className="text-white font-black uppercase text-[10px]">Estado Operativo</TableHead>
                   <TableHead className="text-white font-black uppercase text-[10px] text-center">Vto. Anual</TableHead>
                   <TableHead className="text-white font-black uppercase text-[10px] text-center">Vto. P.H. (5A)</TableHead>
@@ -368,15 +365,15 @@ export default function ClientEquipmentPage() {
                           </div>
                           <div className="flex flex-col">
                             <span className="font-black text-primary uppercase text-[11px] leading-none mb-1">{item.serialNumber}</span>
-                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">FAB: {item.manufacturingYear} • ID: {item.id.split('-')[0]}</span>
+                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">FAB: {item.manufacturingYear}</span>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col">
-                          <span className="font-black text-[10px] uppercase truncate max-w-[200px]">{client?.name || "CLIENTE NO ASIGNADO"}</span>
+                          <span className="font-black text-[10px] uppercase truncate max-w-[200px]">{client?.name || "SIN ASIGNAR"}</span>
                           <span className="text-[9px] text-slate-400 flex items-center gap-1 uppercase font-bold">
-                            <MapPin className="h-2.5 w-2.5" /> {item.location || "S/U"}
+                            <MapPin className="h-2.5 w-2.5" /> {item.location || "---"}
                           </span>
                         </div>
                       </TableCell>
@@ -391,7 +388,7 @@ export default function ClientEquipmentPage() {
                       <TableCell>
                         <Badge className={cn(
                           "text-[9px] font-black uppercase px-3 py-1 rounded-md",
-                          item.status === "Operativo" ? "bg-status-success text-white shadow-sm" : 
+                          item.status === "Operativo" ? "bg-status-success text-white" : 
                           item.status === "Vencido" ? "bg-status-error text-white animate-pulse" :
                           "bg-slate-200 text-slate-600"
                         )}>
@@ -406,7 +403,7 @@ export default function ClientEquipmentPage() {
                           )}>
                             {item.nextServiceDate ? format(parseISO(item.nextServiceDate), "dd MMM yyyy", { locale: es }).toUpperCase() : "---"}
                           </span>
-                          {isExpired && <span className="text-[7px] font-black text-status-error uppercase mt-1">¡RECARGA!</span>}
+                          {isExpired && <span className="text-[7px] font-black text-status-error uppercase mt-1">¡VENCIDO!</span>}
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
@@ -417,7 +414,7 @@ export default function ClientEquipmentPage() {
                           )}>
                             {item.nextHydrostaticTestDate ? format(parseISO(item.nextHydrostaticTestDate), "dd MMM yyyy", { locale: es }).toUpperCase() : "---"}
                           </span>
-                          {isPHExpired && <span className="text-[7px] font-black text-blue-600 uppercase mt-1">¡PRUEBA REQ!</span>}
+                          {isPHExpired && <span className="text-[7px] font-black text-blue-600 uppercase mt-1">¡PH REQ!</span>}
                         </div>
                       </TableCell>
                       <TableCell className="text-right pr-8">
@@ -435,14 +432,9 @@ export default function ClientEquipmentPage() {
                 })}
                 {filteredEquipment?.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-32">
-                      <div className="flex flex-col items-center gap-4 opacity-20">
-                        <HardDrive className="h-16 w-16 text-primary" />
-                        <div className="space-y-1">
-                          <p className="text-sm font-black uppercase tracking-[0.3em]">No hay activos en inventario</p>
-                          <p className="text-[10px] font-bold uppercase">Comience registrando los equipos de sus clientes para emitir certificados.</p>
-                        </div>
-                      </div>
+                    <TableCell colSpan={7} className="text-center py-32 opacity-20">
+                      <HardDrive className="h-16 w-16 mx-auto mb-4 text-primary" />
+                      <p className="text-sm font-black uppercase tracking-[0.3em]">Sin registros de equipos</p>
                     </TableCell>
                   </TableRow>
                 )}
@@ -460,16 +452,14 @@ export default function ClientEquipmentPage() {
               <Factory className="h-10 w-10 text-accent" />
             </div>
             <div className="space-y-2">
-              <h3 className="font-black text-2xl uppercase tracking-tighter leading-none">Hoja de Vida e Inventario Técnico</h3>
+              <h3 className="font-black text-2xl uppercase tracking-tighter leading-none">Hoja de Vida Técnica EXTINPRO</h3>
               <p className="text-sm opacity-70 font-bold uppercase text-[11px] tracking-wider max-w-xl">
-                Este módulo gestiona el ciclo de vida completo: Recarga Anual y Prueba Hidrostática (cada 5 años). Cumpla con la NTP 350.043-1 de forma automatizada.
+                Gestión automatizada de Recargas (Anuales) y Pruebas Hidrostáticas (5 años). Garantizamos el cumplimiento estricto de la NTP 350.043-1.
               </p>
             </div>
           </div>
           <div className="flex flex-col items-end gap-2 shrink-0">
-            <div className="text-[10px] font-black uppercase text-accent bg-white px-6 py-2 rounded-full shadow-lg border-b-2 border-accent">
-              Motor de Cumplimiento NTP v2.5
-            </div>
+            <Badge className="bg-accent text-white px-6 py-2 rounded-full shadow-lg">Motor de Cumplimiento v3.0</Badge>
             <p className="text-[8px] font-black uppercase opacity-40 mr-4">Seguridad Industrial Certificada</p>
           </div>
         </CardContent>
