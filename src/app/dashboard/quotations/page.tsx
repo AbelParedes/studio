@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo } from "react"
@@ -92,7 +93,10 @@ export default function QuotationsPage() {
     if (!quotations || quotations.length === 0) return `COT-0001-${currentYear}`
     const yearQuotations = quotations.filter(q => q.quotationNumber?.endsWith(`-${currentYear}`))
     if (yearQuotations.length === 0) return `COT-0001-${currentYear}`
-    const numbers = yearQuotations.map(q => parseInt(q.quotationNumber.split("-")[1]) || 0)
+    const numbers = yearQuotations.map(q => {
+      const parts = q.quotationNumber.split("-")
+      return parts.length >= 2 ? parseInt(parts[1]) : 0
+    })
     const maxNum = Math.max(...numbers)
     return `COT-${(maxNum + 1).toString().padStart(4, '0')}-${currentYear}`
   }, [quotations, currentYear])
@@ -195,63 +199,128 @@ export default function QuotationsPage() {
           </div>
         </div>
 
-        <div className="proforma-container bg-white shadow-xl mx-auto w-full max-w-[210mm] min-h-[297mm] flex flex-col relative text-[#1c1c1c] border">
-          {/* VISTA PREVIA PROFESIONAL SIMILAR A LA IMPLEMENTADA ANTERIORMENTE PERO RESPONSIVA */}
-          <div className="p-6 sm:p-12 space-y-8 flex-1">
+        <div className="proforma-container bg-white shadow-2xl mx-auto w-[210mm] min-h-[297mm] flex flex-col relative text-[#1c1c1c] border print:shadow-none print:border-none print:m-0 print:w-full">
+          <div className="p-12 space-y-10 flex-1">
              <div className="flex justify-between items-start">
-                <div className="h-16 w-48 relative">
+                <div className="h-20 w-64 relative">
                   {(company?.headerUrl || company?.logoUrl) && <Image src={company.headerUrl || company.logoUrl} alt="Logo" fill className="object-contain object-left" unoptimized />}
                 </div>
                 <div className="text-right">
-                  <h1 className="text-xs sm:text-sm font-black uppercase text-primary">COTIZACIÓN COMERCIAL</h1>
-                  <p className="text-[10px] font-mono font-bold mt-1">N° {viewingQuotation.quotationNumber}</p>
+                  <h1 className="text-sm font-black uppercase text-primary tracking-tighter">COTIZACIÓN COMERCIAL</h1>
+                  <p className="text-[10px] font-mono font-bold mt-1 text-slate-500">N° {viewingQuotation.quotationNumber}</p>
+                  <div className="mt-4 bg-slate-100 px-4 py-1.5 rounded font-black text-[10px] uppercase inline-block border-b-2 border-slate-300">
+                    Vigencia: 15 Días
+                  </div>
                 </div>
              </div>
              
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 text-[11px]">
-                <div className="space-y-1">
-                  <p className="text-slate-400 font-black uppercase">Cliente:</p>
-                  <p className="font-black text-sm uppercase">{client?.name || "---"}</p>
-                  <p className="font-bold">RUC: {client?.taxId || "---"}</p>
-                  <p className="truncate">DIR: {client?.address || "---"}</p>
+             <div className="grid grid-cols-2 gap-12 text-[11px]">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4"><h3 className="text-[9px] font-black text-slate-400 uppercase shrink-0">CLIENTE / ENTIDAD</h3><div className="h-[1px] bg-slate-100 w-full"></div></div>
+                  <div className="space-y-1 pt-1">
+                    <p className="font-black text-sm uppercase">{client?.name || "---"}</p>
+                    <p className="font-bold text-slate-500">RUC: {client?.taxId || "---"}</p>
+                    <p className="text-slate-500 uppercase leading-tight">{client?.address || "---"}</p>
+                  </div>
                 </div>
-                <div className="sm:text-right space-y-1">
-                  <p className="text-slate-400 font-black uppercase">Emisión:</p>
-                  <p className="font-bold">{viewingQuotation.date}</p>
-                  <p className="font-black text-status-success uppercase">Estado: {viewingQuotation.status}</p>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4"><h3 className="text-[9px] font-black text-slate-400 uppercase shrink-0">DETALLES EMISIÓN</h3><div className="h-[1px] bg-slate-100 w-full"></div></div>
+                  <div className="text-right space-y-1 pt-1">
+                    <p className="font-bold uppercase text-slate-700">Fecha: <span className="font-black">{viewingQuotation.date}</span></p>
+                    <p className="font-bold uppercase text-slate-700">Moneda: <span className="font-black">Soles (S/)</span></p>
+                    <div className="mt-2 inline-block">
+                      <Badge variant="outline" className="text-[9px] font-black uppercase bg-status-success/5 text-status-success border-status-success/20">
+                        Estado: {viewingQuotation.status}
+                      </Badge>
+                    </div>
+                  </div>
                 </div>
              </div>
 
-             <div className="overflow-x-auto">
-                <table className="w-full text-[10px] sm:text-[11px]">
-                  <thead className="bg-slate-50 border-b-2">
+             <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                <table className="w-full text-[11px] border-collapse">
+                  <thead className="bg-slate-50 border-b border-slate-200 text-slate-800">
                     <tr>
-                      <th className="p-2 text-center w-12">CANT</th>
-                      <th className="p-2 text-left">DESCRIPCIÓN</th>
-                      <th className="p-2 text-right w-24">UNIT (S/)</th>
-                      <th className="p-2 text-right w-24">TOTAL (S/)</th>
+                      <th className="p-4 text-center w-16 border-r border-slate-200 font-black uppercase">CANT</th>
+                      <th className="p-4 text-left font-black uppercase">DESCRIPCIÓN DE PRODUCTO / SERVICIO</th>
+                      <th className="p-4 text-right w-28 border-l border-slate-200 font-black uppercase">UNIT (S/)</th>
+                      <th className="p-4 text-right w-28 border-l border-slate-200 font-black uppercase">TOTAL (S/)</th>
                     </tr>
                   </thead>
                   <tbody>
                     {viewingQuotation.items?.map((item: any, i: number) => (
-                      <tr key={i} className="border-b border-slate-50">
-                        <td className="p-2 text-center font-bold">{item.quantity}</td>
-                        <td className="p-2 uppercase">{item.description}</td>
-                        <td className="p-2 text-right">{Number(item.unitPrice).toFixed(2)}</td>
-                        <td className="p-2 text-right font-black">{Number(item.total).toFixed(2)}</td>
+                      <tr key={i} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
+                        <td className="p-4 text-center font-black text-primary border-r border-slate-100">{item.quantity}</td>
+                        <td className="p-4 uppercase font-medium text-slate-700">{item.description}</td>
+                        <td className="p-4 text-right border-l border-slate-100 text-slate-600">{(Number(item.unitPrice)).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                        <td className="p-4 text-right font-black border-l border-slate-100 text-primary">{(Number(item.total)).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
              </div>
 
-             <div className="flex justify-end pt-4">
-                <div className="w-full sm:w-64 space-y-1">
-                  <div className="flex justify-between text-[10px] font-bold"><span>SUBTOTAL</span><span>S/ {Number(viewingQuotation.subtotal).toFixed(2)}</span></div>
-                  <div className="flex justify-between text-[10px] font-bold"><span>I.G.V (18%)</span><span>S/ {Number(viewingQuotation.tax).toFixed(2)}</span></div>
-                  <div className="flex justify-between text-base font-black border-t-2 pt-2 text-primary"><span>TOTAL NETO</span><span>S/ {Number(viewingQuotation.total).toFixed(2)}</span></div>
+             <div className="flex justify-between items-start gap-12">
+                <div className="flex-1">
+                  {viewingQuotation.conditions && (
+                    <div className="space-y-2">
+                      <h3 className="text-[9px] font-black uppercase text-primary border-b border-primary/10 pb-1 tracking-widest">Condiciones Comerciales</h3>
+                      <p className="text-[10px] text-slate-500 whitespace-pre-line leading-relaxed font-medium">
+                        {viewingQuotation.conditions}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <div className="w-72 space-y-1.5 p-6 bg-slate-50 rounded-2xl border border-slate-200">
+                  <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase"><span>Subtotal</span><span>S/ {(Number(viewingQuotation.subtotal || 0)).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></div>
+                  <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase"><span>I.G.V (18%)</span><span>S/ {(Number(viewingQuotation.tax || 0)).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></div>
+                  <div className="flex justify-between text-lg font-black border-t-2 border-slate-200 pt-3 text-primary mt-2 uppercase tracking-tighter"><span>Total Neto</span><span>S/ {(Number(viewingQuotation.total || 0)).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></div>
                 </div>
              </div>
+
+             <div className="mt-20 grid grid-cols-2 gap-32">
+                <div className="text-center space-y-3">
+                  <div className="h-24 w-full border-b-2 border-slate-200 flex flex-col items-center justify-center relative bg-slate-50/30 rounded-t-lg">
+                    {company?.signatureUrl ? (
+                      <div className="relative h-20 w-40 z-10">
+                        <Image src={company.signatureUrl} alt="Firma Autorizada" fill className="object-contain" unoptimized />
+                      </div>
+                    ) : (
+                      <span className="text-[9px] uppercase font-bold text-slate-300">Firma y Sello Comercial</span>
+                    )}
+                  </div>
+                  <p className="text-[10px] font-black uppercase text-primary">DEPARTAMENTO COMERCIAL</p>
+                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{company?.name || "EXTINPRO"}</p>
+                </div>
+                <div className="text-center space-y-3">
+                  <div className="h-24 w-full border-b-2 border-slate-200 flex items-center justify-center bg-slate-50/30 rounded-t-lg">
+                    <span className="text-[9px] uppercase font-bold text-slate-300">Aceptación y Firma del Cliente</span>
+                  </div>
+                  <p className="text-[10px] font-black uppercase text-primary">CONFORMIDAD DE PROPUESTA</p>
+                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">FECHA DE ACEPTACIÓN: ___/___/___</p>
+                </div>
+             </div>
+          </div>
+
+          <div 
+            className="mt-auto shrink-0 flex flex-col items-center justify-center py-8 print-footer"
+            style={{ 
+              backgroundColor: company?.footerBgColor || '#f8fafc',
+              borderTop: '1px solid #e2e8f0'
+            } as any}
+          >
+            <div className="px-12 w-full flex flex-col items-center text-center gap-2">
+              <div className="flex flex-wrap justify-center gap-x-12 gap-y-1 text-[10px] font-black text-slate-600 uppercase">
+                {company?.address && <p className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5" /> {company.address}</p>}
+                {company?.phone && <p className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" /> {company.phone}</p>}
+                {company?.email && <p className="flex items-center gap-2"><Mail className="h-3.5 w-3.5" /> {company.email}</p>}
+              </div>
+              <div className="mt-1 pt-3 border-t border-slate-200/30 w-full max-w-md">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] flex items-center justify-center gap-3">
+                  <Globe className="h-3.5 w-3.5" /> {company?.website || "WWW.EXTINPRO.PE"}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -275,8 +344,15 @@ export default function QuotationsPage() {
           <DialogContent className="max-w-5xl max-h-[95vh] flex flex-col p-0 overflow-hidden">
             <form onSubmit={handleSaveQuotation} className="flex flex-col h-full overflow-hidden">
               <DialogHeader className="p-4 sm:p-6 border-b bg-slate-50">
-                <DialogTitle className="uppercase font-black text-[#d9534f] text-lg">Nueva Proforma Oficial</DialogTitle>
-                <DialogDescription className="text-[9px] font-bold uppercase">Sugerido: {suggestedQuotationNumber}</DialogDescription>
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 bg-[#d9534f] rounded-xl flex items-center justify-center text-white shadow-md">
+                    <FileText className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <DialogTitle className="uppercase font-black text-[#d9534f] text-lg">Nueva Proforma Oficial</DialogTitle>
+                    <DialogDescription className="text-[9px] font-bold uppercase">Correlativo Sugerido: {suggestedQuotationNumber}</DialogDescription>
+                  </div>
+                </div>
               </DialogHeader>
 
               <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 custom-scrollbar">
@@ -338,20 +414,20 @@ export default function QuotationsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
                   <div className="grid gap-2">
                     <Label className="text-[10px] font-black uppercase text-slate-500">Condiciones Comerciales</Label>
-                    <Textarea name="conditions" className="min-h-[100px] text-[10px] font-medium leading-relaxed" defaultValue="• Validez: 15 días.\n• Forma de pago: Contado.\n• Garantía: 12 meses." />
+                    <Textarea name="conditions" className="min-h-[120px] text-[10px] font-medium leading-relaxed" defaultValue={"• Validez de la oferta: 15 días calendario.\n• Forma de pago: Contado / Contra entrega.\n• Tiempo de entrega: Inmediato / A coordinar.\n• Garantía de fábrica: 12 meses contra defectos de fabricación."} />
                   </div>
-                  <div className="bg-[#1c1c1c] text-white p-6 rounded-2xl flex flex-col justify-center gap-4">
+                  <div className="bg-[#1c1c1c] text-white p-6 rounded-2xl flex flex-col justify-center gap-4 shadow-xl">
                     <div className="flex justify-between items-center text-[10px] font-bold opacity-60 uppercase">
-                      <span>Estado</span>
+                      <span>Estado de Gestión</span>
                       <Select name="status" defaultValue="Borrador">
                         <SelectTrigger className="h-7 w-28 bg-white/10 border-none text-[9px] font-black"><SelectValue /></SelectTrigger>
                         <SelectContent><SelectItem value="Borrador">Borrador</SelectItem><SelectItem value="Enviado">Enviado</SelectItem><SelectItem value="Aceptado">Aceptado</SelectItem></SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-1 pt-2 border-t border-white/10">
-                      <div className="flex justify-between text-[10px] opacity-80"><span>SUBTOTAL</span><span>S/ {subtotal.toFixed(2)}</span></div>
-                      <div className="flex justify-between text-[10px] opacity-80"><span>I.G.V (18%)</span><span>S/ {tax.toFixed(2)}</span></div>
-                      <div className="flex justify-between text-xl font-black text-accent pt-2"><span>TOTAL</span><span>S/ {total.toFixed(2)}</span></div>
+                    <div className="space-y-1.5 pt-3 border-t border-white/10">
+                      <div className="flex justify-between text-[10px] opacity-80 font-bold"><span>SUBTOTAL</span><span>S/ {subtotal.toFixed(2)}</span></div>
+                      <div className="flex justify-between text-[10px] opacity-80 font-bold"><span>I.G.V (18%)</span><span>S/ {tax.toFixed(2)}</span></div>
+                      <div className="flex justify-between text-2xl font-black text-accent pt-2 tracking-tighter"><span>TOTAL</span><span>S/ {total.toFixed(2)}</span></div>
                     </div>
                   </div>
                 </div>
@@ -377,16 +453,16 @@ export default function QuotationsPage() {
             <Table className="dense-table min-w-[700px] lg:min-w-full">
               <TableHeader className="bg-[#1c1c1c]">
                 <TableRow>
-                  <TableHead className="text-white">Identificador</TableHead>
-                  <TableHead className="text-white">Cliente</TableHead>
-                  <TableHead className="text-white text-right">Total (S/.)</TableHead>
-                  <TableHead className="text-white">Estado</TableHead>
-                  <TableHead className="text-white text-right pr-6">Acciones</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px]">Identificador</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px]">Cliente / Entidad</TableHead>
+                  <TableHead className="text-white text-right font-black uppercase text-[10px]">Total (S/.)</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px]">Estado</TableHead>
+                  <TableHead className="text-white text-right pr-6 font-black uppercase text-[10px]">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredQuotations?.map((q) => (
-                  <TableRow key={q.id} className="hover:bg-muted/30">
+                  <TableRow key={q.id} className="hover:bg-muted/30 transition-colors">
                     <TableCell className="font-black text-[#d9534f] uppercase">{q.quotationNumber}</TableCell>
                     <TableCell className="font-bold uppercase text-[10px] sm:text-[11px] truncate max-w-[200px]">{clients?.find(c => c.id === q.clientId)?.name || "---"}</TableCell>
                     <TableCell className="text-right font-black">S/ {(Number(q.total || 0)).toLocaleString()}</TableCell>
@@ -395,8 +471,8 @@ export default function QuotationsPage() {
                     </TableCell>
                     <TableCell className="text-right pr-6">
                       <div className="flex justify-end gap-1 sm:gap-2">
-                        {q.status !== "Convertido" && <Button variant="ghost" size="icon" className="h-8 w-8 text-status-success" onClick={() => handleConvertToOrder(q)} disabled={isConverting === q.id}><Repeat className="h-4 w-4" /></Button>}
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-[#d9534f]" onClick={() => setViewingQuotation(q)}><FileText className="h-4 w-4" /></Button>
+                        {q.status !== "Convertido" && <Button variant="ghost" size="icon" title="Convertir a OS" className="h-8 w-8 text-status-success" onClick={() => handleConvertToOrder(q)} disabled={isConverting === q.id}><Repeat className="h-4 w-4" /></Button>}
+                        <Button variant="ghost" size="icon" title="Ver / Imprimir" className="h-8 w-8 text-[#d9534f]" onClick={() => setViewingQuotation(q)}><FileText className="h-4 w-4" /></Button>
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteDocumentNonBlocking(doc(db, "quotations", q.id))}><Trash2 className="h-4 w-4" /></Button>
                       </div>
                     </TableCell>
