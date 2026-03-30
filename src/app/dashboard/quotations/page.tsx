@@ -59,6 +59,7 @@ export default function QuotationsPage() {
   const [editingQuotation, setEditingQuotation] = useState<any | null>(null)
   const [items, setItems] = useState<{description: string, quantity: number, unitPrice: number, catalogItemId?: string}[]>([])
   const [isConverting, setIsConverting] = useState<string | null>(null)
+  const [currentStatus, setCurrentStatus] = useState("Borrador")
 
   const userProfileQuery = useMemoFirebase(() => 
     user?.email ? query(collection(db, "company_users"), where("email", "==", user.email)) : null,
@@ -142,7 +143,7 @@ export default function QuotationsPage() {
       })),
       subtotal, tax, total,
       conditions: formData.get("conditions") as string,
-      status: formData.get("status") as string || "Borrador",
+      status: currentStatus,
       updatedAt: new Date().toISOString()
     }
 
@@ -153,7 +154,7 @@ export default function QuotationsPage() {
       addDocumentNonBlocking(collection(db, "quotations"), { ...quotationData, id: crypto.randomUUID(), createdAt: new Date().toISOString() })
       toast({ title: "Proforma generada" })
     }
-    setIsAdding(false); setEditingQuotation(null); setItems([])
+    setIsAdding(false); setEditingQuotation(null); setItems([]); setCurrentStatus("Borrador")
   }
 
   const handleDelete = (id: string) => {
@@ -165,6 +166,7 @@ export default function QuotationsPage() {
   const openEdit = (q: any) => {
     setEditingQuotation(q)
     setItems(q.items || [])
+    setCurrentStatus(q.status || "Borrador")
     setIsAdding(true)
   }
 
@@ -328,7 +330,7 @@ export default function QuotationsPage() {
           <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest">Emisión de proformas industriales.</p>
         </div>
         
-        <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) { setEditingQuotation(null); setItems([]); } }}>
+        <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) { setEditingQuotation(null); setItems([]); setCurrentStatus("Borrador"); } }}>
           <DialogTrigger asChild>
             <Button className="bg-[#d9534f] hover:bg-[#c9302c] text-white h-10 font-bold uppercase text-xs shadow-lg w-full sm:w-auto px-8">
               <Plus className="mr-2 h-4 w-4" /> Nueva Proforma
@@ -353,8 +355,8 @@ export default function QuotationsPage() {
               </DialogHeader>
 
               <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 custom-scrollbar">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="grid gap-1.5">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="grid gap-1.5 md:col-span-1">
                     <Label className="text-[10px] font-black uppercase text-slate-500">Cliente</Label>
                     <Select name="clientId" defaultValue={editingQuotation?.clientId} required>
                       <SelectTrigger className="h-10 border-2"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
@@ -368,6 +370,18 @@ export default function QuotationsPage() {
                   <div className="grid gap-1.5">
                     <Label className="text-[10px] font-black uppercase text-slate-500">Fecha</Label>
                     <Input type="date" name="date" defaultValue={editingQuotation?.date || format(new Date(), "yyyy-MM-dd")} className="h-10 font-bold" />
+                  </div>
+                  <div className="grid gap-1.5">
+                    <Label className="text-[10px] font-black uppercase text-slate-500">Estado de Proforma</Label>
+                    <Select value={currentStatus} onValueChange={setCurrentStatus}>
+                      <SelectTrigger className="h-10 border-2 font-bold"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Borrador">Borrador</SelectItem>
+                        <SelectItem value="Enviado">Enviado</SelectItem>
+                        <SelectItem value="Aceptado">Aceptado</SelectItem>
+                        <SelectItem value="Rechazado">Rechazado</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
@@ -414,22 +428,10 @@ export default function QuotationsPage() {
                     <Textarea name="conditions" className="min-h-[120px] text-[10px] font-medium leading-relaxed" defaultValue={editingQuotation?.conditions || "• Validez de la oferta: 15 días calendario.\n• Forma de pago: Contado / Contra entrega.\n• Tiempo de entrega: Inmediato / A coordinar.\n• Garantía de fábrica: 12 meses contra defectos de fabricación."} />
                   </div>
                   <div className="bg-[#1c1c1c] text-white p-6 rounded-2xl flex flex-col justify-center gap-4 shadow-xl">
-                    <div className="flex justify-between items-center text-[10px] font-bold opacity-60 uppercase">
-                      <span>Estado de Gestión</span>
-                      <Select name="status" defaultValue={editingQuotation?.status || "Borrador"}>
-                        <SelectTrigger className="h-7 w-28 bg-white/10 border-none text-[9px] font-black"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Borrador">Borrador</SelectItem>
-                          <SelectItem value="Enviado">Enviado</SelectItem>
-                          <SelectItem value="Aceptado">Aceptado</SelectItem>
-                          <SelectItem value="Rechazado">Rechazado</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-1.5 pt-3 border-t border-white/10">
-                      <div className="flex justify-between text-[10px] opacity-80 font-bold"><span>SUBTOTAL</span><span>S/ {subtotal.toFixed(2)}</span></div>
-                      <div className="flex justify-between text-[10px] opacity-80 font-bold"><span>I.G.V (18%)</span><span>S/ {tax.toFixed(2)}</span></div>
-                      <div className="flex justify-between text-2xl font-black text-accent pt-2 tracking-tighter"><span>TOTAL</span><span>S/ {total.toFixed(2)}</span></div>
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between text-[10px] opacity-80 font-bold uppercase"><span>SUBTOTAL</span><span>S/ {subtotal.toFixed(2)}</span></div>
+                      <div className="flex justify-between text-[10px] opacity-80 font-bold uppercase"><span>I.G.V (18%)</span><span>S/ {tax.toFixed(2)}</span></div>
+                      <div className="flex justify-between text-2xl font-black text-accent pt-2 tracking-tighter uppercase"><span>TOTAL NETO</span><span>S/ {total.toFixed(2)}</span></div>
                     </div>
                   </div>
                 </div>
@@ -473,8 +475,11 @@ export default function QuotationsPage() {
                     <TableCell>
                       <Badge variant="outline" className={cn(
                         "text-[8px] sm:text-[9px] font-black uppercase px-2 py-0.5",
-                        q.status === "Convertido" ? "bg-status-success/10 text-status-success border-status-success/20" : "bg-slate-50 text-slate-600"
-                      )}>{q.status}</Badge>
+                        q.status === "Convertido" ? "bg-status-success/10 text-status-success border-status-success/20" : 
+                        q.status === "Aceptado" ? "bg-blue-50 text-blue-700 border-blue-200" :
+                        q.status === "Rechazado" ? "bg-status-error/10 text-status-error border-status-error/20" :
+                        "bg-slate-50 text-slate-600"
+                      )}>{q.status || "Borrador"}</Badge>
                     </TableCell>
                     <TableCell className="text-right pr-6">
                       <div className="flex justify-end gap-1 sm:gap-2">
