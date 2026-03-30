@@ -252,8 +252,8 @@ export default function QuotationsPage() {
                       <tr key={i} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
                         <td className="p-4 text-center font-black text-primary border-r border-slate-100">{item.quantity}</td>
                         <td className="p-4 uppercase font-medium text-slate-700">{item.description}</td>
-                        <td className="p-4 text-right border-l border-slate-100 text-slate-600">{(Number(item.unitPrice)).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                        <td className="p-4 text-right font-black border-l border-slate-100 text-primary">{(Number(item.total)).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                        <td className="p-4 text-right border-l border-slate-100 text-slate-600">{(Number(item.unitPrice)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td className="p-4 text-right font-black border-l border-slate-100 text-primary">{(Number(item.total)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -272,32 +272,9 @@ export default function QuotationsPage() {
                   )}
                 </div>
                 <div className="w-72 space-y-1.5 p-6 bg-slate-50 rounded-2xl border border-slate-200">
-                  <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase"><span>Subtotal</span><span>S/ {(Number(viewingQuotation.subtotal || 0)).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></div>
-                  <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase"><span>I.G.V (18%)</span><span>S/ {(Number(viewingQuotation.tax || 0)).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></div>
-                  <div className="flex justify-between text-lg font-black border-t-2 border-slate-200 pt-3 text-primary mt-2 uppercase tracking-tighter"><span>Total Neto</span><span>S/ {(Number(viewingQuotation.total || 0)).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></div>
-                </div>
-             </div>
-
-             <div className="mt-20 grid grid-cols-2 gap-32">
-                <div className="text-center space-y-3">
-                  <div className="h-24 w-full border-b-2 border-slate-200 flex flex-col items-center justify-center relative bg-slate-50/30 rounded-t-lg">
-                    {company?.signatureUrl ? (
-                      <div className="relative h-20 w-40 z-10">
-                        <Image src={company.signatureUrl} alt="Firma Autorizada" fill className="object-contain" unoptimized />
-                      </div>
-                    ) : (
-                      <span className="text-[9px] uppercase font-bold text-slate-300">Firma y Sello Comercial</span>
-                    )}
-                  </div>
-                  <p className="text-[10px] font-black uppercase text-primary">DEPARTAMENTO COMERCIAL</p>
-                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{company?.name || "EXTINPRO"}</p>
-                </div>
-                <div className="text-center space-y-3">
-                  <div className="h-24 w-full border-b-2 border-slate-200 flex items-center justify-center bg-slate-50/30 rounded-t-lg">
-                    <span className="text-[9px] uppercase font-bold text-slate-300">Aceptación y Firma del Cliente</span>
-                  </div>
-                  <p className="text-[10px] font-black uppercase text-primary">CONFORMIDAD DE PROPUESTA</p>
-                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">FECHA DE ACEPTACIÓN: ___/___/___</p>
+                  <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase"><span>Subtotal</span><span>S/ {(Number(viewingQuotation.subtotal || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+                  <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase"><span>I.G.V (18%)</span><span>S/ {(Number(viewingQuotation.tax || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+                  <div className="flex justify-between text-lg font-black border-t-2 border-slate-200 pt-3 text-primary mt-2 uppercase tracking-tighter"><span>Total Neto</span><span>S/ {(Number(viewingQuotation.total || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
                 </div>
              </div>
           </div>
@@ -465,7 +442,7 @@ export default function QuotationsPage() {
                   <TableRow key={q.id} className="hover:bg-muted/30 transition-colors">
                     <TableCell className="font-black text-[#d9534f] uppercase">{q.quotationNumber}</TableCell>
                     <TableCell className="font-bold uppercase text-[10px] sm:text-[11px] truncate max-w-[200px]">{clients?.find(c => c.id === q.clientId)?.name || "---"}</TableCell>
-                    <TableCell className="text-right font-black">S/ {(Number(q.total || 0)).toLocaleString()}</TableCell>
+                    <TableCell className="text-right font-black">S/ {(Number(q.total || 0)).toFixed(2)}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className="text-[8px] sm:text-[9px] font-black uppercase bg-slate-50">{q.status}</Badge>
                     </TableCell>
