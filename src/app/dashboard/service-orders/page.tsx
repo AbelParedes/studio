@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -33,9 +33,19 @@ import {
   CalendarDays,
   Calculator,
   PackageSearch,
-  Wrench
+  Wrench,
+  Edit2
 } from "lucide-react"
-import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc, deleteDocumentNonBlocking, addDocumentNonBlocking } from "@/firebase"
+import { 
+  useCollection, 
+  useFirestore, 
+  useMemoFirebase, 
+  useUser, 
+  useDoc, 
+  deleteDocumentNonBlocking, 
+  addDocumentNonBlocking,
+  updateDocumentNonBlocking
+} from "@/firebase"
 import { collection, doc, query, where, updateDoc } from "firebase/firestore"
 import {
   Dialog,
@@ -64,7 +74,9 @@ export default function ServiceOrdersPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [isAdding, setIsAdding] = useState(false)
   const [viewingOrder, setViewingOrder] = useState<any | null>(null)
+  const [editingOrder, setEditingOrder] = useState<any | null>(null)
   const [items, setItems] = useState<{description: string, quantity: number, unitPrice: number, catalogItemId?: string}[]>([])
+  const [currentStatus, setCurrentStatus] = useState("Pendiente")
 
   // 1. Perfil y Empresa
   const userProfileQuery = useMemoFirebase(() => 
@@ -98,19 +110,9 @@ export default function ServiceOrdersPage() {
   const currentYear = new Date().getFullYear()
   const suggestedOrderNumber = useMemo(() => {
     if (!orders || orders.length === 0) return `OS-0001-${currentYear}`
-    
-    const yearOrders = orders.filter(o => {
-      const oNum = o.orderNumber || ""
-      return oNum.startsWith("OS-") && oNum.endsWith(`-${currentYear}`)
-    })
-
+    const yearOrders = orders.filter(o => (o.orderNumber || "").endsWith(`-${currentYear}`))
     if (yearOrders.length === 0) return `OS-0001-${currentYear}`
-
-    const numbers = yearOrders.map(o => {
-      const parts = o.orderNumber.split("-")
-      return parts.length === 3 ? parseInt(parts[1]) : 0
-    })
-    
+    const numbers = yearOrders.map(o => parseInt(o.orderNumber?.split("-")[1] || "0"))
     const maxNum = Math.max(...numbers)
     return `OS-${(maxNum + 1).toString().padStart(4, '0')}-${currentYear}`
   }, [orders, currentYear])
@@ -148,7 +150,6 @@ export default function ServiceOrdersPage() {
     if (!companyId) return
 
     const formData = new FormData(e.currentTarget)
-
     const orderData = {
       companyId: companyId,
       clientId: formData.get("clientId") as string,
@@ -162,29 +163,40 @@ export default function ServiceOrdersPage() {
         catalogItemId: i.catalogItemId || null
       })),
       total,
-      status: "Pendiente",
-      createdAt: new Date().toISOString()
+      status: currentStatus,
+      updatedAt: new Date().toISOString()
     }
 
-    const newId = crypto.randomUUID()
-    addDocumentNonBlocking(collection(db, "service_orders"), { ...orderData, id: newId })
-    toast({ title: "Orden de Servicio Creada" })
+    if (editingOrder) {
+      updateDocumentNonBlocking(doc(db, "service_orders", editingOrder.id), orderData)
+      toast({ title: "Orden de Servicio Actualizada" })
+    } else {
+      const newId = crypto.randomUUID()
+      addDocumentNonBlocking(collection(db, "service_orders"), { ...orderData, id: newId, createdAt: new Date().toISOString() })
+      toast({ title: "Orden de Servicio Creada" })
+    }
 
     setIsAdding(false)
+    setEditingOrder(null)
     setItems([])
+    setCurrentStatus("Pendiente")
   }
 
   const handleDelete = (id: string) => {
+    if (!confirm("¿Anular esta orden de forma permanente?")) return
     deleteDocumentNonBlocking(doc(db, "service_orders", id))
     toast({ variant: "destructive", title: "Orden eliminada" })
   }
 
-  const handleSchedule = (order: any) => {
-    router.push(`/dashboard/calendar?clientId=${order.clientId}&orderId=${order.id}`)
+  const openEdit = (order: any) => {
+    setEditingOrder(order)
+    setItems(order.items || [])
+    setCurrentStatus(order.status || "Pendiente")
+    setIsAdding(true)
   }
 
-  const handlePrint = () => {
-    window.print()
+  const handleSchedule = (order: any) => {
+    router.push(`/dashboard/calendar?clientId=${order.clientId}&orderId=${order.id}`)
   }
 
   const filteredOrders = orders?.filter(o => {
@@ -195,10 +207,6 @@ export default function ServiceOrdersPage() {
 
   if (viewingOrder) {
     const client = clients?.find(c => c.id === viewingOrder.clientId)
-    const formattedDate = viewingOrder.date 
-      ? format(parseISO(viewingOrder.date), "dd/MM/yyyy") 
-      : "---"
-
     return (
       <div className="space-y-4 animate-in fade-in duration-300">
         <div className="flex items-center justify-between mb-4 print:hidden">
@@ -206,10 +214,10 @@ export default function ServiceOrdersPage() {
             <ArrowLeft className="mr-2 h-3 w-3" /> Volver al Listado
           </Button>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handlePrint} className="font-bold uppercase text-[10px]">
+            <Button variant="outline" size="sm" onClick={() => window.print()} className="font-bold uppercase text-[10px]">
               <Printer className="mr-2 h-3 w-3" /> Imprimir
             </Button>
-            <Button size="sm" onClick={handlePrint} className="bg-primary text-white font-bold uppercase text-[10px]">
+            <Button size="sm" onClick={() => window.print()} className="bg-primary text-white font-bold uppercase text-[10px]">
               <Download className="mr-2 h-3 w-3" /> Descargar PDF
             </Button>
           </div>
@@ -259,7 +267,7 @@ export default function ServiceOrdersPage() {
                   <div className="h-[1px] bg-slate-100 w-full"></div>
                 </div>
                 <div className="text-[11px] space-y-1 pt-1 text-right">
-                  <p className="font-bold text-slate-700 uppercase">FECHA DE REGISTRO: {formattedDate}</p>
+                  <p className="font-bold text-slate-700 uppercase">FECHA DE REGISTRO: {viewingOrder.date}</p>
                   <p className="font-bold text-slate-700 uppercase">TIPO: SERVICIO TÉCNICO NTP</p>
                   <div className="mt-2">
                     <Badge variant="outline" className="text-[9px] font-black uppercase bg-slate-50 text-slate-600 border-slate-200 px-3">
@@ -280,7 +288,7 @@ export default function ServiceOrdersPage() {
                     <tr>
                       <th className="p-4 text-center font-black uppercase w-20 border-r border-slate-200">CANT.</th>
                       <th className="p-4 text-left font-black uppercase">DESCRIPCIÓN DEL SERVICIO / PRODUCTO</th>
-                      <th className="p-4 text-right font-black uppercase w-32 border-l border-slate-200">ESTADO</th>
+                      <th className="p-4 text-right font-black uppercase w-32 border-l border-slate-200">TOTAL (S/)</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -288,20 +296,17 @@ export default function ServiceOrdersPage() {
                       <tr key={idx} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
                         <td className="p-4 text-center font-bold border-r border-slate-100">{item.quantity}</td>
                         <td className="p-4 font-medium uppercase text-slate-700">{item.description}</td>
-                        <td className="p-4 text-right text-slate-400 italic font-bold border-l border-slate-100">Pendiente</td>
+                        <td className="p-4 text-right font-black border-l border-slate-100 text-primary">{(Number(item.total || 0)).toFixed(2)}</td>
                       </tr>
-                    ))}
-                  </tbody>
+                    </tbody>
                 </table>
               </div>
             </div>
 
-            <div className="mt-12 p-6 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl min-h-[150px]">
-              <h4 className="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-widest">Observaciones de Campo / Hallazgos</h4>
-              <div className="grid grid-cols-1 gap-4">
-                <div className="h-px bg-slate-200 w-full mt-4"></div>
-                <div className="h-px bg-slate-200 w-full mt-4"></div>
-                <div className="h-px bg-slate-200 w-full mt-4"></div>
+            <div className="flex justify-end pt-4">
+              <div className="w-64 p-4 bg-slate-50 rounded-xl border border-slate-200 text-right">
+                <span className="text-[10px] font-bold text-slate-500 uppercase mr-4">Total Neto</span>
+                <span className="text-xl font-black text-primary">S/ {(Number(viewingOrder.total || 0)).toFixed(2)}</span>
               </div>
             </div>
 
@@ -325,8 +330,6 @@ export default function ServiceOrdersPage() {
             className="mt-auto shrink-0 flex flex-col items-center justify-center py-6 print-footer"
             style={{ 
               backgroundColor: company?.footerBgColor || '#f8fafc',
-              WebkitPrintColorAdjust: 'exact',
-              printColorAdjust: 'exact',
               borderTop: '1px solid #e2e8f0'
             } as any}
           >
@@ -356,7 +359,7 @@ export default function ServiceOrdersPage() {
           <p className="text-muted-foreground text-sm font-medium uppercase text-[10px] tracking-widest">Gestión de ejecución técnica y control de campo.</p>
         </div>
         <div className="flex gap-2">
-          <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) setItems([]); }}>
+          <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) { setEditingOrder(null); setItems([]); setCurrentStatus("Pendiente"); } }}>
             <DialogTrigger asChild>
               <Button className="bg-primary text-white h-10 font-bold uppercase text-xs px-6 shadow-lg">
                 <Plus className="mr-2 h-4 w-4" /> Nueva Orden (Manual)
@@ -370,40 +373,53 @@ export default function ServiceOrdersPage() {
                       <ClipboardList className="h-6 w-6" />
                     </div>
                     <div>
-                      <DialogTitle className="uppercase font-black text-primary text-xl tracking-tight leading-none">Nueva Orden de Trabajo</DialogTitle>
-                      <DialogDescription className="text-[10px] font-bold text-slate-500 uppercase mt-1">Sugerido: {suggestedOrderNumber}</DialogDescription>
+                      <DialogTitle className="uppercase font-black text-primary text-xl tracking-tight leading-none">
+                        {editingOrder ? "Editar Orden de Trabajo" : "Nueva Orden de Trabajo"}
+                      </DialogTitle>
+                      <DialogDescription className="text-[10px] font-bold text-slate-500 uppercase mt-1">
+                        {editingOrder ? `Editando: ${editingOrder.orderNumber}` : `Sugerido: ${suggestedOrderNumber}`}
+                      </DialogDescription>
                     </div>
                   </div>
                 </DialogHeader>
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar min-h-0">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-1.5">
-                        <Briefcase className="h-3 w-3" /> Cliente
-                      </Label>
-                      <Select name="clientId" required>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div className="space-y-2 md:col-span-1">
+                      <Label className="text-[10px] font-black uppercase text-slate-500">Cliente</Label>
+                      <Select name="clientId" defaultValue={editingOrder?.clientId} required>
                         <SelectTrigger className="h-11 border-2">
-                          <SelectValue placeholder="Seleccione un cliente" />
+                          <SelectValue placeholder="Seleccionar" />
                         </SelectTrigger>
                         <SelectContent>
                           {clients?.map(c => (
-                            <SelectItem key={c.id} value={c.id} className="font-bold">{c.name}</SelectItem>
+                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-1.5">
-                        <Tag className="h-3 w-3" /> N° de Orden
-                      </Label>
-                      <Input name="number" defaultValue={suggestedOrderNumber} className="h-11 uppercase font-mono font-bold border-2" />
+                      <Label className="text-[10px] font-black uppercase text-slate-500">N° de Orden</Label>
+                      <Input name="number" defaultValue={editingOrder?.orderNumber || suggestedOrderNumber} className="h-11 uppercase font-mono font-bold border-2" />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-1.5">
-                        <CalendarDays className="h-3 w-3" /> Fecha Registro
-                      </Label>
-                      <Input type="date" name="date" defaultValue={new Date().toISOString().split('T')[0]} className="h-11 border-2 font-bold" />
+                      <Label className="text-[10px] font-black uppercase text-slate-500">Fecha</Label>
+                      <Input type="date" name="date" defaultValue={editingOrder?.date || new Date().toISOString().split('T')[0]} className="h-11 border-2 font-bold" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase text-slate-500">Estado</Label>
+                      <Select value={currentStatus} onValueChange={setCurrentStatus}>
+                        <SelectTrigger className="h-11 border-2 font-bold">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Pendiente">Pendiente</SelectItem>
+                          <SelectItem value="Programado">Programado</SelectItem>
+                          <SelectItem value="En Ejecución">En Ejecución</SelectItem>
+                          <SelectItem value="Finalizado">Finalizado</SelectItem>
+                          <SelectItem value="Cancelado">Cancelado</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
 
@@ -422,15 +438,13 @@ export default function ServiceOrdersPage() {
                       {items.map((item, idx) => (
                         <div key={idx} className="grid grid-cols-12 gap-3 items-end p-4 rounded-xl bg-slate-50 border-2 border-slate-100 relative group">
                           <div className="col-span-12 md:col-span-5 grid gap-1.5">
-                            <Label className="text-[9px] font-black uppercase text-slate-500 flex items-center gap-1">
-                              <PackageSearch className="h-3 w-3 text-primary" /> Catálogo
-                            </Label>
+                            <Label className="text-[9px] font-black uppercase text-slate-500">Catálogo</Label>
                             <Select 
                               value={item.catalogItemId || ""} 
                               onValueChange={(val) => handleSelectFromCatalog(idx, val)}
                             >
                               <SelectTrigger className="h-10 text-[10px] font-bold bg-white border-none">
-                                <SelectValue placeholder="Seleccionar del catálogo..." />
+                                <SelectValue placeholder="Seleccionar..." />
                               </SelectTrigger>
                               <SelectContent>
                                 {catalog?.map(p => (
@@ -442,7 +456,7 @@ export default function ServiceOrdersPage() {
                             </Select>
                           </div>
                           <div className="col-span-12 md:col-span-5 grid gap-1.5">
-                            <Label className="text-[9px] font-black uppercase text-slate-500">Descripción en OS</Label>
+                            <Label className="text-[9px] font-black uppercase text-slate-500">Descripción</Label>
                             <Input 
                               value={item.description} 
                               onChange={(e) => handleItemChange(idx, "description", e.target.value)}
@@ -473,13 +487,19 @@ export default function ServiceOrdersPage() {
                 </div>
 
                 <DialogFooter className="p-6 border-t bg-slate-50 shrink-0">
-                  <div className="flex gap-4 w-full">
-                    <Button type="button" variant="ghost" onClick={() => setIsAdding(false)} className="flex-1 h-12 uppercase font-black text-[10px]">
-                      Cancelar
-                    </Button>
-                    <Button type="submit" className="flex-[2] h-12 uppercase font-black text-xs bg-primary text-white shadow-xl">
-                      Registrar Orden de Servicio
-                    </Button>
+                  <div className="flex items-center justify-between w-full gap-8">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">Total Estimado</span>
+                      <span className="text-xl font-black text-primary">S/ {total.toFixed(2)}</span>
+                    </div>
+                    <div className="flex gap-4">
+                      <Button type="button" variant="ghost" onClick={() => { setIsAdding(false); setEditingOrder(null); }} className="h-12 uppercase font-black text-[10px]">
+                        Cancelar
+                      </Button>
+                      <Button type="submit" className="h-12 uppercase font-black text-xs bg-primary text-white shadow-xl px-10">
+                        {editingOrder ? "Actualizar Orden" : "Registrar Orden"}
+                      </Button>
+                    </div>
                   </div>
                 </DialogFooter>
               </form>
@@ -489,39 +509,6 @@ export default function ServiceOrdersPage() {
             <Filter className="mr-2 h-3.5 w-3.5" /> Filtrar
           </Button>
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-white border-none shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Pendientes de Inicio</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-black text-primary">
-              {orders?.filter(o => o.status === "Pendiente").length || 0}
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white border-none shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">En Ejecución</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-black text-accent">
-              {orders?.filter(o => o.status === "En Ejecución").length || 0}
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white border-none shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Finalizadas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-black text-status-success">
-              {orders?.filter(o => o.status === "Finalizado").length || 0}
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       <Card className="shadow-sm border-none overflow-hidden">
@@ -547,8 +534,8 @@ export default function ServiceOrdersPage() {
                 <TableRow className="border-none">
                   <TableHead className="text-white font-black uppercase text-[10px]">N° Orden</TableHead>
                   <TableHead className="text-white font-black uppercase text-[10px]">Cliente / Solicitante</TableHead>
-                  <TableHead className="text-white font-black uppercase text-[10px]">Fecha Registro</TableHead>
-                  <TableHead className="text-white font-black uppercase text-[10px]">Estado Operativo</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px]">Fecha</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px]">Estado</TableHead>
                   <TableHead className="text-white text-right pr-6 font-black uppercase text-[10px]">Gestión</TableHead>
                 </TableRow>
               </TableHeader>
@@ -558,10 +545,7 @@ export default function ServiceOrdersPage() {
                   return (
                     <TableRow key={order.id} className="hover:bg-muted/30 border-slate-100 transition-colors">
                       <TableCell className="font-black text-primary uppercase tracking-tight">
-                        <div className="flex flex-col">
-                          <span>{order.orderNumber}</span>
-                          <span className="text-[8px] opacity-50 font-mono">ID: {order.id.split('-')[0]}</span>
-                        </div>
+                        {order.orderNumber}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -579,11 +563,11 @@ export default function ServiceOrdersPage() {
                           order.status === "En Ejecución" ? "bg-accent/10 text-accent border-accent/20" :
                           order.status === "Programado" ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-slate-50 text-slate-600"
                         )}>
-                          {order.status}
+                          {order.status || "Pendiente"}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right pr-6">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-1">
                           {order.status === "Pendiente" && (
                             <Button 
                               size="sm" 
@@ -591,10 +575,13 @@ export default function ServiceOrdersPage() {
                               className="h-7 text-[9px] font-black uppercase border-primary text-primary hover:bg-primary hover:text-white"
                               onClick={() => handleSchedule(order)}
                             >
-                              <Calendar className="h-3 w-3 mr-1.5" /> Programar Visita
+                              <Calendar className="h-3 w-3 mr-1.5" /> Agendar
                             </Button>
                           )}
-                          <Button variant="ghost" size="icon" className="h-9 w-9 text-primary" onClick={() => setViewingOrder(order)}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600" onClick={() => openEdit(order)}>
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => setViewingOrder(order)}>
                             <FileText className="h-4 w-4" />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(order.id)}>
@@ -605,38 +592,9 @@ export default function ServiceOrdersPage() {
                     </TableRow>
                   )
                 })}
-                {filteredOrders?.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-24 text-muted-foreground">
-                      <div className="flex flex-col items-center gap-2 opacity-40">
-                        <ClipboardList className="h-12 w-12" />
-                        <p className="text-[10px] font-black uppercase">No se detectan órdenes de servicio activas</p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )}
               </TableBody>
             </Table>
           )}
-        </CardContent>
-      </Card>
-
-      <Card className="bg-primary text-white shadow-xl border-none">
-        <CardContent className="p-6 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-              <CheckCircle2 className="h-6 w-6 text-accent" />
-            </div>
-            <div>
-              <h3 className="font-bold text-lg uppercase tracking-tight">Control Operativo Total</h3>
-              <p className="text-sm opacity-80 font-medium">
-                Las Órdenes de Servicio son el nexo entre la venta y la ejecución técnica de campo.
-              </p>
-            </div>
-          </div>
-          <div className="text-[10px] font-black uppercase text-accent bg-white px-4 py-1.5 rounded-full shadow-lg">
-            Módulo Operativo v4.0
-          </div>
         </CardContent>
       </Card>
     </div>
