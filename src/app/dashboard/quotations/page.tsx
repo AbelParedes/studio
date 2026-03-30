@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,7 +19,6 @@ import {
   Building2,
   FileText,
   Globe,
-  Gavel,
   Printer,
   Download,
   PackageSearch,
@@ -48,7 +47,6 @@ import { Textarea } from "@/components/ui/textarea"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { format, parseISO } from "date-fns"
-import { es } from "date-fns/locale"
 import { useRouter } from "next/navigation"
 
 export default function QuotationsPage() {
@@ -135,7 +133,13 @@ export default function QuotationsPage() {
       clientId: formData.get("clientId") as string,
       quotationNumber: formData.get("number") as string || suggestedQuotationNumber,
       date: formData.get("date") as string || format(new Date(), "yyyy-MM-dd"),
-      items: items.map(i => ({ ...i, total: Number(i.quantity || 0) * Number(i.unitPrice || 0) })),
+      items: items.map(i => ({ 
+        description: i.description, 
+        quantity: Number(i.quantity || 0), 
+        unitPrice: Number(i.unitPrice || 0),
+        total: Number(i.quantity || 0) * Number(i.unitPrice || 0),
+        catalogItemId: i.catalogItemId || null
+      })),
       subtotal, tax, total,
       conditions: formData.get("conditions") as string,
       status: formData.get("status") as string || "Borrador",
@@ -150,6 +154,18 @@ export default function QuotationsPage() {
       toast({ title: "Proforma generada" })
     }
     setIsAdding(false); setEditingQuotation(null); setItems([])
+  }
+
+  const handleDelete = (id: string) => {
+    if(!confirm("¿Eliminar esta proforma de forma permanente?")) return
+    deleteDocumentNonBlocking(doc(db, "quotations", id))
+    toast({ variant: "destructive", title: "Proforma eliminada" })
+  }
+
+  const openEdit = (q: any) => {
+    setEditingQuotation(q)
+    setItems(q.items || [])
+    setIsAdding(true)
   }
 
   const handleConvertToOrder = async (q: any) => {
@@ -252,8 +268,8 @@ export default function QuotationsPage() {
                       <tr key={i} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
                         <td className="p-4 text-center font-black text-primary border-r border-slate-100">{item.quantity}</td>
                         <td className="p-4 uppercase font-medium text-slate-700">{item.description}</td>
-                        <td className="p-4 text-right border-l border-slate-100 text-slate-600">{(Number(item.unitPrice)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                        <td className="p-4 text-right font-black border-l border-slate-100 text-primary">{(Number(item.total)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td className="p-4 text-right border-l border-slate-100 text-slate-600">{(Number(item.unitPrice)).toFixed(2)}</td>
+                        <td className="p-4 text-right font-black border-l border-slate-100 text-primary">{(Number(item.total)).toFixed(2)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -272,9 +288,9 @@ export default function QuotationsPage() {
                   )}
                 </div>
                 <div className="w-72 space-y-1.5 p-6 bg-slate-50 rounded-2xl border border-slate-200">
-                  <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase"><span>Subtotal</span><span>S/ {(Number(viewingQuotation.subtotal || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
-                  <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase"><span>I.G.V (18%)</span><span>S/ {(Number(viewingQuotation.tax || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
-                  <div className="flex justify-between text-lg font-black border-t-2 border-slate-200 pt-3 text-primary mt-2 uppercase tracking-tighter"><span>Total Neto</span><span>S/ {(Number(viewingQuotation.total || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+                  <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase"><span>Subtotal</span><span>S/ {(Number(viewingQuotation.subtotal || 0)).toFixed(2)}</span></div>
+                  <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase"><span>I.G.V (18%)</span><span>S/ {(Number(viewingQuotation.tax || 0)).toFixed(2)}</span></div>
+                  <div className="flex justify-between text-lg font-black border-t-2 border-slate-200 pt-3 text-primary mt-2 uppercase tracking-tighter"><span>Total Neto</span><span>S/ {(Number(viewingQuotation.total || 0)).toFixed(2)}</span></div>
                 </div>
              </div>
           </div>
@@ -326,8 +342,12 @@ export default function QuotationsPage() {
                     <FileText className="h-6 w-6" />
                   </div>
                   <div>
-                    <DialogTitle className="uppercase font-black text-[#d9534f] text-lg">Nueva Proforma Oficial</DialogTitle>
-                    <DialogDescription className="text-[9px] font-bold uppercase">Correlativo Sugerido: {suggestedQuotationNumber}</DialogDescription>
+                    <DialogTitle className="uppercase font-black text-[#d9534f] text-lg">
+                      {editingQuotation ? "Editar Proforma Oficial" : "Nueva Proforma Oficial"}
+                    </DialogTitle>
+                    <DialogDescription className="text-[9px] font-bold uppercase">
+                      {editingQuotation ? `Editando: ${editingQuotation.quotationNumber}` : `Correlativo Sugerido: ${suggestedQuotationNumber}`}
+                    </DialogDescription>
                   </div>
                 </div>
               </DialogHeader>
@@ -336,18 +356,18 @@ export default function QuotationsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="grid gap-1.5">
                     <Label className="text-[10px] font-black uppercase text-slate-500">Cliente</Label>
-                    <Select name="clientId" required>
+                    <Select name="clientId" defaultValue={editingQuotation?.clientId} required>
                       <SelectTrigger className="h-10 border-2"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                       <SelectContent>{clients?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                   <div className="grid gap-1.5">
                     <Label className="text-[10px] font-black uppercase text-slate-500">N° Proforma</Label>
-                    <Input name="number" defaultValue={suggestedQuotationNumber} className="h-10 uppercase font-mono font-bold" />
+                    <Input name="number" defaultValue={editingQuotation?.quotationNumber || suggestedQuotationNumber} className="h-10 uppercase font-mono font-bold" />
                   </div>
                   <div className="grid gap-1.5">
                     <Label className="text-[10px] font-black uppercase text-slate-500">Fecha</Label>
-                    <Input type="date" name="date" defaultValue={format(new Date(), "yyyy-MM-dd")} className="h-10 font-bold" />
+                    <Input type="date" name="date" defaultValue={editingQuotation?.date || format(new Date(), "yyyy-MM-dd")} className="h-10 font-bold" />
                   </div>
                 </div>
 
@@ -391,14 +411,19 @@ export default function QuotationsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
                   <div className="grid gap-2">
                     <Label className="text-[10px] font-black uppercase text-slate-500">Condiciones Comerciales</Label>
-                    <Textarea name="conditions" className="min-h-[120px] text-[10px] font-medium leading-relaxed" defaultValue={"• Validez de la oferta: 15 días calendario.\n• Forma de pago: Contado / Contra entrega.\n• Tiempo de entrega: Inmediato / A coordinar.\n• Garantía de fábrica: 12 meses contra defectos de fabricación."} />
+                    <Textarea name="conditions" className="min-h-[120px] text-[10px] font-medium leading-relaxed" defaultValue={editingQuotation?.conditions || "• Validez de la oferta: 15 días calendario.\n• Forma de pago: Contado / Contra entrega.\n• Tiempo de entrega: Inmediato / A coordinar.\n• Garantía de fábrica: 12 meses contra defectos de fabricación."} />
                   </div>
                   <div className="bg-[#1c1c1c] text-white p-6 rounded-2xl flex flex-col justify-center gap-4 shadow-xl">
                     <div className="flex justify-between items-center text-[10px] font-bold opacity-60 uppercase">
                       <span>Estado de Gestión</span>
-                      <Select name="status" defaultValue="Borrador">
+                      <Select name="status" defaultValue={editingQuotation?.status || "Borrador"}>
                         <SelectTrigger className="h-7 w-28 bg-white/10 border-none text-[9px] font-black"><SelectValue /></SelectTrigger>
-                        <SelectContent><SelectItem value="Borrador">Borrador</SelectItem><SelectItem value="Enviado">Enviado</SelectItem><SelectItem value="Aceptado">Aceptado</SelectItem></SelectContent>
+                        <SelectContent>
+                          <SelectItem value="Borrador">Borrador</SelectItem>
+                          <SelectItem value="Enviado">Enviado</SelectItem>
+                          <SelectItem value="Aceptado">Aceptado</SelectItem>
+                          <SelectItem value="Rechazado">Rechazado</SelectItem>
+                        </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-1.5 pt-3 border-t border-white/10">
@@ -411,7 +436,9 @@ export default function QuotationsPage() {
               </div>
 
               <DialogFooter className="p-4 sm:p-6 border-t bg-slate-50">
-                <Button type="submit" className="w-full h-12 uppercase font-black text-xs bg-[#d9534f] text-white shadow-xl">Generar Proforma Maestra</Button>
+                <Button type="submit" className="w-full h-12 uppercase font-black text-xs bg-[#d9534f] text-white shadow-xl">
+                  {editingQuotation ? "Actualizar Proforma" : "Generar Proforma Maestra"}
+                </Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -444,13 +471,25 @@ export default function QuotationsPage() {
                     <TableCell className="font-bold uppercase text-[10px] sm:text-[11px] truncate max-w-[200px]">{clients?.find(c => c.id === q.clientId)?.name || "---"}</TableCell>
                     <TableCell className="text-right font-black">S/ {(Number(q.total || 0)).toFixed(2)}</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="text-[8px] sm:text-[9px] font-black uppercase bg-slate-50">{q.status}</Badge>
+                      <Badge variant="outline" className={cn(
+                        "text-[8px] sm:text-[9px] font-black uppercase px-2 py-0.5",
+                        q.status === "Convertido" ? "bg-status-success/10 text-status-success border-status-success/20" : "bg-slate-50 text-slate-600"
+                      )}>{q.status}</Badge>
                     </TableCell>
                     <TableCell className="text-right pr-6">
                       <div className="flex justify-end gap-1 sm:gap-2">
-                        {q.status !== "Convertido" && <Button variant="ghost" size="icon" title="Convertir a OS" className="h-8 w-8 text-status-success" onClick={() => handleConvertToOrder(q)} disabled={isConverting === q.id}><Repeat className="h-4 w-4" /></Button>}
+                        {q.status !== "Convertido" && (
+                          <>
+                            <Button variant="ghost" size="icon" title="Convertir a OS" className="h-8 w-8 text-status-success" onClick={() => handleConvertToOrder(q)} disabled={isConverting === q.id}>
+                              <Repeat className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" title="Editar Proforma" className="h-8 w-8 text-blue-600" onClick={() => openEdit(q)}>
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
                         <Button variant="ghost" size="icon" title="Ver / Imprimir" className="h-8 w-8 text-[#d9534f]" onClick={() => setViewingQuotation(q)}><FileText className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteDocumentNonBlocking(doc(db, "quotations", q.id))}><Trash2 className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" title="Eliminar" className="h-8 w-8 text-destructive" onClick={() => handleDelete(q.id)}><Trash2 className="h-4 w-4" /></Button>
                       </div>
                     </TableCell>
                   </TableRow>
