@@ -112,7 +112,10 @@ export default function ServiceOrdersPage() {
     if (!orders || orders.length === 0) return `OS-0001-${currentYear}`
     const yearOrders = orders.filter(o => (o.orderNumber || "").endsWith(`-${currentYear}`))
     if (yearOrders.length === 0) return `OS-0001-${currentYear}`
-    const numbers = yearOrders.map(o => parseInt(o.orderNumber?.split("-")[1] || "0"))
+    const numbers = yearOrders.map(o => {
+      const parts = o.orderNumber?.split("-") || []
+      return parts.length >= 2 ? parseInt(parts[1]) : 0
+    })
     const maxNum = Math.max(...numbers)
     return `OS-${(maxNum + 1).toString().padStart(4, '0')}-${currentYear}`
   }, [orders, currentYear])
@@ -298,7 +301,8 @@ export default function ServiceOrdersPage() {
                         <td className="p-4 font-medium uppercase text-slate-700">{item.description}</td>
                         <td className="p-4 text-right font-black border-l border-slate-100 text-primary">{(Number(item.total || 0)).toFixed(2)}</td>
                       </tr>
-                    </tbody>
+                    ))}
+                  </tbody>
                 </table>
               </div>
             </div>
