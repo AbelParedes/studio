@@ -1,7 +1,7 @@
 
 "use client"
 
-import React, { useState, useMemo, useCallback } from "react"
+import React, { useState, useMemo, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -17,7 +17,10 @@ import {
   Printer, 
   ShieldCheck,
   HardDrive,
-  UserCheck
+  UserCheck,
+  ClipboardCheck,
+  Zap,
+  Info
 } from "lucide-react"
 import { 
   useCollection, 
@@ -52,34 +55,36 @@ const CertificateForm = React.memo(({
   suggestedCertNumber, 
   clients, 
   technicians,
+  appointments,
   onSave 
 }: any) => {
   const db = useFirestore()
   const [selectedClientId, setSelectedClientId] = useState<string | null>(editingCert?.clienteId || null)
   const [selectedEquipmentIds, setSelectedEquipmentIds] = useState<string[]>(editingCert?.servicedEquipmentIds || [])
+  const [certificateItems, setCertificateItems] = useState<any[]>(editingCert?.datosExtintor || [])
 
   const equipmentRef = useMemoFirebase(() => 
     (companyId && selectedClientId) ? query(collection(db, "client_equipment"), where("clientId", "==", selectedClientId)) : null,
   [db, companyId, selectedClientId])
   const { data: clientEquipment, isLoading: loadingEquip } = useCollection(equipmentRef)
 
-  const toggleEquipment = useCallback((id: string) => {
-    setSelectedEquipmentIds(prev => 
-      prev.includes(id) ? prev.filter(eid => eid !== id) : [...prev, id]
-    )
-  }, [])
+  // Sincronizar tabla editable cuando cambian los equipos seleccionados
+  useEffect(() => {
+    if (!clientEquipment) return;
+    
+    // Si estamos editando y ya hay items, no sobreescribir al inicio
+    if (editingCert && certificateItems.length > 0 && selectedEquipmentIds.length === editingCert.servicedEquipmentIds?.length) {
+      // Solo procedemos si es una carga inicial de edición
+      return;
+    }
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const formData = new FormData(e.currentTarget)
-    const clientId = formData.get("clienteId") as string
-    const client = clients?.find((c: any) => c.id === clientId)
-    const techId = formData.get("technicianId") as string
-    const technician = technicians?.find((t: any) => t.id === techId)
+    const newItems = selectedEquipmentIds.map(id => {
+      const existing = certificateItems.find(item => item.equipmentId === id);
+      if (existing) return existing;
 
-    const technicalData = selectedEquipmentIds.map(id => {
-      const equip = clientEquipment?.find(e => e.id === id)
+      const equip = clientEquipment.find(e => e.id === id);
       return {
+        equipmentId: id,
         ns: equip?.serialNumber || "---",
         ff: equip?.manufacturingYear?.toString() || "---",
         tipo: equip?.extinguishingAgent || equip?.type || "---",
@@ -87,8 +92,39 @@ const CertificateForm = React.memo(({
         recarga: equip?.lastServiceDate || "---",
         vctoRecarga: equip?.nextServiceDate || "---",
         vctoPH: equip?.nextHydrostaticTestDate || "---"
-      }
-    })
+      };
+    });
+    setCertificateItems(newItems);
+  }, [selectedEquipmentIds, clientEquipment, editingCert]);
+
+  const handleLinkAppointment = (aptId: string) => {
+    const apt = appointments?.find((a: any) => a.id === aptId);
+    if (apt) {
+      setSelectedClientId(apt.clientId);
+      setSelectedEquipmentIds(apt.servicedEquipmentIds || []);
+      toast({ title: "Información de OT vinculada", description: `Se han cargado ${apt.servicedEquipmentIds?.length || 0} equipos.` });
+    }
+  }
+
+  const toggleEquipment = useCallback((id: string) => {
+    setSelectedEquipmentIds(prev => 
+      prev.includes(id) ? prev.filter(eid => eid !== id) : [...prev, id]
+    )
+  }, [])
+
+  const handleItemChange = (idx: number, field: string, value: string) => {
+    const updated = [...certificateItems];
+    updated[idx] = { ...updated[idx], [field]: value };
+    setCertificateItems(updated);
+  }
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const formData = new FormData(e.currentTarget)
+    const clientId = selectedClientId || formData.get("clienteId") as string
+    const client = clients?.find((c: any) => c.id === clientId)
+    const techId = formData.get("technicianId") as string
+    const technician = technicians?.find((t: any) => t.id === techId)
 
     const certData = {
       clienteId: clientId,
@@ -102,7 +138,7 @@ const CertificateForm = React.memo(({
       presionTrabajo: formData.get("presionTrabajo") as string || "---",
       rating: formData.get("rating") as string || "---",
       normativa: "NTP 350.043",
-      datosExtintor: technicalData,
+      datosExtintor: certificateItems,
       servicedEquipmentIds: selectedEquipmentIds,
       status: "Emitido"
     }
@@ -113,10 +149,35 @@ const CertificateForm = React.memo(({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col h-full overflow-hidden">
       <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+        {/* Vincular con OT */}
+        <div className="bg-primary/5 p-4 rounded-xl border-2 border-primary/10 flex flex-col sm:flex-row items-center gap-4">
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-white">
+              <ClipboardCheck className="h-5 w-5" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black uppercase text-primary leading-none">Vincular con OT</span>
+              <span className="text-[8px] font-bold text-slate-400 uppercase">Cargar datos de ejecución</span>
+            </div>
+          </div>
+          <Select onValueChange={handleLinkAppointment}>
+            <SelectTrigger className="flex-1 h-11 border-primary/20 bg-white font-bold text-xs uppercase">
+              <SelectValue placeholder="Seleccione una Orden de Trabajo (OT) finalizada..." />
+            </SelectTrigger>
+            <SelectContent>
+              {appointments?.filter((a: any) => a.status === "Completado").map((apt: any) => (
+                <SelectItem key={apt.id} value={apt.id} className="text-xs uppercase font-bold">
+                  {apt.orderNumber || apt.id.split('-')[0]} • {apt.clientName} ({apt.date})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="grid gap-2">
             <Label className="text-[10px] font-black uppercase text-slate-500">Cliente</Label>
-            <Select name="clienteId" defaultValue={selectedClientId || ""} onValueChange={(val) => { setSelectedClientId(val); setSelectedEquipmentIds([]); }} required>
+            <Select name="clienteId" value={selectedClientId || ""} onValueChange={(val) => { setSelectedClientId(val); setSelectedEquipmentIds([]); }} required>
               <SelectTrigger className="h-11 border-2 text-xs uppercase font-bold"><SelectValue placeholder="Cliente" /></SelectTrigger>
               <SelectContent>{clients?.map((c: any) => (<SelectItem key={c.id} value={c.id} className="font-bold text-xs uppercase">{c.name}</SelectItem>))}</SelectContent>
             </Select>
@@ -165,30 +226,81 @@ const CertificateForm = React.memo(({
           </div>
         </div>
 
+        {/* Tabla de Equipos - Editable */}
         <div className="space-y-4">
           <div className="flex items-center justify-between border-b pb-2">
-            <h3 className="text-[11px] font-black uppercase text-primary flex items-center gap-2"><HardDrive className="h-4 w-4" /> Equipos del Cliente</h3>
-            <Badge variant="outline" className="text-[9px] font-black">{selectedEquipmentIds.length} Seleccionados</Badge>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
-            {loadingEquip ? (
-              <div className="col-span-2 py-10 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
-            ) : clientEquipment && clientEquipment.length > 0 ? (
-              clientEquipment.map(item => (
-                <div key={item.id} onClick={() => toggleEquipment(item.id)} className={cn("flex items-center justify-between p-3 border-2 rounded-xl transition-all cursor-pointer", selectedEquipmentIds.includes(item.id) ? "border-primary bg-primary/5 shadow-sm" : "border-slate-100 hover:border-slate-200 bg-slate-50/50")}>
-                  <div className="flex items-center gap-3">
-                    <Checkbox checked={selectedEquipmentIds.includes(item.id)} onCheckedChange={() => toggleEquipment(item.id)} onClick={(e) => e.stopPropagation()} />
-                    <div className="flex flex-col"><span className="text-[11px] font-black uppercase text-primary">{item.serialNumber}</span><span className="text-[9px] font-bold text-slate-400 uppercase">{item.type} • {item.capacity} • PH: {item.nextHydrostaticTestDate || 'S/F'}</span></div>
+            <h3 className="text-[11px] font-black uppercase text-primary flex items-center gap-2"><Zap className="h-4 w-4 text-accent" /> Anexo Técnico de Equipos</h3>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-[9px] font-black">{selectedEquipmentIds.length} Unidades</Badge>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7 text-[9px] font-bold uppercase"><Plus className="h-3 w-3 mr-1" /> Gestionar Selección</Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col p-0">
+                  <DialogHeader className="p-6 border-b bg-slate-50">
+                    <DialogTitle className="uppercase font-black text-primary">Equipos del Cliente</DialogTitle>
+                    <DialogDescription className="text-[10px] font-bold uppercase">Seleccione los extintores que aparecerán en el protocolo.</DialogDescription>
+                  </DialogHeader>
+                  <div className="flex-1 overflow-y-auto p-6 space-y-3 custom-scrollbar">
+                    {loadingEquip ? (
+                      <div className="py-10 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+                    ) : clientEquipment && clientEquipment.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {clientEquipment.map((item: any) => (
+                          <div key={item.id} onClick={() => toggleEquipment(item.id)} className={cn("flex items-center justify-between p-3 border-2 rounded-xl transition-all cursor-pointer", selectedEquipmentIds.includes(item.id) ? "border-primary bg-primary/5 shadow-sm" : "border-slate-100 hover:border-slate-200 bg-slate-50/50")}>
+                            <div className="flex items-center gap-3">
+                              <Checkbox checked={selectedEquipmentIds.includes(item.id)} onCheckedChange={() => toggleEquipment(item.id)} onClick={(e) => e.stopPropagation()} />
+                              <div className="flex flex-col"><span className="text-[11px] font-black uppercase text-primary">{item.serialNumber}</span><span className="text-[9px] font-bold text-slate-400 uppercase">{item.type} • {item.capacity}</span></div>
+                            </div>
+                            <Badge variant="outline" className="text-[8px] font-black uppercase bg-white">{item.location || "S/U"}</Badge>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (<div className="py-10 text-center text-slate-400 font-bold uppercase text-[10px]">No hay equipos o cliente no seleccionado</div>)}
                   </div>
-                  <Badge variant="outline" className="text-[8px] font-black uppercase bg-white">{item.location || "S/U"}</Badge>
-                </div>
-              ))
-            ) : (<div className="col-span-2 py-10 text-center text-slate-400 font-bold uppercase text-[10px]">No hay equipos o cliente no seleccionado</div>)}
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
+
+          <div className="border rounded-xl overflow-hidden shadow-sm overflow-x-auto">
+            <Table className="dense-table min-w-[1000px]">
+              <TableHeader className="bg-slate-50">
+                <TableRow>
+                  <TableHead className="text-[9px] font-black uppercase w-32">Serie</TableHead>
+                  <TableHead className="text-[9px] font-black uppercase w-24">Año Fab.</TableHead>
+                  <TableHead className="text-[9px] font-black uppercase w-48">Agente / Capacidad</TableHead>
+                  <TableHead className="text-[9px] font-black uppercase">Últ. Recarga</TableHead>
+                  <TableHead className="text-[9px] font-black uppercase">Vto. Recarga</TableHead>
+                  <TableHead className="text-[9px] font-black uppercase">Vto. P.H.</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {certificateItems.length > 0 ? certificateItems.map((item, idx) => (
+                  <TableRow key={item.equipmentId || idx} className="hover:bg-slate-50/50">
+                    <TableCell><Input value={item.ns} onChange={(e) => handleItemChange(idx, 'ns', e.target.value)} className="h-8 text-[10px] font-black uppercase border-none bg-transparent focus:ring-0" /></TableCell>
+                    <TableCell><Input value={item.ff} onChange={(e) => handleItemChange(idx, 'ff', e.target.value)} className="h-8 text-[10px] font-bold text-center border-none bg-transparent" /></TableCell>
+                    <TableCell><Input value={`${item.tipo} ${item.cap}`} onChange={(e) => handleItemChange(idx, 'tipo', e.target.value)} className="h-8 text-[10px] font-bold uppercase border-none bg-transparent" /></TableCell>
+                    <TableCell><Input type="date" value={item.recarga} onChange={(e) => handleItemChange(idx, 'recarga', e.target.value)} className="h-8 text-[10px] font-medium border-none bg-transparent" /></TableCell>
+                    <TableCell><Input type="date" value={item.vctoRecarga} onChange={(e) => handleItemChange(idx, 'vctoRecarga', e.target.value)} className="h-8 text-[10px] font-black text-primary border-none bg-transparent" /></TableCell>
+                    <TableCell><Input type="date" value={item.vctoPH} onChange={(e) => handleItemChange(idx, 'vctoPH', e.target.value)} className="h-8 text-[10px] font-bold text-blue-600 border-none bg-transparent" /></TableCell>
+                  </TableRow>
+                )) : (
+                  <TableRow><TableCell colSpan={6} className="text-center py-10 opacity-30 italic text-[10px] font-bold uppercase">Seleccione equipos para poblar la tabla técnica</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg">
+            <Info className="h-3 w-3 text-slate-400" />
+            <p className="text-[8px] font-bold text-slate-400 uppercase">Nota: Puede modificar los valores directamente en la tabla para este protocolo específico.</p>
           </div>
         </div>
       </div>
       <DialogFooter className="p-6 border-t bg-slate-50 shrink-0">
-        <Button type="submit" className="w-full h-14 bg-primary text-white font-black uppercase text-xs tracking-[0.2em] shadow-xl">Emitir Certificado</Button>
+        <Button type="submit" className="w-full h-14 bg-primary text-white font-black uppercase text-xs tracking-[0.2em] shadow-xl" disabled={certificateItems.length === 0}>
+          Emitir Certificado Oficial
+        </Button>
       </DialogFooter>
     </form>
   )
@@ -215,7 +327,9 @@ export default function CertificatesRegistryPage() {
   const clientsRef = useMemoFirebase(() => companyId ? query(collection(db, "clients"), where("companyId", "==", companyId)) : null, [db, companyId])
   const { data: clients } = useCollection(clientsRef)
 
-  // Obtener roles para filtrar técnicos
+  const appointmentsRef = useMemoFirebase(() => companyId ? query(collection(db, "appointments"), where("companyId", "==", companyId)) : null, [db, companyId])
+  const { data: appointments } = useCollection(appointmentsRef)
+
   const rolesRef = useMemoFirebase(() => collection(db, "system_roles"), [db])
   const { data: allRoles } = useCollection(rolesRef)
   const techRoleIds = useMemo(() => allRoles?.filter(r => 
@@ -227,7 +341,6 @@ export default function CertificatesRegistryPage() {
   const usersRef = useMemoFirebase(() => companyId ? query(collection(db, "company_users"), where("companyId", "==", companyId)) : null, [db, companyId])
   const { data: companyUsers } = useCollection(usersRef)
 
-  // Filtrar solo usuarios con roles técnicos
   const technicians = useMemo(() => 
     companyUsers?.filter(u => techRoleIds.includes(u.roleId)) || [], 
   [companyUsers, techRoleIds])
@@ -267,9 +380,9 @@ export default function CertificatesRegistryPage() {
         </div>
         <Dialog open={modalState.open} onOpenChange={handleOpenChange}>
           <DialogTrigger asChild><Button className="bg-primary text-white h-10 font-bold uppercase text-[11px] shadow-lg px-6" onClick={() => setModalState({ open: true, editing: null })}><Plus className="mr-2 h-4 w-4" /> Emitir Nuevo Protocolo</Button></DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
+          <DialogContent className="max-w-5xl max-h-[95vh] flex flex-col p-0 overflow-hidden">
             <DialogHeader className="p-6 border-b bg-slate-50"><DialogTitle className="uppercase font-black text-primary text-xl">Protocolo de Operatividad</DialogTitle><DialogDescription className="text-[10px] font-bold uppercase">Correlativo sugerido: {suggestedCertNumber}</DialogDescription></DialogHeader>
-            {modalState.open && <CertificateForm companyId={companyId} editingCert={modalState.editing} suggestedCertNumber={suggestedCertNumber} clients={clients} technicians={technicians} onSave={handleSaveCertificate} />}
+            {modalState.open && <CertificateForm companyId={companyId} editingCert={modalState.editing} suggestedCertNumber={suggestedCertNumber} clients={clients} technicians={technicians} appointments={appointments} onSave={handleSaveCertificate} />}
           </DialogContent>
         </Dialog>
       </div>
