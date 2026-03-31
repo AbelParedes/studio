@@ -120,10 +120,6 @@ export default function ServiceOrdersPage() {
     return `OS-${(maxNum + 1).toString().padStart(4, '0')}-${currentYear}`
   }, [orders, currentYear])
 
-  const total = useMemo(() => 
-    items.reduce((acc, item) => acc + (Number(item.quantity || 0) * Number(item.unitPrice || 0)), 0),
-  [items])
-
   const handleAddItem = () => {
     setItems([...items, { description: "", quantity: 1, unitPrice: 0 }])
   }
@@ -142,7 +138,7 @@ export default function ServiceOrdersPage() {
         ...newItems[index],
         catalogItemId: product.id,
         description: product.description,
-        unitPrice: product.sellPrice
+        unitPrice: product.sellPrice || 0
       }
       setItems(newItems)
     }
@@ -165,7 +161,7 @@ export default function ServiceOrdersPage() {
         total: Number(i.quantity || 0) * Number(i.unitPrice || 0),
         catalogItemId: i.catalogItemId || null
       })),
-      total,
+      total: items.reduce((acc, i) => acc + (Number(i.quantity || 0) * Number(i.unitPrice || 0)), 0),
       status: currentStatus,
       updatedAt: new Date().toISOString()
     }
@@ -289,9 +285,8 @@ export default function ServiceOrdersPage() {
                 <table className="w-full text-[11px] border-collapse">
                   <thead className="bg-slate-50 text-slate-800 border-b border-slate-200">
                     <tr>
-                      <th className="p-4 text-center font-black uppercase w-20 border-r border-slate-200">CANT.</th>
+                      <th className="p-4 text-center font-black uppercase w-24 border-r border-slate-200">CANT.</th>
                       <th className="p-4 text-left font-black uppercase">DESCRIPCIÓN DEL SERVICIO / PRODUCTO</th>
-                      <th className="p-4 text-right font-black uppercase w-32 border-l border-slate-200">TOTAL (S/)</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -299,18 +294,10 @@ export default function ServiceOrdersPage() {
                       <tr key={idx} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
                         <td className="p-4 text-center font-bold border-r border-slate-100">{item.quantity}</td>
                         <td className="p-4 font-medium uppercase text-slate-700">{item.description}</td>
-                        <td className="p-4 text-right font-black border-l border-slate-100 text-primary">{(Number(item.total || 0)).toFixed(2)}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-4">
-              <div className="w-64 p-4 bg-slate-50 rounded-xl border border-slate-200 text-right">
-                <span className="text-[10px] font-bold text-slate-500 uppercase mr-4">Total Neto</span>
-                <span className="text-xl font-black text-primary">S/ {(Number(viewingOrder.total || 0)).toFixed(2)}</span>
               </div>
             </div>
 
@@ -430,7 +417,7 @@ export default function ServiceOrdersPage() {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between border-b-2 border-slate-100 pb-2">
                       <div className="flex items-center gap-2">
-                        <Calculator className="h-4 w-4 text-primary" />
+                        <Wrench className="h-4 w-4 text-primary" />
                         <h3 className="text-[11px] font-black uppercase text-primary tracking-widest">Requerimientos Técnicos</h3>
                       </div>
                       <Button type="button" variant="outline" size="sm" onClick={handleAddItem} className="h-8 text-[10px] font-bold uppercase border-2">
@@ -491,19 +478,13 @@ export default function ServiceOrdersPage() {
                 </div>
 
                 <DialogFooter className="p-6 border-t bg-slate-50 shrink-0">
-                  <div className="flex items-center justify-between w-full gap-8">
-                    <div className="flex flex-col">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase">Total Estimado</span>
-                      <span className="text-xl font-black text-primary">S/ {total.toFixed(2)}</span>
-                    </div>
-                    <div className="flex gap-4">
-                      <Button type="button" variant="ghost" onClick={() => { setIsAdding(false); setEditingOrder(null); }} className="h-12 uppercase font-black text-[10px]">
-                        Cancelar
-                      </Button>
-                      <Button type="submit" className="h-12 uppercase font-black text-xs bg-primary text-white shadow-xl px-10">
-                        {editingOrder ? "Actualizar Orden" : "Registrar Orden"}
-                      </Button>
-                    </div>
+                  <div className="flex items-center justify-end w-full gap-4">
+                    <Button type="button" variant="ghost" onClick={() => { setIsAdding(false); setEditingOrder(null); }} className="h-12 uppercase font-black text-[10px]">
+                      Cancelar
+                    </Button>
+                    <Button type="submit" className="h-12 uppercase font-black text-xs bg-primary text-white shadow-xl px-10">
+                      {editingOrder ? "Actualizar Orden" : "Registrar Orden"}
+                    </Button>
                   </div>
                 </DialogFooter>
               </form>
