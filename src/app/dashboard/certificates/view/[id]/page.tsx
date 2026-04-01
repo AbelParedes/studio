@@ -1,3 +1,4 @@
+
 "use client"
 
 import { use, useEffect, useState } from "react"
@@ -78,13 +79,8 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
             </div>
           </div>
 
-          {/* FECHA DERECHA */}
-          <div className="text-right text-[13px] mt-2 mb-10">
-            Lima, <span className="border-b border-black px-2 mx-1">{day}</span> de <span className="border-b border-black px-4 mx-1 font-bold">{month}</span> del 20<span className="border-b border-black px-2 mx-1">{yearShort}</span>
-          </div>
-
           {/* TITULO */}
-          <h1 className="text-center text-[20px] font-bold underline mb-10 tracking-wide">
+          <h1 className="text-center text-[20px] font-bold underline mb-10 mt-10 tracking-wide">
             CERTIFICADO DE OPERATIVIDAD
           </h1>
 
