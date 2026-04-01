@@ -70,6 +70,7 @@ const CertificateForm = React.memo(({
   [db, companyId, selectedClientId])
   const { data: clientEquipment, isLoading: loadingEquip } = useCollection(equipmentRef)
 
+  // Sincronización de tabla técnica basada en equipos seleccionados
   useEffect(() => {
     if (!clientEquipment || clientEquipment.length === 0) return;
     
@@ -102,7 +103,7 @@ const CertificateForm = React.memo(({
 
     setCertificateItems(newItems);
     if (isLinking) setIsLinking(false); 
-  }, [selectedEquipmentIds, clientEquipment, isLinking, certificateItems]);
+  }, [selectedEquipmentIds, clientEquipment, isLinking]); // Se quitó certificateItems para evitar loops
 
   const handleLinkAppointment = (aptId: string) => {
     const apt = appointments?.find((a: any) => a.id === aptId);
@@ -264,11 +265,9 @@ const CertificateForm = React.memo(({
                           return (
                             <div key={item.id} onClick={() => toggleEquipment(item.id)} className={cn("flex items-center justify-between p-3 border-2 rounded-xl transition-all cursor-pointer", isChecked ? "border-primary bg-primary/5 shadow-sm" : "border-slate-100 hover:border-slate-200 bg-slate-50/50")}>
                               <div className="flex items-center gap-3">
-                                <Checkbox 
-                                  checked={isChecked} 
-                                  onCheckedChange={(val) => { if(!!val !== isChecked) toggleEquipment(item.id) }} 
-                                  onClick={(e) => e.stopPropagation()} 
-                                />
+                                <div className="pointer-events-none">
+                                  <Checkbox checked={isChecked} />
+                                </div>
                                 <div className="flex flex-col"><span className="text-[11px] font-black uppercase text-primary">{item.serialNumber}</span><span className="text-[9px] font-bold text-slate-400 uppercase">{item.type} • {item.capacity}</span></div>
                               </div>
                               <Badge variant="outline" className="text-[8px] font-black uppercase bg-white">{item.location || "S/U"}</Badge>
