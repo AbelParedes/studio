@@ -10,7 +10,10 @@ import {
   Printer, 
   Download, 
   ArrowLeft, 
-  Globe
+  Globe,
+  MapPin,
+  Phone,
+  Mail
 } from "lucide-react"
 import { format, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
@@ -58,7 +61,7 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
 
       <div className="proforma-container bg-white mx-auto w-[210mm] min-h-[297mm] shadow-2xl p-0 border print:shadow-none print:border-none print:m-0 print:w-full overflow-hidden flex flex-col relative text-black font-serif">
         
-        {/* CABECERA ESTILO APEVA */}
+        {/* CABECERA DINÁMICA */}
         <div className="pt-10 px-14 pb-4 shrink-0">
           <div className="flex flex-col items-start">
             <div className="relative h-20 w-64">
@@ -101,36 +104,32 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
             </p>
 
             <p>
-              han sido cargados con <span className="font-bold text-[15px]">polvo químico seco (PQS) – ASIATICO; ABC</span> y una concentración de sustancia química al <span className="font-bold">75% ACTIVO</span>; cumpliendo con la <span className="font-bold">NTP 350.043 y ISO 9001</span>.
+              han sido inspeccionados y/o cargados bajo las especificaciones técnicas vigentes, cumpliendo estrictamente con la <span className="font-bold">NTP 350.043 y ISO 9001</span>.
             </p>
 
-            <p className="font-bold">Extinción de fuegos clase ABC.</p>
-
-            <p className="text-[13px] italic">
-              Cargado con polvos a base de: poliphosphate amonium monamonium phosphate y sulphate amonium amorphous silica y aditivos. (fosfato monoamónico).
-            </p>
+            <p className="font-bold">Extinción de fuegos clase ABC / Operatividad Técnica.</p>
 
             {/* PARAMETROS TECNICOS */}
-            <div className="ml-24 space-y-1 font-mono text-[13px]">
+            <div className="ml-24 space-y-1 font-mono text-[13px] border-l-2 border-slate-200 pl-6 py-2">
               <div className="flex gap-4">
-                <span className="w-40">Presión de Prueba</span> <span>:</span> <span className="font-bold">{cert.presionPrueba || "KPA3400"}</span>
+                <span className="w-40 uppercase">Presión de Prueba</span> <span>:</span> <span className="font-bold">{cert.presionPrueba || "KPA3400"}</span>
               </div>
               <div className="flex gap-4">
-                <span className="w-40">Presión de trabajo</span> <span>:</span> <span className="font-bold">{cert.presionTrabajo || "KPA1400"}</span>
+                <span className="w-40 uppercase">Presión de trabajo</span> <span>:</span> <span className="font-bold">{cert.presionTrabajo || "KPA1400"}</span>
               </div>
               <div className="flex gap-4">
-                <span className="w-40">Rating</span> <span>:</span> <span className="font-bold">{cert.rating || "2 A – 20 B: C"}</span>
+                <span className="w-40 uppercase">Rating Nominal</span> <span>:</span> <span className="font-bold">{cert.rating || "2 A – 20 B: C"}</span>
               </div>
             </div>
 
             <h2 className="text-[15px] font-bold underline mt-8 uppercase">
-              EXTINTORES DE {cert.tipoExtintor === 'PQS' ? 'POLVO QUIMICO SECO (PQS-ABC)' : cert.tipoExtintor} {cert.normativa || "NTP 350.026"}
+              ANEXO TÉCNICO DE EQUIPOS (NTP 350.026 / 350.043)
             </h2>
 
             {/* TABLA TÉCNICA REESTRUCTURADA */}
             <div className="mt-4 border-2 border-black rounded shadow-sm overflow-hidden">
               <table className="w-full text-[11px] border-collapse">
-                <thead className="bg-white text-black border-b-2 border-black">
+                <thead className="bg-slate-50 text-black border-b-2 border-black">
                   <tr className="font-bold uppercase text-center">
                     <th className="p-2 border-r border-black w-10">N°</th>
                     <th className="p-2 border-r border-black w-20">CAP</th>
@@ -143,10 +142,9 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
                 </thead>
                 <tbody>
                   {cert.datosExtintor?.map((item: any, idx: number) => {
-                    // Formatear fechas para mostrar solo Mes - Año si es posible
                     const formatMY = (d: string) => {
                       if (!d || d === "---") return "---"
-                      try { return format(parseISO(d), "MMMM - yyyy", { locale: es }).toUpperCase() } catch { return d }
+                      try { return format(parseISO(d), "MM / yy", { locale: es }).toUpperCase() } catch { return d }
                     }
                     return (
                       <tr key={idx} className="border-b border-black last:border-0 text-center font-bold">
@@ -164,8 +162,8 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
               </table>
             </div>
 
-            <p className="mt-12">
-              Se emite el siguiente certificado para los fines que estimen por conveniente.
+            <p className="mt-8">
+              Se emite el presente protocolo de operatividad para los fines que el beneficiario estime conveniente, garantizando la seguridad industrial en las instalaciones o unidades descritas.
             </p>
           </div>
 
@@ -179,8 +177,8 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
                   </div>
                 )}
               </div>
-              <p className="text-[11px] font-bold uppercase">{company?.name || "EXTINTORES APEVA"}</p>
-              <p className="text-[10px] font-medium uppercase text-slate-500">Sello y Firma de Gerencia</p>
+              <p className="text-[11px] font-bold uppercase">{company?.name || "GERENCIA GENERAL"}</p>
+              <p className="text-[10px] font-medium uppercase text-slate-500">Firma y Sello Autorizado</p>
             </div>
 
             <div className="space-y-2">
@@ -197,11 +195,21 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
           </div>
         </div>
 
-        {/* PIE DE PAGINA DISCRETO */}
-        <div className="mt-auto py-8 px-14 text-center border-t border-slate-100 bg-slate-50/30 print:bg-transparent">
-          <div className="flex justify-center items-center gap-10 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-            {company?.website && <p className="flex items-center gap-2"><Globe className="h-3 w-3" /> {company.website}</p>}
-            <p>Validación Digital EXTINPRO v3.0</p>
+        {/* PIE DE PAGINA PERSONALIZADO */}
+        <div 
+          className="mt-auto py-6 px-14 border-t border-slate-100 print:bg-transparent"
+          style={{ backgroundColor: company?.footerBgColor || '#f8fafc' } as any}
+        >
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex flex-wrap justify-center gap-x-10 gap-y-1 text-[9px] font-black text-slate-600 uppercase">
+              {company?.address && <p className="flex items-center gap-1.5"><MapPin className="h-3 w-3" /> {company.address}</p>}
+              {company?.phone && <p className="flex items-center gap-1.5"><Phone className="h-3 w-3" /> {company.phone}</p>}
+              {company?.email && <p className="flex items-center gap-1.5"><Mail className="h-3 w-3" /> {company.email}</p>}
+            </div>
+            <div className="flex justify-center items-center gap-6 text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+              {company?.website && <p className="flex items-center gap-1.5"><Globe className="h-3 w-3" /> {company.website}</p>}
+              <p>Validación Digital EXTINPRO v3.0</p>
+            </div>
           </div>
         </div>
       </div>

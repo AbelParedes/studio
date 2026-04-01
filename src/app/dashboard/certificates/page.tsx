@@ -72,7 +72,6 @@ const CertificateForm = React.memo(({
   [db, companyId, selectedClientId])
   const { data: clientEquipment, isLoading: loadingEquip } = useCollection(equipmentRef)
 
-  // Al cambiar de cliente, sugerir dirección si es Local
   useEffect(() => {
     if (selectedClientId && certType === "Local" && !editingCert) {
       const client = clients?.find((c: any) => c.id === selectedClientId)
@@ -112,7 +111,7 @@ const CertificateForm = React.memo(({
 
     setCertificateItems(newItems);
     if (isLinking) setIsLinking(false); 
-  }, [selectedEquipmentIds, clientEquipment, isLinking]);
+  }, [selectedEquipmentIds, clientEquipment, isLinking, certificateItems.length]);
 
   const handleLinkAppointment = (aptId: string) => {
     const apt = appointments?.find((a: any) => a.id === aptId);
@@ -126,9 +125,9 @@ const CertificateForm = React.memo(({
 
   const toggleEquipment = useCallback((id: string) => {
     setSelectedEquipmentIds(prev => {
-      const next = prev.includes(id) ? prev.filter(eid => eid !== id) : [...prev, id]
-      return next
-    })
+      if (prev.includes(id)) return prev.filter(eid => eid !== id);
+      return [...prev, id];
+    });
   }, [])
 
   const handleItemChange = (idx: number, field: string, value: string) => {
@@ -275,6 +274,17 @@ const CertificateForm = React.memo(({
           </div>
         </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid gap-2">
+            <Label className="text-[10px] font-black uppercase text-slate-500">Presión de Prueba</Label>
+            <Input name="presionPrueba" defaultValue={editingCert?.presionPrueba || "KPA3400"} placeholder="Ej. KPA3400" className="h-10 border-2 font-bold text-xs" />
+          </div>
+          <div className="grid gap-2">
+            <Label className="text-[10px] font-black uppercase text-slate-500">Presión de Trabajo</Label>
+            <Input name="presionTrabajo" defaultValue={editingCert?.presionTrabajo || "KPA1400"} placeholder="Ej. KPA1400" className="h-10 border-2 font-bold text-xs" />
+          </div>
+        </div>
+
         <div className="space-y-4">
           <div className="flex items-center justify-between border-b pb-2">
             <h3 className="text-[11px] font-black uppercase text-primary flex items-center gap-2"><Zap className="h-4 w-4 text-accent" /> Anexo Técnico de Equipos Certificados</h3>
@@ -297,7 +307,7 @@ const CertificateForm = React.memo(({
                         {clientEquipment.map((item: any) => {
                           const isChecked = selectedEquipmentIds.includes(item.id)
                           return (
-                            <div key={item.id} onClick={() => toggleEquipment(item.id)} className={cn("flex items-center justify-between p-3 border-2 rounded-xl transition-all cursor-pointer", isChecked ? "border-primary bg-primary/5 shadow-sm" : "border-slate-100 hover:border-slate-200 bg-slate-50/50")}>
+                            <div key={item.id} onClick={(e) => { e.preventDefault(); toggleEquipment(item.id); }} className={cn("flex items-center justify-between p-3 border-2 rounded-xl transition-all cursor-pointer", isChecked ? "border-primary bg-primary/5 shadow-sm" : "border-slate-100 hover:border-slate-200 bg-slate-50/50")}>
                               <div className="flex items-center gap-3">
                                 <div className="pointer-events-none">
                                   <Checkbox checked={isChecked} />
