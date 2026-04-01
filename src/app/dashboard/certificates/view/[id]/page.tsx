@@ -1,3 +1,4 @@
+
 "use client"
 
 import { use, useEffect, useState } from "react"
@@ -5,20 +6,16 @@ import { useRouter } from "next/navigation"
 import { useDoc, useFirestore, useMemoFirebase } from "@/firebase"
 import { doc } from "firebase/firestore"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { 
   Printer, 
   Download, 
   ArrowLeft, 
-  ShieldCheck, 
-  MapPin,
-  Phone,
-  Mail,
-  Globe,
-  FileText,
+  MapPin, 
+  Phone, 
+  Globe, 
   Scale,
-  Award,
-  Flame
+  Truck,
+  Building2
 } from "lucide-react"
 import { format, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
@@ -85,17 +82,38 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
 
           <div className="grid grid-cols-2 gap-16">
             <div className="space-y-4">
-              <div className="flex items-center gap-4"><h3 className="text-[10px] font-black text-slate-400 uppercase shrink-0">EMPRESA</h3><div className="h-[1px] bg-slate-100 w-full"></div></div>
-              <div className="space-y-1 pt-1"><p className="text-lg font-black uppercase">{cert.clienteNombre}</p><p className="text-[11px] font-bold text-slate-500 uppercase">{client?.address || "---"}</p><p className="text-[11px] font-bold text-slate-500">RUC: {client?.taxId || "---"}</p></div>
+              <div className="flex items-center gap-4"><h3 className="text-[10px] font-black text-slate-400 uppercase shrink-0">EMPRESA / TITULAR</h3><div className="h-[1px] bg-slate-100 w-full"></div></div>
+              <div className="space-y-1 pt-1">
+                <p className="text-lg font-black uppercase">{cert.clienteNombre}</p>
+                <div className="flex flex-col gap-0.5">
+                  <div className="flex items-start gap-1">
+                    <span className="text-[9px] font-black text-primary shrink-0">
+                      {cert.certificationType === "Vehículo" ? "PLACA / UNIDAD: " : "DIRECCIÓN: "}
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase leading-tight">
+                      {cert.targetDetail || client?.address || "---"}
+                    </span>
+                  </div>
+                  <p className="text-[10px] font-bold text-slate-500">RUC: {client?.taxId || "---"}</p>
+                </div>
+              </div>
             </div>
             <div className="space-y-4">
               <div className="flex items-center gap-4"><h3 className="text-[10px] font-black text-slate-400 uppercase shrink-0">VALIDEZ TÉCNICA</h3><div className="h-[1px] bg-slate-100 w-full"></div></div>
-              <div className="text-[11px] space-y-2 pt-1 text-right"><p className="font-bold uppercase">EMISIÓN: <span className="font-black">{formattedDate}</span></p><div className="bg-slate-50 border px-4 py-2 rounded inline-block"><p className="text-[12px] font-black uppercase text-primary">NORMA: {cert.normativa || "NTP 350.043"}</p></div></div>
+              <div className="text-[11px] space-y-2 pt-1 text-right">
+                <p className="font-bold uppercase">EMISIÓN: <span className="font-black">{formattedDate}</span></p>
+                <div className="bg-slate-50 border px-4 py-2 rounded inline-block">
+                  <p className="text-[12px] font-black uppercase text-primary">NORMA: {cert.normativa || "NTP 350.043"}</p>
+                </div>
+              </div>
             </div>
           </div>
 
           <div className="space-y-8 pt-4">
-            <div className="flex items-center gap-3 bg-slate-50 border p-3 rounded"><Scale className="h-4 w-4 text-primary" /><h3 className="text-[10px] font-black uppercase tracking-[0.15em]">ANEXO TÉCNICO DE EQUIPOS</h3></div>
+            <div className="flex items-center gap-3 bg-slate-50 border p-3 rounded">
+              <Scale className="h-4 w-4 text-primary" />
+              <h3 className="text-[10px] font-black uppercase tracking-[0.15em]">ANEXO TÉCNICO DE EQUIPOS</h3>
+            </div>
             <div className="grid grid-cols-3 gap-4 mb-6">
               <div className="p-3 bg-white border rounded-lg text-center shadow-sm"><p className="text-[8px] font-black text-slate-400 uppercase">P. PRUEBA</p><p className="text-xs font-black text-primary">{cert.presionPrueba}</p></div>
               <div className="p-3 bg-white border rounded-lg text-center shadow-sm"><p className="text-[8px] font-black text-slate-400 uppercase">P. TRABAJO</p><p className="text-xs font-black text-primary">{cert.presionTrabajo}</p></div>

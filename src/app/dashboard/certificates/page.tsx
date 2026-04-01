@@ -1,7 +1,7 @@
 
 "use client"
 
-import React, { useState, useMemo, useCallback, useEffect, useRef } from "react"
+import React, { useState, useMemo, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -15,13 +15,12 @@ import {
   Trash2, 
   Edit2, 
   Printer, 
-  ShieldCheck,
-  HardDrive,
   UserCheck,
-  ClipboardCheck,
   Zap,
   Info,
-  Wrench
+  Wrench,
+  Building2,
+  Truck
 } from "lucide-react"
 import { 
   useCollection, 
@@ -46,6 +45,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { toast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
@@ -63,6 +63,8 @@ const CertificateForm = React.memo(({
   const [selectedClientId, setSelectedClientId] = useState<string | null>(editingCert?.clienteId || null)
   const [selectedEquipmentIds, setSelectedEquipmentIds] = useState<string[]>(editingCert?.servicedEquipmentIds || [])
   const [certificateItems, setCertificateItems] = useState<any[]>(editingCert?.datosExtintor || [])
+  const [certType, setCertType] = useState<"Local" | "Vehículo">(editingCert?.certificationType || "Local")
+  const [targetDetail, setTargetDetail] = useState(editingCert?.targetDetail || "")
   const [isLinking, setIsLinking] = useState(false)
 
   const equipmentRef = useMemoFirebase(() => 
@@ -70,7 +72,14 @@ const CertificateForm = React.memo(({
   [db, companyId, selectedClientId])
   const { data: clientEquipment, isLoading: loadingEquip } = useCollection(equipmentRef)
 
-  // Sincronización de tabla técnica basada en equipos seleccionados
+  // Al cambiar de cliente, sugerir dirección si es Local
+  useEffect(() => {
+    if (selectedClientId && certType === "Local" && !editingCert) {
+      const client = clients?.find((c: any) => c.id === selectedClientId)
+      if (client?.address) setTargetDetail(client.address)
+    }
+  }, [selectedClientId, certType, clients, editingCert])
+
   useEffect(() => {
     if (!clientEquipment || clientEquipment.length === 0) return;
     
@@ -103,7 +112,7 @@ const CertificateForm = React.memo(({
 
     setCertificateItems(newItems);
     if (isLinking) setIsLinking(false); 
-  }, [selectedEquipmentIds, clientEquipment, isLinking]); // Se quitó certificateItems para evitar loops
+  }, [selectedEquipmentIds, clientEquipment, isLinking]);
 
   const handleLinkAppointment = (aptId: string) => {
     const apt = appointments?.find((a: any) => a.id === aptId);
@@ -111,17 +120,14 @@ const CertificateForm = React.memo(({
       setIsLinking(true);
       setSelectedClientId(apt.clientId);
       setSelectedEquipmentIds(apt.servicedEquipmentIds || []);
-      toast({ 
-        title: "Datos de OT vinculados", 
-        description: `Se han identificado ${apt.servicedEquipmentIds?.length || 0} equipos atendidos.` 
-      });
+      toast({ title: "Datos de OT vinculados" });
     }
   }
 
   const toggleEquipment = useCallback((id: string) => {
     setSelectedEquipmentIds(prev => {
-      const isIncluded = prev.includes(id)
-      return isIncluded ? prev.filter(eid => eid !== id) : [...prev, id]
+      const next = prev.includes(id) ? prev.filter(eid => eid !== id) : [...prev, id]
+      return next
     })
   }, [])
 
@@ -149,6 +155,8 @@ const CertificateForm = React.memo(({
       technicianName: technician?.name || "Sin Asignar",
       certificadoNumero: formData.get("number") as string || suggestedCertNumber,
       fechaEmision: formData.get("date") as string || format(new Date(), "yyyy-MM-dd"),
+      certificationType: certType,
+      targetDetail: targetDetail,
       tipoExtintor: formData.get("tipo") as string || "PQS",
       presionPrueba: formData.get("presionPrueba") as string || "---",
       presionTrabajo: formData.get("presionTrabajo") as string || "---",
@@ -189,6 +197,28 @@ const CertificateForm = React.memo(({
           </Select>
         </div>
 
+        <div className="space-y-4">
+          <Label className="text-[10px] font-black uppercase text-slate-500">Acondicionamiento del Certificado</Label>
+          <RadioGroup 
+            value={certType} 
+            onValueChange={(val: any) => setCertType(val)}
+            className="flex gap-6"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="Local" id="type-local" />
+              <Label htmlFor="type-local" className="flex items-center gap-2 text-xs font-bold uppercase cursor-pointer">
+                <Building2 className="h-4 w-4 text-primary" /> Oficina / Local
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="Vehículo" id="type-vehicle" />
+              <Label htmlFor="type-vehicle" className="flex items-center gap-2 text-xs font-bold uppercase cursor-pointer">
+                <Truck className="h-4 w-4 text-accent" /> Vehículo / Unidad
+              </Label>
+            </div>
+          </RadioGroup>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="grid gap-2">
             <Label className="text-[10px] font-black uppercase text-slate-500">Cliente</Label>
@@ -197,6 +227,18 @@ const CertificateForm = React.memo(({
               <SelectContent>{clients?.map((c: any) => (<SelectItem key={c.id} value={c.id} className="font-bold text-xs uppercase">{c.name}</SelectItem>))}</SelectContent>
             </Select>
           </div>
+          <div className="grid gap-2 lg:col-span-2">
+            <Label className="text-[10px] font-black uppercase text-slate-500">
+              {certType === "Vehículo" ? "Placa / Identificador de Unidad" : "Dirección de Sede Certificada"}
+            </Label>
+            <Input 
+              value={targetDetail} 
+              onChange={(e) => setTargetDetail(e.target.value)}
+              placeholder={certType === "Vehículo" ? "Ej. ABC-123 / Camión 04" : "Dirección completa..."}
+              className="h-11 border-2 font-bold text-xs uppercase"
+              required
+            />
+          </div>
           <div className="grid gap-2">
             <Label className="text-[10px] font-black uppercase text-slate-500">Técnico Certificador</Label>
             <Select name="technicianId" defaultValue={editingCert?.technicianId} required>
@@ -204,19 +246,19 @@ const CertificateForm = React.memo(({
               <SelectContent>{technicians?.map((t: any) => (<SelectItem key={t.id} value={t.id} className="font-bold text-xs uppercase">{t.name} {t.signatureUrl ? '✓' : '(Sin Firma)'}</SelectItem>))}</SelectContent>
             </Select>
           </div>
-          <div className="grid gap-2">
-            <Label className="text-[10px] font-black uppercase text-slate-500">N° Certificado</Label>
-            <Input name="number" defaultValue={editingCert?.certificadoNumero || suggestedCertNumber} className="h-11 border-2 font-black text-xs uppercase" />
-          </div>
-          <div className="grid gap-2">
-            <Label className="text-[10px] font-black uppercase text-slate-500">Fecha</Label>
-            <Input name="date" type="date" defaultValue={editingCert?.fechaEmision || format(new Date(), "yyyy-MM-dd")} className="h-11 border-2 font-bold" />
-          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="grid gap-2">
-            <Label className="text-[10px] font-black uppercase text-slate-500">Agente</Label>
+            <Label className="text-[10px] font-black uppercase text-slate-500">N° Certificado</Label>
+            <Input name="number" defaultValue={editingCert?.certificadoNumero || suggestedCertNumber} className="h-10 border-2 font-black text-xs uppercase" />
+          </div>
+          <div className="grid gap-2">
+            <Label className="text-[10px] font-black uppercase text-slate-500">Fecha</Label>
+            <Input name="date" type="date" defaultValue={editingCert?.fechaEmision || format(new Date(), "yyyy-MM-dd")} className="h-10 border-2 font-bold" />
+          </div>
+          <div className="grid gap-2">
+            <Label className="text-[10px] font-black uppercase text-slate-500">Agente Principal</Label>
             <Select name="tipo" defaultValue={editingCert?.tipoExtintor || "PQS"}>
               <SelectTrigger className="h-10 border-2 text-xs font-bold"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -226,14 +268,6 @@ const CertificateForm = React.memo(({
                 <SelectItem value="K">POTASIO (K)</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-          <div className="grid gap-2">
-            <Label className="text-[10px] font-black uppercase text-slate-500">P. Prueba</Label>
-            <Input name="presionPrueba" defaultValue={editingCert?.presionPrueba || "KPA 3400"} className="h-10 border-2 font-bold text-xs" />
-          </div>
-          <div className="grid gap-2">
-            <Label className="text-[10px] font-black uppercase text-slate-500">P. Trabajo</Label>
-            <Input name="presionTrabajo" defaultValue={editingCert?.presionTrabajo || "KPA 1345"} className="h-10 border-2 font-bold text-xs" />
           </div>
           <div className="grid gap-2">
             <Label className="text-[10px] font-black uppercase text-slate-500">Rating</Label>
@@ -309,10 +343,6 @@ const CertificateForm = React.memo(({
                 )}
               </TableBody>
             </Table>
-          </div>
-          <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg">
-            <Info className="h-3 w-3 text-slate-400" />
-            <p className="text-[8px] font-bold text-slate-400 uppercase">Los datos se jalarán de la OT vinculada, permitiendo modificaciones manuales antes de la emisión.</p>
           </div>
         </div>
       </div>

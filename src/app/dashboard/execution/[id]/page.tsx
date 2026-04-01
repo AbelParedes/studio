@@ -61,10 +61,6 @@ export default function ExecutionPage({ params }: { params: Promise<{ id: string
         ? current.filter((id: string) => id !== equipId) 
         : [...current, equipId]
       
-      // Solo actualiza si hay un cambio real para evitar bucles de renderizado
-      if (isSelected === (next.length < current.length) && isSelected !== (next.includes(equipId))) {
-         return { ...prev, servicedEquipmentIds: next }
-      }
       return { ...prev, servicedEquipmentIds: next }
     })
   }, [])
@@ -135,9 +131,8 @@ export default function ExecutionPage({ params }: { params: Promise<{ id: string
                       isChecked ? "border-primary bg-primary/5" : "border-slate-100 hover:border-slate-200"
                     )} onClick={() => handleEquipmentToggle(item.id)}>
                       <div className="flex items-center gap-3">
-                        {/* Se usa pointer-events-none para que el div padre gestione el click exclusivamente */}
                         <div className="pointer-events-none">
-                          <Checkbox checked={isChecked} />
+                          <Checkbox checked={isChecked} onCheckedChange={() => {}} />
                         </div>
                         <div className="flex flex-col">
                           <span className="text-[11px] font-black uppercase">{item.serialNumber}</span>
@@ -176,7 +171,7 @@ export default function ExecutionPage({ params }: { params: Promise<{ id: string
                   >
                     <Label className="text-[10px] font-bold uppercase text-slate-700 cursor-pointer">{item.label}</Label>
                     <div className="pointer-events-none">
-                      <Checkbox checked={isChecked} />
+                      <Checkbox checked={isChecked} onCheckedChange={() => {}} />
                     </div>
                   </div>
                 )
