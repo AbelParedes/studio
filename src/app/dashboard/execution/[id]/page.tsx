@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, use, useMemo } from "react"
+import { useState, use, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -53,15 +53,16 @@ export default function ExecutionPage({ params }: { params: Promise<{ id: string
     clientSignatureName: ""
   })
 
-  const handleEquipmentToggle = (equipId: string) => {
+  const handleEquipmentToggle = useCallback((equipId: string) => {
     setTechData((prev: any) => {
       const current = prev.servicedEquipmentIds
-      const next = current.includes(equipId) 
+      const isSelected = current.includes(equipId)
+      const next = isSelected 
         ? current.filter((id: string) => id !== equipId) 
         : [...current, equipId]
       return { ...prev, servicedEquipmentIds: next }
     })
-  }
+  }, [])
 
   const handleFinish = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -104,7 +105,7 @@ export default function ExecutionPage({ params }: { params: Promise<{ id: string
   return (
     <div className="max-w-2xl mx-auto space-y-6 pb-20">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full"><ArrowLeft className="h-5 w-5" /></Button>
+        <Button variant="ghost" size="icon" type="button" onClick={() => router.back()} className="rounded-full"><ArrowLeft className="h-5 w-5" /></Button>
         <div>
           <h2 className="text-xl font-black uppercase tracking-tighter text-primary">Ejecución Técnica NTP</h2>
           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">OT: {apt.id.split('-')[0]} • {apt.clientName}</p>
@@ -121,25 +122,30 @@ export default function ExecutionPage({ params }: { params: Promise<{ id: string
             </CardHeader>
             <CardContent className="pt-6 space-y-3">
               <div className="grid grid-cols-1 gap-2">
-                {equipment.map(item => (
-                  <div key={item.id} className={cn(
-                    "flex items-center justify-between p-3 border-2 rounded-2xl transition-all cursor-pointer",
-                    techData.servicedEquipmentIds.includes(item.id) ? "border-primary bg-primary/5" : "border-slate-100 hover:border-slate-200"
-                  )} onClick={() => handleEquipmentToggle(item.id)}>
-                    <div className="flex items-center gap-3">
-                      <Checkbox 
-                        checked={techData.servicedEquipmentIds.includes(item.id)} 
-                        onCheckedChange={() => handleEquipmentToggle(item.id)}
-                        onClick={(e) => e.stopPropagation()} 
-                      />
-                      <div className="flex flex-col">
-                        <span className="text-[11px] font-black uppercase">{item.serialNumber}</span>
-                        <span className="text-[9px] font-bold text-slate-400 uppercase">{item.type} • {item.location}</span>
+                {equipment.map(item => {
+                  const isChecked = techData.servicedEquipmentIds.includes(item.id)
+                  return (
+                    <div key={item.id} className={cn(
+                      "flex items-center justify-between p-3 border-2 rounded-2xl transition-all cursor-pointer",
+                      isChecked ? "border-primary bg-primary/5" : "border-slate-100 hover:border-slate-200"
+                    )} onClick={() => handleEquipmentToggle(item.id)}>
+                      <div className="flex items-center gap-3">
+                        <Checkbox 
+                          checked={isChecked} 
+                          onCheckedChange={(val) => {
+                            if (!!val !== isChecked) handleEquipmentToggle(item.id)
+                          }}
+                          onClick={(e) => e.stopPropagation()} 
+                        />
+                        <div className="flex flex-col">
+                          <span className="text-[11px] font-black uppercase">{item.serialNumber}</span>
+                          <span className="text-[9px] font-bold text-slate-400 uppercase">{item.type} • {item.location}</span>
+                        </div>
                       </div>
+                      <Badge variant="outline" className="text-[8px] font-black uppercase">{item.status}</Badge>
                     </div>
-                    <Badge variant="outline" className="text-[8px] font-black uppercase">{item.status}</Badge>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </CardContent>
           </Card>
@@ -159,15 +165,22 @@ export default function ExecutionPage({ params }: { params: Promise<{ id: string
                 { id: 'pasador_seguridad', label: 'Pasador y Precinto de Plástico' },
                 { id: 'etiqueta_vigencia', label: 'Etiqueta de Mantenimiento Visible' },
                 { id: 'estado_cilindro', label: 'Cilindro sin Corrosión o Abolladura' },
-              ].map(item => (
-                <div key={item.id} className="flex items-center justify-between p-4 border-2 rounded-2xl bg-white hover:bg-slate-50 transition-colors">
-                  <Label className="text-[10px] font-bold uppercase text-slate-700">{item.label}</Label>
-                  <Checkbox 
-                    checked={techData.extChecklist[item.id]} 
-                    onCheckedChange={(val) => setTechData((prev: any) => ({ ...prev, extChecklist: { ...prev.extChecklist, [item.id]: !!val } }))} 
-                  />
-                </div>
-              ))}
+              ].map(item => {
+                const isChecked = !!techData.extChecklist[item.id]
+                return (
+                  <div key={item.id} className="flex items-center justify-between p-4 border-2 rounded-2xl bg-white hover:bg-slate-50 transition-colors">
+                    <Label className="text-[10px] font-bold uppercase text-slate-700">{item.label}</Label>
+                    <Checkbox 
+                      checked={isChecked} 
+                      onCheckedChange={(val) => {
+                        if (!!val !== isChecked) {
+                          setTechData((prev: any) => ({ ...prev, extChecklist: { ...prev.extChecklist, [item.id]: !!val } }))
+                        }
+                      }} 
+                    />
+                  </div>
+                )
+              })}
             </div>
           </CardContent>
         </Card>

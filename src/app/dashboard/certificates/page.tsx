@@ -70,17 +70,20 @@ const CertificateForm = React.memo(({
   [db, companyId, selectedClientId])
   const { data: clientEquipment, isLoading: loadingEquip } = useCollection(equipmentRef)
 
-  // Sincronizar tabla editable cuando cambian los equipos seleccionados o cargan los datos técnicos
   useEffect(() => {
     if (!clientEquipment || clientEquipment.length === 0) return;
     
-    // Solo regeneramos items si hay un cambio en la selección o estamos vinculando
-    // Mantenemos los datos manuales si no es un evento de vinculación forzada
+    const needsUpdate = selectedEquipmentIds.some(id => {
+      const existing = certificateItems.find(item => item.equipmentId === id);
+      return !existing || existing.ns === "---";
+    }) || certificateItems.length !== selectedEquipmentIds.length || isLinking;
+
+    if (!needsUpdate) return;
+
     const newItems = selectedEquipmentIds.map(id => {
       const equip = clientEquipment.find(e => e.id === id);
       const existing = certificateItems.find(item => item.equipmentId === id);
 
-      // Si estamos vinculando o el item no tiene datos, cargamos desde la ficha técnica
       if (equip && (isLinking || !existing || existing.ns === "---")) {
         return {
           equipmentId: id,
@@ -98,8 +101,8 @@ const CertificateForm = React.memo(({
     });
 
     setCertificateItems(newItems);
-    setIsLinking(false); 
-  }, [selectedEquipmentIds, clientEquipment, isLinking]);
+    if (isLinking) setIsLinking(false); 
+  }, [selectedEquipmentIds, clientEquipment, isLinking, certificateItems]);
 
   const handleLinkAppointment = (aptId: string) => {
     const apt = appointments?.find((a: any) => a.id === aptId);
@@ -115,15 +118,19 @@ const CertificateForm = React.memo(({
   }
 
   const toggleEquipment = useCallback((id: string) => {
-    setSelectedEquipmentIds(prev => 
-      prev.includes(id) ? prev.filter(eid => eid !== id) : [...prev, id]
-    )
+    setSelectedEquipmentIds(prev => {
+      const isIncluded = prev.includes(id)
+      return isIncluded ? prev.filter(eid => eid !== id) : [...prev, id]
+    })
   }, [])
 
   const handleItemChange = (idx: number, field: string, value: string) => {
-    const updated = [...certificateItems];
-    updated[idx] = { ...updated[idx], [field]: value };
-    setCertificateItems(updated);
+    setCertificateItems(prev => {
+      const updated = [...prev];
+      if (updated[idx][field] === value) return prev;
+      updated[idx] = { ...updated[idx], [field]: value };
+      return updated;
+    });
   }
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -157,7 +164,6 @@ const CertificateForm = React.memo(({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col h-full overflow-hidden">
       <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
-        {/* Vincular con OT (Ejecución Técnica) */}
         <div className="bg-primary/5 p-4 rounded-xl border-2 border-primary/10 flex flex-col sm:flex-row items-center gap-4">
           <div className="flex items-center gap-3 shrink-0">
             <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-white">
@@ -185,7 +191,7 @@ const CertificateForm = React.memo(({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="grid gap-2">
             <Label className="text-[10px] font-black uppercase text-slate-500">Cliente</Label>
-            <Select name="clienteId" value={selectedClientId || ""} onValueChange={(val) => { setSelectedClientId(val); setSelectedEquipmentIds([]); }} required>
+            <Select name="clienteId" value={selectedClientId || ""} onValueChange={(val) => { if(val !== selectedClientId) { setSelectedClientId(val); setSelectedEquipmentIds([]); } }} required>
               <SelectTrigger className="h-11 border-2 text-xs uppercase font-bold"><SelectValue placeholder="Cliente" /></SelectTrigger>
               <SelectContent>{clients?.map((c: any) => (<SelectItem key={c.id} value={c.id} className="font-bold text-xs uppercase">{c.name}</SelectItem>))}</SelectContent>
             </Select>
@@ -234,7 +240,6 @@ const CertificateForm = React.memo(({
           </div>
         </div>
 
-        {/* Tabla de Equipos - Editable */}
         <div className="space-y-4">
           <div className="flex items-center justify-between border-b pb-2">
             <h3 className="text-[11px] font-black uppercase text-primary flex items-center gap-2"><Zap className="h-4 w-4 text-accent" /> Anexo Técnico de Equipos Certificados</h3>
@@ -242,7 +247,7 @@ const CertificateForm = React.memo(({
               <Badge variant="outline" className="text-[9px] font-black">{selectedEquipmentIds.length} Unidades</Badge>
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-7 text-[9px] font-bold uppercase"><Plus className="h-3 w-3 mr-1" /> Seleccionar Equipos</Button>
+                  <Button variant="outline" size="sm" type="button" className="h-7 text-[9px] font-bold uppercase"><Plus className="h-3 w-3 mr-1" /> Seleccionar Equipos</Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col p-0">
                   <DialogHeader className="p-6 border-b bg-slate-50">
@@ -254,15 +259,22 @@ const CertificateForm = React.memo(({
                       <div className="py-10 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
                     ) : clientEquipment && clientEquipment.length > 0 ? (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {clientEquipment.map((item: any) => (
-                          <div key={item.id} onClick={() => toggleEquipment(item.id)} className={cn("flex items-center justify-between p-3 border-2 rounded-xl transition-all cursor-pointer", selectedEquipmentIds.includes(item.id) ? "border-primary bg-primary/5 shadow-sm" : "border-slate-100 hover:border-slate-200 bg-slate-50/50")}>
-                            <div className="flex items-center gap-3">
-                              <Checkbox checked={selectedEquipmentIds.includes(item.id)} onCheckedChange={() => toggleEquipment(item.id)} onClick={(e) => e.stopPropagation()} />
-                              <div className="flex flex-col"><span className="text-[11px] font-black uppercase text-primary">{item.serialNumber}</span><span className="text-[9px] font-bold text-slate-400 uppercase">{item.type} • {item.capacity}</span></div>
+                        {clientEquipment.map((item: any) => {
+                          const isChecked = selectedEquipmentIds.includes(item.id)
+                          return (
+                            <div key={item.id} onClick={() => toggleEquipment(item.id)} className={cn("flex items-center justify-between p-3 border-2 rounded-xl transition-all cursor-pointer", isChecked ? "border-primary bg-primary/5 shadow-sm" : "border-slate-100 hover:border-slate-200 bg-slate-50/50")}>
+                              <div className="flex items-center gap-3">
+                                <Checkbox 
+                                  checked={isChecked} 
+                                  onCheckedChange={(val) => { if(!!val !== isChecked) toggleEquipment(item.id) }} 
+                                  onClick={(e) => e.stopPropagation()} 
+                                />
+                                <div className="flex flex-col"><span className="text-[11px] font-black uppercase text-primary">{item.serialNumber}</span><span className="text-[9px] font-bold text-slate-400 uppercase">{item.type} • {item.capacity}</span></div>
+                              </div>
+                              <Badge variant="outline" className="text-[8px] font-black uppercase bg-white">{item.location || "S/U"}</Badge>
                             </div>
-                            <Badge variant="outline" className="text-[8px] font-black uppercase bg-white">{item.location || "S/U"}</Badge>
-                          </div>
-                        ))}
+                          )
+                        })}
                       </div>
                     ) : (<div className="py-10 text-center text-slate-400 font-bold uppercase text-[10px]">No hay equipos o cliente no seleccionado</div>)}
                   </div>
