@@ -1,4 +1,3 @@
-
 "use client"
 
 import { use, useEffect, useState } from "react"
@@ -67,7 +66,6 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
             <div className="relative h-20 w-64">
               <Image src={company?.headerUrl || company?.logoUrl || EXTINPRO_DEFAULT_LOGO} alt="Logo" fill className="object-contain object-left" unoptimized />
             </div>
-            <p className="text-[11px] font-medium text-slate-500 italic mt-1 ml-2">Su seguridad por encima de todo</p>
           </div>
           <div className="mt-4 border-t-[3px] border-b-[1px] border-slate-300 h-1.5 w-full"></div>
         </div>
