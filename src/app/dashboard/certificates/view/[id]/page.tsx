@@ -81,7 +81,7 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
           {/* CUERPO DE TEXTO */}
           <div className="space-y-6 text-[14px] leading-relaxed text-justify">
             <p>
-              La empresa <span className="font-bold">Extintores &quot;{company?.name || "EXTINPRO"}&quot;</span>, certifica que los extintores pertenecientes
+              La empresa <span className="font-bold">&quot;{company?.name || "EXTINPRO"}&quot;</span>, certifica que los extintores pertenecientes
               <br />
               <span className="text-[16px] font-bold">A: {cert.clienteNombre}</span> <span className="ml-8 font-bold">RUC: {client?.taxId || "---"}</span>
             </p>
