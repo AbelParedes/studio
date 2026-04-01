@@ -44,11 +44,6 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
   if (isLoading) return <div className="p-20 text-center font-bold uppercase animate-pulse text-primary">Generando Protocolo Oficial...</div>
   if (!cert) return <div className="p-20 text-center font-bold uppercase">Protocolo no encontrado</div>
 
-  const dateObj = cert.fechaEmision ? parseISO(cert.fechaEmision) : new Date()
-  const day = format(dateObj, "dd")
-  const month = format(dateObj, "MMMM", { locale: es }).toUpperCase()
-  const yearShort = format(dateObj, "yy")
-
   return (
     <div className="space-y-6 pb-20 bg-slate-100 min-h-screen p-4 sm:p-8 print:p-0 print:bg-white">
       <div className="flex items-center justify-between max-w-[210mm] mx-auto print:hidden">
@@ -79,8 +74,8 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
             </div>
           </div>
 
-          {/* TITULO */}
-          <h1 className="text-center text-[20px] font-bold underline mb-10 mt-10 tracking-wide">
+          {/* TITULO - UN POCO MÁS GRANDE */}
+          <h1 className="text-center text-[26px] font-bold underline mb-10 mt-10 tracking-wide uppercase">
             CERTIFICADO DE OPERATIVIDAD
           </h1>
 
