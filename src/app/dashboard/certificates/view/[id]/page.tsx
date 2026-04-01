@@ -10,12 +10,7 @@ import {
   Printer, 
   Download, 
   ArrowLeft, 
-  MapPin, 
-  Phone, 
-  Globe, 
-  Scale,
-  Truck,
-  Building2
+  Globe
 } from "lucide-react"
 import { format, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
@@ -46,13 +41,14 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
   if (isLoading) return <div className="p-20 text-center font-bold uppercase animate-pulse text-primary">Generando Protocolo Oficial...</div>
   if (!cert) return <div className="p-20 text-center font-bold uppercase">Protocolo no encontrado</div>
 
-  const formattedDate = cert.fechaEmision ? format(parseISO(cert.fechaEmision), "dd 'de' MMMM 'del' yyyy", { locale: es }) : "---"
-  const displayCertNumber = cert.certificadoNumero?.replace('CERT-', '') || "---"
-  const qrValidationUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(currentUrl)}`
+  const dateObj = cert.fechaEmision ? parseISO(cert.fechaEmision) : new Date()
+  const day = format(dateObj, "dd")
+  const month = format(dateObj, "MMMM", { locale: es }).toUpperCase()
+  const yearShort = format(dateObj, "yy")
 
   return (
-    <div className="space-y-6 pb-20">
-      <div className="flex items-center justify-between print:hidden">
+    <div className="space-y-6 pb-20 bg-slate-100 min-h-screen p-4 sm:p-8 print:p-0 print:bg-white">
+      <div className="flex items-center justify-between max-w-[210mm] mx-auto print:hidden">
         <Button variant="ghost" onClick={() => router.back()} className="font-black uppercase text-[10px] tracking-widest"><ArrowLeft className="mr-2 h-3 w-3" /> Regresar</Button>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => window.print()} className="font-black uppercase text-[10px] tracking-widest border-2"><Printer className="mr-2 h-3.5 w-3.5" /> Imprimir</Button>
@@ -60,132 +56,152 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
         </div>
       </div>
 
-      <div className="proforma-container bg-white mx-auto w-[210mm] min-h-[297mm] shadow-2xl p-0 border print:shadow-none print:border-none print:m-0 print:w-full overflow-hidden flex flex-col relative text-[#1c1c1c]">
+      <div className="proforma-container bg-white mx-auto w-[210mm] min-h-[297mm] shadow-2xl p-0 border print:shadow-none print:border-none print:m-0 print:w-full overflow-hidden flex flex-col relative text-black font-serif">
         
-        {/* HEADER */}
-        <div className="pt-12 px-12 pb-8 shrink-0 flex items-center justify-between bg-slate-50/50 border-b">
-          <div className="relative h-20 w-64">
-            <Image src={company?.headerUrl || company?.logoUrl || EXTINPRO_DEFAULT_LOGO} alt="Logo" fill className="object-contain object-left" unoptimized />
+        {/* CABECERA ESTILO APEVA */}
+        <div className="pt-10 px-14 pb-4 shrink-0">
+          <div className="flex flex-col items-start">
+            <div className="relative h-20 w-64">
+              <Image src={company?.headerUrl || company?.logoUrl || EXTINPRO_DEFAULT_LOGO} alt="Logo" fill className="object-contain object-left" unoptimized />
+            </div>
+            <p className="text-[11px] font-medium text-slate-500 italic mt-1 ml-2">Su seguridad por encima de todo</p>
           </div>
-          <div className="text-right">
-            <h1 className="text-sm font-black text-primary uppercase tracking-tighter mb-1">CERTIFICADO DE OPERATIVIDAD</h1>
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">CONFORME NTP 350.043-1</p>
-            <div className="bg-[#1c1c1c] text-white px-6 py-2 rounded font-black text-xs tracking-widest inline-block border-b-2 border-slate-400">CERT N° {displayCertNumber}</div>
-          </div>
+          <div className="mt-4 border-t-[3px] border-b-[1px] border-slate-300 h-1.5 w-full"></div>
         </div>
 
-        <div className="p-12 space-y-10 flex-1 relative z-10">
+        <div className="px-14 flex-1 relative z-10">
           {/* MARCA DE AGUA */}
-          <div className="absolute inset-0 flex items-center justify-center opacity-[0.04] pointer-events-none -rotate-12">
-            <Image src={company?.logoUrl || EXTINPRO_DEFAULT_LOGO} alt="Watermark" fill className="object-contain" unoptimized />
-          </div>
-
-          <div className="grid grid-cols-2 gap-16">
-            <div className="space-y-4">
-              <div className="flex items-center gap-4"><h3 className="text-[10px] font-black text-slate-400 uppercase shrink-0">EMPRESA / TITULAR</h3><div className="h-[1px] bg-slate-100 w-full"></div></div>
-              <div className="space-y-1 pt-1">
-                <p className="text-lg font-black uppercase">{cert.clienteNombre}</p>
-                <div className="flex flex-col gap-0.5">
-                  <div className="flex items-start gap-1">
-                    <span className="text-[9px] font-black text-primary shrink-0">
-                      {cert.certificationType === "Vehículo" ? "PLACA / UNIDAD: " : "DIRECCIÓN: "}
-                    </span>
-                    <span className="text-[10px] font-bold text-slate-500 uppercase leading-tight">
-                      {cert.targetDetail || client?.address || "---"}
-                    </span>
-                  </div>
-                  <p className="text-[10px] font-bold text-slate-500">RUC: {client?.taxId || "---"}</p>
-                </div>
-              </div>
-            </div>
-            <div className="space-y-4">
-              <div className="flex items-center gap-4"><h3 className="text-[10px] font-black text-slate-400 uppercase shrink-0">VALIDEZ TÉCNICA</h3><div className="h-[1px] bg-slate-100 w-full"></div></div>
-              <div className="text-[11px] space-y-2 pt-1 text-right">
-                <p className="font-bold uppercase">EMISIÓN: <span className="font-black">{formattedDate}</span></p>
-                <div className="bg-slate-50 border px-4 py-2 rounded inline-block">
-                  <p className="text-[12px] font-black uppercase text-primary">NORMA: {cert.normativa || "NTP 350.043"}</p>
-                </div>
-              </div>
+          <div className="absolute inset-0 flex items-center justify-center opacity-[0.05] pointer-events-none -rotate-12">
+            <div className="relative h-[400px] w-[400px]">
+              <Image src={company?.logoUrl || EXTINPRO_DEFAULT_LOGO} alt="Watermark" fill className="object-contain" unoptimized />
             </div>
           </div>
 
-          <div className="space-y-8 pt-4">
-            <div className="flex items-center gap-3 bg-slate-50 border p-3 rounded">
-              <Scale className="h-4 w-4 text-primary" />
-              <h3 className="text-[10px] font-black uppercase tracking-[0.15em]">ANEXO TÉCNICO DE EQUIPOS</h3>
+          {/* FECHA DERECHA */}
+          <div className="text-right text-[13px] mt-2 mb-10">
+            Lima, <span className="border-b border-black px-2 mx-1">{day}</span> de <span className="border-b border-black px-4 mx-1 font-bold">{month}</span> del 20<span className="border-b border-black px-2 mx-1">{yearShort}</span>
+          </div>
+
+          {/* TITULO */}
+          <h1 className="text-center text-[20px] font-bold underline mb-10 tracking-wide">
+            CERTIFICADO DE OPERATIVIDAD
+          </h1>
+
+          {/* CUERPO DE TEXTO */}
+          <div className="space-y-6 text-[14px] leading-relaxed text-justify">
+            <p>
+              La empresa <span className="font-bold">Extintores &quot;{company?.name || "EXTINPRO"}&quot;</span>, certifica que los extintores pertenecientes
+              <br />
+              <span className="text-[16px] font-bold">A: {cert.clienteNombre}</span> <span className="ml-8 font-bold">RUC: {client?.taxId || "---"}</span>
+            </p>
+            
+            <p>
+              <span className="font-bold uppercase">{cert.certificationType === "Vehículo" ? "UBICACIÓN / PLACA: " : "UBICADOS: "}</span>
+              <span className="font-bold">{cert.targetDetail || client?.address || "---"}</span>
+            </p>
+
+            <p>
+              han sido cargados con <span className="font-bold text-[15px]">polvo químico seco (PQS) – ASIATICO; ABC</span> y una concentración de sustancia química al <span className="font-bold">75% ACTIVO</span>; cumpliendo con la <span className="font-bold">NTP 350.043 y ISO 9001</span>.
+            </p>
+
+            <p className="font-bold">Extinción de fuegos clase ABC.</p>
+
+            <p className="text-[13px] italic">
+              Cargado con polvos a base de: poliphosphate amonium monamonium phosphate y sulphate amonium amorphous silica y aditivos. (fosfato monoamónico).
+            </p>
+
+            {/* PARAMETROS TECNICOS */}
+            <div className="ml-24 space-y-1 font-mono text-[13px]">
+              <div className="flex gap-4">
+                <span className="w-40">Presión de Prueba</span> <span>:</span> <span className="font-bold">{cert.presionPrueba || "KPA3400"}</span>
+              </div>
+              <div className="flex gap-4">
+                <span className="w-40">Presión de trabajo</span> <span>:</span> <span className="font-bold">{cert.presionTrabajo || "KPA1400"}</span>
+              </div>
+              <div className="flex gap-4">
+                <span className="w-40">Rating</span> <span>:</span> <span className="font-bold">{cert.rating || "2 A – 20 B: C"}</span>
+              </div>
             </div>
-            <div className="grid grid-cols-3 gap-4 mb-6">
-              <div className="p-3 bg-white border rounded-lg text-center shadow-sm"><p className="text-[8px] font-black text-slate-400 uppercase">P. PRUEBA</p><p className="text-xs font-black text-primary">{cert.presionPrueba}</p></div>
-              <div className="p-3 bg-white border rounded-lg text-center shadow-sm"><p className="text-[8px] font-black text-slate-400 uppercase">P. TRABAJO</p><p className="text-xs font-black text-primary">{cert.presionTrabajo}</p></div>
-              <div className="p-3 bg-white border rounded-lg text-center shadow-sm"><p className="text-[8px] font-black text-slate-400 uppercase">RATING</p><p className="text-xs font-black text-primary">{cert.rating}</p></div>
-            </div>
-            <div className="border rounded-xl overflow-hidden shadow-sm">
-              <table className="w-full text-[10px] border-collapse">
-                <thead className="bg-slate-50 text-slate-600 border-b"><tr><th className="p-3 text-left font-black uppercase border-r">SERIE</th><th className="p-3 text-left font-black uppercase border-r">AGENTE / CAPACIDAD</th><th className="p-3 text-center font-black uppercase border-r">VTO. RECARGA</th><th className="p-3 text-center font-black uppercase">VTO. P.H.</th></tr></thead>
+
+            <h2 className="text-[15px] font-bold underline mt-8 uppercase">
+              EXTINTORES DE {cert.tipoExtintor === 'PQS' ? 'POLVO QUIMICO SECO (PQS-ABC)' : cert.tipoExtintor} {cert.normativa || "NTP 350.026"}
+            </h2>
+
+            {/* TABLA TÉCNICA REESTRUCTURADA */}
+            <div className="mt-4 border-2 border-black rounded shadow-sm overflow-hidden">
+              <table className="w-full text-[11px] border-collapse">
+                <thead className="bg-white text-black border-b-2 border-black">
+                  <tr className="font-bold uppercase text-center">
+                    <th className="p-2 border-r border-black w-10">N°</th>
+                    <th className="p-2 border-r border-black w-20">CAP</th>
+                    <th className="p-2 border-r border-black w-32">TIPO</th>
+                    <th className="p-2 border-r border-black">NS - FF</th>
+                    <th className="p-2 border-r border-black">VCTO - PH</th>
+                    <th className="p-2 border-r border-black">RECARGA</th>
+                    <th className="p-2">VCTO RECARGA</th>
+                  </tr>
+                </thead>
                 <tbody>
-                  {cert.datosExtintor?.map((item: any, idx: number) => (
-                    <tr key={idx} className="border-b last:border-0 hover:bg-slate-50 transition-colors">
-                      <td className="p-3 font-black text-primary border-r">{item.ns}</td>
-                      <td className="p-3 font-bold uppercase border-r">{item.tipo} {item.cap}</td>
-                      <td className="p-3 text-center font-bold text-slate-500 border-r">{item.vctoRecarga}</td>
-                      <td className="p-3 text-center font-bold text-slate-500">{item.vctoPH || "---"}</td>
-                    </tr>
-                  ))}
+                  {cert.datosExtintor?.map((item: any, idx: number) => {
+                    // Formatear fechas para mostrar solo Mes - Año si es posible
+                    const formatMY = (d: string) => {
+                      if (!d || d === "---") return "---"
+                      try { return format(parseISO(d), "MMMM - yyyy", { locale: es }).toUpperCase() } catch { return d }
+                    }
+                    return (
+                      <tr key={idx} className="border-b border-black last:border-0 text-center font-bold">
+                        <td className="p-2 border-r border-black">{(idx + 1).toString().padStart(2, '0')}</td>
+                        <td className="p-2 border-r border-black">{item.cap}</td>
+                        <td className="p-2 border-r border-black">{item.tipo}</td>
+                        <td className="p-2 border-r border-black">{item.ns} - {item.ff}</td>
+                        <td className="p-2 border-r border-black">{formatMY(item.vctoPH)}</td>
+                        <td className="p-2 border-r border-black">{formatMY(item.recarga)}</td>
+                        <td className="p-2">{formatMY(item.vctoRecarga)}</td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
+
+            <p className="mt-12">
+              Se emite el siguiente certificado para los fines que estimen por conveniente.
+            </p>
           </div>
 
-          <div className="pt-16 grid grid-cols-2 gap-24 text-center">
-            <div className="space-y-3 relative">
-              <div className="h-24 w-full border-b-2 flex flex-col items-center justify-center bg-slate-50/30 rounded-t-lg relative">
-                {company?.signatureUrl ? (
-                  <div className="relative h-20 w-40 z-20">
-                    <Image src={company.signatureUrl} alt="Sello Empresa" fill className="object-contain" unoptimized />
+          {/* SECCIÓN DE FIRMAS */}
+          <div className="mt-20 grid grid-cols-2 gap-24 text-center">
+            <div className="space-y-2">
+              <div className="h-24 w-full border-b border-black flex flex-col items-center justify-end pb-2 relative">
+                {company?.signatureUrl && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Image src={company.signatureUrl} alt="Sello Empresa" width={160} height={80} className="object-contain opacity-90" unoptimized />
                   </div>
-                ) : (
-                  <div className="border-4 border-primary/10 text-primary/10 p-2 rounded-xl rotate-12 font-black text-[11px] uppercase border-double absolute">VALIDADO POR<br/>DEPARTAMENTO TÉCNICO</div>
                 )}
               </div>
-              <p className="text-[10px] font-black uppercase text-primary">{company?.name || "EXTINPRO"}</p>
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">SELLO Y FIRMA DE GERENCIA</p>
+              <p className="text-[11px] font-bold uppercase">{company?.name || "EXTINTORES APEVA"}</p>
+              <p className="text-[10px] font-medium uppercase text-slate-500">Sello y Firma de Gerencia</p>
             </div>
 
-            <div className="space-y-3 relative">
-              <div className="h-24 w-full border-b-2 flex flex-col items-center justify-center bg-slate-50/30 rounded-t-lg relative">
-                {technician?.signatureUrl ? (
-                  <div className="relative h-20 w-40 z-20">
-                    <Image src={technician.signatureUrl} alt="Firma Técnico" fill className="object-contain" unoptimized />
+            <div className="space-y-2">
+              <div className="h-24 w-full border-b border-black flex flex-col items-center justify-end pb-2 relative">
+                {technician?.signatureUrl && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Image src={technician.signatureUrl} alt="Firma Técnico" width={160} height={80} className="object-contain" unoptimized />
                   </div>
-                ) : (
-                  <div className="text-2xl text-slate-200 italic opacity-50 font-medium">Firma Digital</div>
                 )}
               </div>
-              <p className="text-[10px] font-black uppercase text-primary">{cert.technicianName}</p>
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">TÉCNICO ESPECIALISTA NTP</p>
+              <p className="text-[11px] font-bold uppercase">{cert.technicianName}</p>
+              <p className="text-[10px] font-medium uppercase text-slate-500">Técnico Especialista NTP</p>
             </div>
           </div>
         </div>
 
-        <div className="mt-auto shrink-0 flex flex-col items-center justify-center py-8 print-footer" style={{ backgroundColor: company?.footerBgColor || '#f8fafc', borderTop: '1px solid #e2e8f0' } as any}>
-          <div className="px-12 w-full flex flex-row items-center justify-between gap-3 text-slate-600">
-            <div className="flex flex-col items-start gap-1">
-              <div className="flex flex-wrap justify-start gap-x-12 text-[10px] font-black uppercase">
-                {company?.address && <p>{company.address}</p>}
-                {company?.phone && <p>{company.phone}</p>}
-              </div>
-              <div className="mt-1 pt-3 border-t border-slate-200/50 w-full max-w-lg">
-                <p className="text-[10px] font-black opacity-50 uppercase tracking-[0.4em] flex items-center justify-start gap-3">
-                  <Globe className="h-3.5 w-3.5" /> {company?.website || "WWW.EXTINPRO.PE"}
-                </p>
-              </div>
-            </div>
-            <div className="shrink-0 flex flex-col items-center gap-1">
-              <div className="relative h-16 w-16 bg-white p-1 border rounded shadow-sm">
-                <Image src={qrValidationUrl} alt="QR Validation" fill className="object-contain" unoptimized />
-              </div>
-              <p className="text-[7px] font-black uppercase opacity-40">Validación Digital</p>
-            </div>
+        {/* PIE DE PAGINA DISCRETO */}
+        <div className="mt-auto py-8 px-14 text-center border-t border-slate-100 bg-slate-50/30 print:bg-transparent">
+          <div className="flex justify-center items-center gap-10 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            {company?.website && <p className="flex items-center gap-2"><Globe className="h-3 w-3" /> {company.website}</p>}
+            <p>Validación Digital EXTINPRO v3.0</p>
           </div>
         </div>
       </div>
