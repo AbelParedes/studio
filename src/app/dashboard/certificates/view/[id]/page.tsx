@@ -43,11 +43,11 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
 
   const formatAgentDisplay = (type: string) => {
     const t = type?.toUpperCase() || ""
-    if (t.includes("PQS")) return "PQS (ABC)"
-    if (t.includes("CO2")) return "CO2 (BC)"
+    if (t.includes("PQS")) return "POLVO QUÍMICO SECO"
+    if (t.includes("CO2")) return "ANHÍDRIDO CARBÓNICO"
     if (t.includes("H2O") || t.includes("AGUA")) return "AGUA (H2O)"
-    if (t.includes("K") || t.includes("ACETATO") || t.includes("POTASIO")) return "ACETATO DE POTASIO (K)"
-    if (t.includes("HALOTRON")) return "HALOTRON (ABC)"
+    if (t.includes("K") || t.includes("ACETATO") || t.includes("POTASIO")) return "ACETATO DE POTASIO"
+    if (t.includes("HALOTRON")) return "HALOTRÓN"
     return type
   }
 
