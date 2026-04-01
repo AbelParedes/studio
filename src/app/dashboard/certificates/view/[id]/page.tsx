@@ -102,13 +102,21 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
               La empresa <span className="font-bold">&quot;{company?.name || "EXTINPRO"}&quot;</span>, certifica que los extintores pertenecientes a:
             </p>
             
-            <div className="pl-4 space-y-1.5">
-              <p><span className="font-bold uppercase w-24 inline-block">A:</span> <span className="text-[16px] font-bold">{cert.clienteNombre}</span></p>
-              <p><span className="font-bold uppercase w-24 inline-block">RUC:</span> <span className="font-bold">{client?.taxId || "---"}</span></p>
-              <p>
-                <span className="font-bold uppercase w-24 inline-block">{cert.certificationType === "Vehículo" ? "PLACA / UNID:" : "DIRECCIÓN:"}</span>
-                <span className="font-bold">{cert.targetDetail || client?.address || "---"}</span>
-              </p>
+            <div className="pl-4 space-y-2">
+              <div className="flex items-start">
+                <span className="font-bold uppercase w-40 shrink-0">A:</span> 
+                <span className="text-[16px] font-bold uppercase">{cert.clienteNombre}</span>
+              </div>
+              <div className="flex items-start">
+                <span className="font-bold uppercase w-40 shrink-0">RUC:</span> 
+                <span className="font-bold">{client?.taxId || "---"}</span>
+              </div>
+              <div className="flex items-start">
+                <span className="font-bold uppercase w-40 shrink-0">
+                  {cert.certificationType === "Vehículo" ? "PLACA / UNID:" : "DIRECCIÓN:"}
+                </span>
+                <span className="font-bold uppercase">{cert.targetDetail || client?.address || "---"}</span>
+              </div>
             </div>
 
             <p className="mt-4">
