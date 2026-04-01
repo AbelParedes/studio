@@ -277,11 +277,11 @@ const CertificateForm = React.memo(({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="grid gap-2">
             <Label className="text-[10px] font-black uppercase text-slate-500">Presión de Prueba</Label>
-            <Input name="presionPrueba" defaultValue={editingCert?.presionPrueba || "KPA3400"} placeholder="Ej. KPA3400" className="h-10 border-2 font-bold text-xs" />
+            <Input name="presionPrueba" defaultValue={editingCert?.presionPrueba || "KPA 3400"} placeholder="Ej. KPA 3400" className="h-10 border-2 font-bold text-xs" />
           </div>
           <div className="grid gap-2">
             <Label className="text-[10px] font-black uppercase text-slate-500">Presión de Trabajo</Label>
-            <Input name="presionTrabajo" defaultValue={editingCert?.presionTrabajo || "KPA1400"} placeholder="Ej. KPA1400" className="h-10 border-2 font-bold text-xs" />
+            <Input name="presionTrabajo" defaultValue={editingCert?.presionTrabajo || "KPA 1345"} placeholder="Ej. KPA 1345" className="h-10 border-2 font-bold text-xs" />
           </div>
         </div>
 
@@ -332,7 +332,8 @@ const CertificateForm = React.memo(({
                 <TableRow>
                   <TableHead className="text-[9px] font-black uppercase w-32">Serie</TableHead>
                   <TableHead className="text-[9px] font-black uppercase w-24">Año Fab.</TableHead>
-                  <TableHead className="text-[9px] font-black uppercase w-48">Agente / Capacidad</TableHead>
+                  <TableHead className="text-[9px] font-black uppercase w-32">Agente</TableHead>
+                  <TableHead className="text-[9px] font-black uppercase w-24">Capacidad</TableHead>
                   <TableHead className="text-[9px] font-black uppercase">Últ. Recarga</TableHead>
                   <TableHead className="text-[9px] font-black uppercase">Vto. Recarga</TableHead>
                   <TableHead className="text-[9px] font-black uppercase">Vto. P.H.</TableHead>
@@ -343,13 +344,14 @@ const CertificateForm = React.memo(({
                   <TableRow key={item.equipmentId || idx} className="hover:bg-slate-50/50">
                     <TableCell><Input value={item.ns} onChange={(e) => handleItemChange(idx, 'ns', e.target.value)} className="h-8 text-[10px] font-black uppercase border-none bg-transparent focus:ring-0" /></TableCell>
                     <TableCell><Input value={item.ff} onChange={(e) => handleItemChange(idx, 'ff', e.target.value)} className="h-8 text-[10px] font-bold text-center border-none bg-transparent" /></TableCell>
-                    <TableCell><Input value={`${item.tipo} ${item.cap}`} onChange={(e) => handleItemChange(idx, 'tipo', e.target.value)} className="h-8 text-[10px] font-bold uppercase border-none bg-transparent" /></TableCell>
+                    <TableCell><Input value={item.tipo} onChange={(e) => handleItemChange(idx, 'tipo', e.target.value)} className="h-8 text-[10px] font-bold uppercase border-none bg-transparent" /></TableCell>
+                    <TableCell><Input value={item.cap} onChange={(e) => handleItemChange(idx, 'cap', e.target.value)} className="h-8 text-[10px] font-bold text-center border-none bg-transparent" /></TableCell>
                     <TableCell><Input type="date" value={item.recarga} onChange={(e) => handleItemChange(idx, 'recarga', e.target.value)} className="h-8 text-[10px] font-medium border-none bg-transparent" /></TableCell>
                     <TableCell><Input type="date" value={item.vctoRecarga} onChange={(e) => handleItemChange(idx, 'vctoRecarga', e.target.value)} className="h-8 text-[10px] font-black text-primary border-none bg-transparent" /></TableCell>
                     <TableCell><Input type="date" value={item.vctoPH} onChange={(e) => handleItemChange(idx, 'vctoPH', e.target.value)} className="h-8 text-[10px] font-bold text-blue-600 border-none bg-transparent" /></TableCell>
                   </TableRow>
                 )) : (
-                  <TableRow><TableCell colSpan={6} className="text-center py-10 opacity-30 italic text-[10px] font-bold uppercase">Seleccione equipos o vincule una Orden de Trabajo (OT)</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={7} className="text-center py-10 opacity-30 italic text-[10px] font-bold uppercase">Seleccione equipos o vincule una Orden de Trabajo (OT)</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>

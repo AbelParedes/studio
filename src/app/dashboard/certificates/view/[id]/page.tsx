@@ -41,7 +41,16 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
   const techRef = useMemoFirebase(() => cert?.technicianId ? doc(db, "company_users", cert.technicianId) : null, [db, cert?.technicianId])
   const { data: technician } = useDoc(techRef)
 
-  // Lógica dinámica para clases de fuego
+  const formatAgentDisplay = (type: string) => {
+    const t = type?.toUpperCase() || ""
+    if (t.includes("PQS")) return "PQS (ABC)"
+    if (t.includes("CO2")) return "CO2 (BC)"
+    if (t.includes("H2O") || t.includes("AGUA")) return "AGUA (H2O)"
+    if (t.includes("K") || t.includes("ACETATO") || t.includes("POTASIO")) return "ACETATO DE POTASIO (K)"
+    if (t.includes("HALOTRON")) return "HALOTRON (ABC)"
+    return type
+  }
+
   const dynamicFireClasses = useMemo(() => {
     if (!cert?.datosExtintor || cert.datosExtintor.length === 0) return "clase ABC"
     
@@ -73,7 +82,6 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
 
       <div className="proforma-container bg-white mx-auto w-[210mm] min-h-[297mm] shadow-2xl p-0 border print:shadow-none print:border-none print:m-0 print:w-full overflow-hidden flex flex-col relative text-black font-serif">
         
-        {/* CABECERA DINÁMICA */}
         <div className="pt-10 px-14 pb-4 shrink-0">
           <div className="flex flex-col items-start">
             <div className="relative h-20 w-64">
@@ -84,19 +92,16 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
         </div>
 
         <div className="px-14 flex-1 relative z-10">
-          {/* MARCA DE AGUA */}
           <div className="absolute inset-0 flex items-center justify-center opacity-[0.05] pointer-events-none -rotate-12">
             <div className="relative h-[400px] w-[400px]">
               <Image src={company?.logoUrl || EXTINPRO_DEFAULT_LOGO} alt="Watermark" fill className="object-contain" unoptimized />
             </div>
           </div>
 
-          {/* TITULO AJUSTADO */}
           <h1 className="text-center text-[26px] font-bold underline mb-10 mt-4 tracking-wide uppercase">
             CERTIFICADO DE OPERATIVIDAD
           </h1>
 
-          {/* CUERPO DE TEXTO ESTRUCTURADO */}
           <div className="space-y-6 text-[14px] leading-relaxed text-justify">
             <p>
               La empresa <span className="font-bold">&quot;{company?.name || "EXTINPRO"}&quot;</span>, certifica que los extintores pertenecientes a:
@@ -125,7 +130,6 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
 
             <p className="font-bold italic">Extinción de fuegos {dynamicFireClasses} / Operatividad Técnica.</p>
 
-            {/* PARAMETROS TECNICOS COMPACTOS */}
             <div className="flex justify-around items-center font-mono text-[12px] border-y-2 border-black py-3 my-4 bg-slate-50/50">
               <p className="flex gap-2">
                 <span className="uppercase font-bold">Presión Prueba:</span> <span>{cert.presionPrueba || "---"}</span>
@@ -144,14 +148,13 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
               ANEXO TÉCNICO DE EQUIPOS (NTP 350.026 / 350.043)
             </h2>
 
-            {/* TABLA TÉCNICA REESTRUCTURADA */}
             <div className="mt-4 border-2 border-black rounded shadow-sm overflow-hidden">
               <table className="w-full text-[11px] border-collapse">
                 <thead className="bg-slate-50 text-black border-b-2 border-black">
                   <tr className="font-bold uppercase text-center">
                     <th className="p-2 border-r border-black w-10">N°</th>
                     <th className="p-2 border-r border-black w-20">CAP</th>
-                    <th className="p-2 border-r border-black w-32">TIPO</th>
+                    <th className="p-2 border-r border-black w-48">TIPO</th>
                     <th className="p-2 border-r border-black">NS - FF</th>
                     <th className="p-2 border-r border-black">VCTO - PH</th>
                     <th className="p-2 border-r border-black">RECARGA</th>
@@ -168,7 +171,7 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
                       <tr key={idx} className="border-b border-black last:border-0 text-center font-bold">
                         <td className="p-2 border-r border-black">{(idx + 1).toString().padStart(2, '0')}</td>
                         <td className="p-2 border-r border-black">{item.cap}</td>
-                        <td className="p-2 border-r border-black">{item.tipo}</td>
+                        <td className="p-2 border-r border-black">{formatAgentDisplay(item.tipo)}</td>
                         <td className="p-2 border-r border-black">{item.ns} - {item.ff}</td>
                         <td className="p-2 border-r border-black">{formatMY(item.vctoPH)}</td>
                         <td className="p-2 border-r border-black">{formatMY(item.recarga)}</td>
@@ -185,7 +188,6 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
             </p>
           </div>
 
-          {/* SECCIÓN DE FIRMAS */}
           <div className="mt-20 grid grid-cols-2 gap-24 text-center">
             <div className="space-y-2">
               <div className="h-24 w-full border-b border-black flex flex-col items-center justify-end pb-2 relative">
@@ -213,7 +215,6 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
           </div>
         </div>
 
-        {/* PIE DE PAGINA PERSONALIZADO */}
         <div 
           className="mt-auto py-6 px-14 border-t border-slate-100 print:bg-transparent"
           style={{ backgroundColor: company?.footerBgColor || '#f8fafc' } as any}
