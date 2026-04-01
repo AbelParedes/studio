@@ -97,20 +97,22 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
 
             <p className="font-bold">Extinción de fuegos clase ABC / Operatividad Técnica.</p>
 
-            {/* PARAMETROS TECNICOS */}
-            <div className="ml-24 space-y-1 font-mono text-[13px] border-l-2 border-slate-200 pl-6 py-2">
-              <div className="flex gap-4">
-                <span className="w-40 uppercase">Presión de Prueba</span> <span>:</span> <span className="font-bold">{cert.presionPrueba || "KPA3400"}</span>
-              </div>
-              <div className="flex gap-4">
-                <span className="w-40 uppercase">Presión de trabajo</span> <span>:</span> <span className="font-bold">{cert.presionTrabajo || "KPA1400"}</span>
-              </div>
-              <div className="flex gap-4">
-                <span className="w-40 uppercase">Rating Nominal</span> <span>:</span> <span className="font-bold">{cert.rating || "2 A – 20 B: C"}</span>
-              </div>
+            {/* PARAMETROS TECNICOS COMPACTOS */}
+            <div className="flex justify-around items-center font-mono text-[12px] border-y-2 border-black py-2 my-4">
+              <p className="flex gap-2">
+                <span className="uppercase font-bold">Presión Prueba:</span> <span>{cert.presionPrueba || "---"}</span>
+              </p>
+              <div className="h-4 w-[1px] bg-slate-300"></div>
+              <p className="flex gap-2">
+                <span className="uppercase font-bold">Presión Trabajo:</span> <span>{cert.presionTrabajo || "---"}</span>
+              </p>
+              <div className="h-4 w-[1px] bg-slate-300"></div>
+              <p className="flex gap-2">
+                <span className="uppercase font-bold">Rating:</span> <span>{cert.rating || "---"}</span>
+              </p>
             </div>
 
-            <h2 className="text-[15px] font-bold underline mt-8 uppercase">
+            <h2 className="text-[15px] font-bold underline mt-6 uppercase">
               ANEXO TÉCNICO DE EQUIPOS (NTP 350.026 / 350.043)
             </h2>
 
