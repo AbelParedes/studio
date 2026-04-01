@@ -224,10 +224,18 @@ export default function QuotationsPage() {
                   {(company?.headerUrl || company?.logoUrl) && <Image src={company.headerUrl || company.logoUrl} alt="Logo" fill className="object-contain object-left" unoptimized />}
                 </div>
                 <div className="text-right">
-                  <h1 className="text-sm font-black uppercase text-primary tracking-tighter">COTIZACIÓN COMERCIAL</h1>
-                  <p className="text-[10px] font-mono font-bold mt-1 text-slate-500">N° {viewingQuotation.quotationNumber}</p>
-                  <div className="mt-4 bg-slate-100 px-4 py-1.5 rounded font-black text-[10px] uppercase inline-block border-b-2 border-slate-300">
-                    Vigencia: 15 Días
+                  <h1 className="text-sm font-black uppercase text-primary tracking-tighter mb-1">
+                    {company?.name || "EXTINPRO"}
+                  </h1>
+                  <div className="flex flex-col items-end gap-0.5">
+                    <span className="text-[10px] font-bold text-slate-600">RUC: {company?.taxId || "---"}</span>
+                    <span className="text-[9px] font-black text-primary uppercase tracking-[0.2em] mt-2">COTIZACIÓN COMERCIAL</span>
+                    <div className="mt-2 bg-slate-100 text-[#1c1c1c] px-6 py-2 rounded-md font-black text-[12px] shadow-sm border-b-2 border-slate-300">
+                      N° {viewingQuotation.quotationNumber}
+                    </div>
+                  </div>
+                  <div className="mt-4 bg-slate-50 px-4 py-1.5 rounded font-black text-[9px] uppercase inline-block border border-slate-200">
+                    Vigencia de Oferta: 15 Días
                   </div>
                 </div>
              </div>
@@ -237,14 +245,14 @@ export default function QuotationsPage() {
                   <div className="flex items-center gap-4"><h3 className="text-[9px] font-black text-slate-400 uppercase shrink-0">CLIENTE / ENTIDAD</h3><div className="h-[1px] bg-slate-100 w-full"></div></div>
                   <div className="space-y-1 pt-1">
                     <p className="font-black text-sm uppercase">{client?.name || "---"}</p>
-                    <p className="font-bold text-slate-500">RUC: {client?.taxId || "---"}</p>
+                    <p className="font-bold text-slate-500 uppercase">RUC/DNI: {client?.taxId || "---"}</p>
                     <p className="text-slate-500 uppercase leading-tight">{client?.address || "---"}</p>
                   </div>
                 </div>
                 <div className="space-y-4">
                   <div className="flex items-center gap-4"><h3 className="text-[9px] font-black text-slate-400 uppercase shrink-0">DETALLES EMISIÓN</h3><div className="h-[1px] bg-slate-100 w-full"></div></div>
                   <div className="text-right space-y-1 pt-1">
-                    <p className="font-bold uppercase text-slate-700">Fecha: <span className="font-black">{viewingQuotation.date}</span></p>
+                    <p className="font-bold uppercase text-slate-700">Fecha de Emisión: <span className="font-black">{viewingQuotation.date}</span></p>
                     <p className="font-bold uppercase text-slate-700">Moneda: <span className="font-black">Soles (S/)</span></p>
                     <div className="mt-2 inline-block">
                       <Badge variant="outline" className="text-[9px] font-black uppercase bg-status-success/5 text-status-success border-status-success/20">
@@ -270,8 +278,8 @@ export default function QuotationsPage() {
                       <tr key={i} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
                         <td className="p-4 text-center font-black text-primary border-r border-slate-100">{item.quantity}</td>
                         <td className="p-4 uppercase font-medium text-slate-700">{item.description}</td>
-                        <td className="p-4 text-right border-l border-slate-100 text-slate-600">{(Number(item.unitPrice)).toFixed(2)}</td>
-                        <td className="p-4 text-right font-black border-l border-slate-100 text-primary">{(Number(item.total)).toFixed(2)}</td>
+                        <td className="p-4 text-right border-l border-slate-100 text-slate-600">{(Number(item.unitPrice || 0)).toFixed(2)}</td>
+                        <td className="p-4 text-right font-black border-l border-slate-100 text-primary">{(Number(item.total || 0)).toFixed(2)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -449,7 +457,7 @@ export default function QuotationsPage() {
 
       <Card className="shadow-sm border-none overflow-hidden">
         <CardHeader className="pb-3 border-b bg-white p-4">
-          <div className="relative w-full max-w-sm">
+          <div className="relative w-full max-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Buscar por N° o Cliente..." className="pl-9 h-10 text-[10px] sm:text-xs font-bold uppercase" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
