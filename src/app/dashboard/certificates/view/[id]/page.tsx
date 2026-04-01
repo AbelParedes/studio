@@ -1,4 +1,3 @@
-
 "use client"
 
 import { use, useEffect, useState } from "react"
@@ -74,8 +73,8 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
             </div>
           </div>
 
-          {/* TITULO - UN POCO MÁS GRANDE */}
-          <h1 className="text-center text-[26px] font-bold underline mb-10 mt-10 tracking-wide uppercase">
+          {/* TITULO - AJUSTADO HACIA ARRIBA */}
+          <h1 className="text-center text-[26px] font-bold underline mb-10 mt-4 tracking-wide uppercase">
             CERTIFICADO DE OPERATIVIDAD
           </h1>
 
