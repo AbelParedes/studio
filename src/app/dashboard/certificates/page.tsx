@@ -20,7 +20,8 @@ import {
   UserCheck,
   ClipboardCheck,
   Zap,
-  Info
+  Info,
+  Wrench
 } from "lucide-react"
 import { 
   useCollection, 
@@ -62,30 +63,25 @@ const CertificateForm = React.memo(({
   const [selectedClientId, setSelectedClientId] = useState<string | null>(editingCert?.clienteId || null)
   const [selectedEquipmentIds, setSelectedEquipmentIds] = useState<string[]>(editingCert?.servicedEquipmentIds || [])
   const [certificateItems, setCertificateItems] = useState<any[]>(editingCert?.datosExtintor || [])
-  const isLinkingRef = useRef(false)
+  const [isLinking, setIsLinking] = useState(false)
 
   const equipmentRef = useMemoFirebase(() => 
     (companyId && selectedClientId) ? query(collection(db, "client_equipment"), where("clientId", "==", selectedClientId)) : null,
   [db, companyId, selectedClientId])
   const { data: clientEquipment, isLoading: loadingEquip } = useCollection(equipmentRef)
 
-  // Sincronizar tabla editable cuando cambian los equipos seleccionados o cargan los datos
+  // Sincronizar tabla editable cuando cambian los equipos seleccionados o cargan los datos técnicos
   useEffect(() => {
     if (!clientEquipment || clientEquipment.length === 0) return;
     
-    // Generar nuevos items combinando datos de la DB con lo ya existente en la tabla editable
+    // Solo regeneramos items si hay un cambio en la selección o estamos vinculando
+    // Mantenemos los datos manuales si no es un evento de vinculación forzada
     const newItems = selectedEquipmentIds.map(id => {
       const equip = clientEquipment.find(e => e.id === id);
       const existing = certificateItems.find(item => item.equipmentId === id);
 
-      // Si el equipo existe en la base de datos, preferimos sus valores frescos
-      // A MENOS que estemos editando un certificado guardado y no estemos en proceso de "vincular"
-      if (equip) {
-        // Si el item existente tiene datos reales (no guiones), y no estamos vinculando, mantenemos el existente
-        if (existing && existing.ns !== "---" && !isLinkingRef.current) {
-          return existing;
-        }
-
+      // Si estamos vinculando o el item no tiene datos, cargamos desde la ficha técnica
+      if (equip && (isLinking || !existing || existing.ns === "---")) {
         return {
           equipmentId: id,
           ns: equip.serialNumber || "---",
@@ -102,13 +98,13 @@ const CertificateForm = React.memo(({
     });
 
     setCertificateItems(newItems);
-    isLinkingRef.current = false; // Resetear bandera tras procesar
-  }, [selectedEquipmentIds, clientEquipment]);
+    setIsLinking(false); 
+  }, [selectedEquipmentIds, clientEquipment, isLinking]);
 
   const handleLinkAppointment = (aptId: string) => {
     const apt = appointments?.find((a: any) => a.id === aptId);
     if (apt) {
-      isLinkingRef.current = true;
+      setIsLinking(true);
       setSelectedClientId(apt.clientId);
       setSelectedEquipmentIds(apt.servicedEquipmentIds || []);
       toast({ 
@@ -161,25 +157,25 @@ const CertificateForm = React.memo(({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col h-full overflow-hidden">
       <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
-        {/* Vincular con OT */}
+        {/* Vincular con OT (Ejecución Técnica) */}
         <div className="bg-primary/5 p-4 rounded-xl border-2 border-primary/10 flex flex-col sm:flex-row items-center gap-4">
           <div className="flex items-center gap-3 shrink-0">
             <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-white">
-              <ClipboardCheck className="h-5 w-5" />
+              <Wrench className="h-5 w-5" />
             </div>
             <div className="flex flex-col">
-              <span className="text-[10px] font-black uppercase text-primary leading-none">Vincular con OT / OS</span>
-              <span className="text-[8px] font-bold text-slate-400 uppercase">Importar equipos atendidos</span>
+              <span className="text-[10px] font-black uppercase text-primary leading-none">Vincular con Ejecución Técnica (OT)</span>
+              <span className="text-[8px] font-bold text-slate-400 uppercase">Jalar equipos desde el trabajo en campo</span>
             </div>
           </div>
           <Select onValueChange={handleLinkAppointment}>
             <SelectTrigger className="flex-1 h-11 border-primary/20 bg-white font-bold text-xs uppercase">
-              <SelectValue placeholder="Seleccione una Orden finalizada..." />
+              <SelectValue placeholder="Seleccione una Orden de Trabajo finalizada..." />
             </SelectTrigger>
             <SelectContent>
               {appointments?.filter((a: any) => a.status === "Completado").sort((a:any, b:any) => (b.date || "").localeCompare(a.date || "")).map((apt: any) => (
                 <SelectItem key={apt.id} value={apt.id} className="text-xs uppercase font-bold">
-                  {apt.orderNumber || apt.id.split('-')[0]} • {apt.clientName} ({apt.date})
+                  OT: {apt.id.split('-')[0]} {apt.orderNumber ? `(Ref OS: ${apt.orderNumber})` : ''} • {apt.clientName}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -241,17 +237,17 @@ const CertificateForm = React.memo(({
         {/* Tabla de Equipos - Editable */}
         <div className="space-y-4">
           <div className="flex items-center justify-between border-b pb-2">
-            <h3 className="text-[11px] font-black uppercase text-primary flex items-center gap-2"><Zap className="h-4 w-4 text-accent" /> Anexo Técnico de Equipos</h3>
+            <h3 className="text-[11px] font-black uppercase text-primary flex items-center gap-2"><Zap className="h-4 w-4 text-accent" /> Anexo Técnico de Equipos Certificados</h3>
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="text-[9px] font-black">{selectedEquipmentIds.length} Unidades</Badge>
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-7 text-[9px] font-bold uppercase"><Plus className="h-3 w-3 mr-1" /> Gestionar Selección</Button>
+                  <Button variant="outline" size="sm" className="h-7 text-[9px] font-bold uppercase"><Plus className="h-3 w-3 mr-1" /> Seleccionar Equipos</Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col p-0">
                   <DialogHeader className="p-6 border-b bg-slate-50">
-                    <DialogTitle className="uppercase font-black text-primary">Equipos del Cliente</DialogTitle>
-                    <DialogDescription className="text-[10px] font-bold uppercase">Seleccione los extintores que aparecerán en el protocolo.</DialogDescription>
+                    <DialogTitle className="uppercase font-black text-primary">Equipos en Hoja de Vida</DialogTitle>
+                    <DialogDescription className="text-[10px] font-bold uppercase">Marque los equipos que aparecerán en este protocolo.</DialogDescription>
                   </DialogHeader>
                   <div className="flex-1 overflow-y-auto p-6 space-y-3 custom-scrollbar">
                     {loadingEquip ? (
@@ -298,14 +294,14 @@ const CertificateForm = React.memo(({
                     <TableCell><Input type="date" value={item.vctoPH} onChange={(e) => handleItemChange(idx, 'vctoPH', e.target.value)} className="h-8 text-[10px] font-bold text-blue-600 border-none bg-transparent" /></TableCell>
                   </TableRow>
                 )) : (
-                  <TableRow><TableCell colSpan={6} className="text-center py-10 opacity-30 italic text-[10px] font-bold uppercase">Vincule una Orden o seleccione equipos manualmente</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="text-center py-10 opacity-30 italic text-[10px] font-bold uppercase">Seleccione equipos o vincule una Orden de Trabajo (OT)</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
           </div>
           <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg">
             <Info className="h-3 w-3 text-slate-400" />
-            <p className="text-[8px] font-bold text-slate-400 uppercase">Nota: Los datos se sincronizan desde la Orden, pero puede modificarlos aquí para este protocolo específico.</p>
+            <p className="text-[8px] font-bold text-slate-400 uppercase">Los datos se jalarán de la OT vinculada, permitiendo modificaciones manuales antes de la emisión.</p>
           </div>
         </div>
       </div>
