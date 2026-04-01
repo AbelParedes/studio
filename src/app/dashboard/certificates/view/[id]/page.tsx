@@ -1,3 +1,4 @@
+
 "use client"
 
 import { use, useEffect, useState } from "react"
@@ -73,32 +74,34 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
             </div>
           </div>
 
-          {/* TITULO - AJUSTADO HACIA ARRIBA */}
+          {/* TITULO */}
           <h1 className="text-center text-[26px] font-bold underline mb-10 mt-4 tracking-wide uppercase">
             CERTIFICADO DE OPERATIVIDAD
           </h1>
 
-          {/* CUERPO DE TEXTO */}
+          {/* CUERPO DE TEXTO REESTRUCTURADO */}
           <div className="space-y-6 text-[14px] leading-relaxed text-justify">
             <p>
-              La empresa <span className="font-bold">&quot;{company?.name || "EXTINPRO"}&quot;</span>, certifica que los extintores pertenecientes
-              <br />
-              <span className="text-[16px] font-bold">A: {cert.clienteNombre}</span> <span className="ml-8 font-bold">RUC: {client?.taxId || "---"}</span>
+              La empresa <span className="font-bold">&quot;{company?.name || "EXTINPRO"}&quot;</span>, certifica que los extintores pertenecientes a:
             </p>
             
-            <p>
-              <span className="font-bold uppercase">{cert.certificationType === "Vehículo" ? "UBICACIÓN / PLACA: " : "UBICADOS: "}</span>
-              <span className="font-bold">{cert.targetDetail || client?.address || "---"}</span>
+            <div className="pl-4 space-y-1.5">
+              <p><span className="font-bold uppercase w-24 inline-block">A:</span> <span className="text-[16px] font-bold">{cert.clienteNombre}</span></p>
+              <p><span className="font-bold uppercase w-24 inline-block">RUC:</span> <span className="font-bold">{client?.taxId || "---"}</span></p>
+              <p>
+                <span className="font-bold uppercase w-24 inline-block">{cert.certificationType === "Vehículo" ? "PLACA / UNID:" : "DIRECCIÓN:"}</span>
+                <span className="font-bold">{cert.targetDetail || client?.address || "---"}</span>
+              </p>
+            </div>
+
+            <p className="mt-4">
+              han sido inspeccionados y/o cargados bajo las especificaciones técnicas vigentes, cumpliendo estrictamente con la normativa <span className="font-bold">NTP 350.043 y ISO 9001</span>.
             </p>
 
-            <p>
-              han sido inspeccionados y/o cargados bajo las especificaciones técnicas vigentes, cumpliendo estrictamente con la <span className="font-bold">NTP 350.043 y ISO 9001</span>.
-            </p>
-
-            <p className="font-bold">Extinción de fuegos clase ABC / Operatividad Técnica.</p>
+            <p className="font-bold italic">Extinción de fuegos clase ABC / Operatividad Técnica.</p>
 
             {/* PARAMETROS TECNICOS COMPACTOS */}
-            <div className="flex justify-around items-center font-mono text-[12px] border-y-2 border-black py-2 my-4">
+            <div className="flex justify-around items-center font-mono text-[12px] border-y-2 border-black py-3 my-4 bg-slate-50/50">
               <p className="flex gap-2">
                 <span className="uppercase font-bold">Presión Prueba:</span> <span>{cert.presionPrueba || "---"}</span>
               </p>
@@ -112,7 +115,7 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
               </p>
             </div>
 
-            <h2 className="text-[15px] font-bold underline mt-6 uppercase">
+            <h2 className="text-[15px] font-bold underline mt-8 uppercase">
               ANEXO TÉCNICO DE EQUIPOS (NTP 350.026 / 350.043)
             </h2>
 
