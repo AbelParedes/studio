@@ -1,8 +1,8 @@
 
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Calendar } from "@/components/ui/calendar"
 import { Badge } from "@/components/ui/badge"
@@ -14,7 +14,8 @@ import {
   Plus,
   Loader2,
   Trash2,
-  Edit2
+  Edit2,
+  ClipboardList
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, useUser } from "@/firebase"
@@ -39,9 +40,19 @@ export default function CalendarPage() {
   const db = useFirestore()
   const { user } = useUser()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [date, setDate] = useState<Date | undefined>(new Date())
   const [isAdding, setIsAdding] = useState(false)
   const [editingApt, setEditingApt] = useState<any | null>(null)
+
+  const prefillClientId = searchParams.get("clientId")
+  const prefillOrderId = searchParams.get("orderId")
+
+  useEffect(() => {
+    if (prefillClientId) {
+      setIsAdding(true)
+    }
+  }, [prefillClientId])
 
   const userProfileQuery = useMemoFirebase(() => 
     user?.email ? query(collection(db, "company_users"), where("email", "==", user.email)) : null,
@@ -90,6 +101,7 @@ export default function CalendarPage() {
       time: formData.get("time") as string,
       status: formData.get("status") as string || "Pendiente",
       notes: formData.get("notes") as string,
+      orderId: prefillOrderId || null
     }
 
     if (editingApt) {
@@ -103,6 +115,7 @@ export default function CalendarPage() {
 
     setIsAdding(false)
     setEditingApt(null)
+    if (prefillClientId) router.replace("/dashboard/calendar") // Limpiar params
   }
 
   const handleDelete = (id: string) => {
@@ -140,9 +153,16 @@ export default function CalendarPage() {
               </DialogHeader>
               
               <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar min-h-0">
+                {prefillOrderId && (
+                  <div className="bg-accent/10 p-3 rounded-lg border border-accent/20 flex items-center gap-3">
+                    <ClipboardList className="h-4 w-4 text-accent" />
+                    <span className="text-[10px] font-black uppercase text-accent">Vinculado a Orden de Servicio</span>
+                  </div>
+                )}
+
                 <div className="grid gap-2">
                   <Label className="text-[10px] font-bold uppercase text-slate-500">Cliente</Label>
-                  <Select name="clientId" defaultValue={editingApt?.clientId} required>
+                  <Select name="clientId" defaultValue={editingApt?.clientId || prefillClientId || ""} required>
                     <SelectTrigger className="h-11 border-2">
                       <SelectValue placeholder="Seleccione cliente" />
                     </SelectTrigger>
