@@ -54,9 +54,13 @@ export default function ExecutionPage({ params }: { params: Promise<{ id: string
   })
 
   const handleEquipmentToggle = (equipId: string) => {
-    const current = techData.servicedEquipmentIds
-    const next = current.includes(equipId) ? current.filter((id: string) => id !== equipId) : [...current, equipId]
-    setTechData({ ...techData, servicedEquipmentIds: next })
+    setTechData((prev: any) => {
+      const current = prev.servicedEquipmentIds
+      const next = current.includes(equipId) 
+        ? current.filter((id: string) => id !== equipId) 
+        : [...current, equipId]
+      return { ...prev, servicedEquipmentIds: next }
+    })
   }
 
   const handleFinish = async (e: React.FormEvent) => {
@@ -123,7 +127,11 @@ export default function ExecutionPage({ params }: { params: Promise<{ id: string
                     techData.servicedEquipmentIds.includes(item.id) ? "border-primary bg-primary/5" : "border-slate-100 hover:border-slate-200"
                   )} onClick={() => handleEquipmentToggle(item.id)}>
                     <div className="flex items-center gap-3">
-                      <Checkbox checked={techData.servicedEquipmentIds.includes(item.id)} onCheckedChange={() => handleEquipmentToggle(item.id)} />
+                      <Checkbox 
+                        checked={techData.servicedEquipmentIds.includes(item.id)} 
+                        onCheckedChange={() => handleEquipmentToggle(item.id)}
+                        onClick={(e) => e.stopPropagation()} 
+                      />
                       <div className="flex flex-col">
                         <span className="text-[11px] font-black uppercase">{item.serialNumber}</span>
                         <span className="text-[9px] font-bold text-slate-400 uppercase">{item.type} • {item.location}</span>
@@ -156,7 +164,7 @@ export default function ExecutionPage({ params }: { params: Promise<{ id: string
                   <Label className="text-[10px] font-bold uppercase text-slate-700">{item.label}</Label>
                   <Checkbox 
                     checked={techData.extChecklist[item.id]} 
-                    onCheckedChange={(val) => setTechData({ ...techData, extChecklist: { ...techData.extChecklist, [item.id]: !!val } })} 
+                    onCheckedChange={(val) => setTechData((prev: any) => ({ ...prev, extChecklist: { ...prev.extChecklist, [item.id]: !!val } }))} 
                   />
                 </div>
               ))}
@@ -173,7 +181,7 @@ export default function ExecutionPage({ params }: { params: Promise<{ id: string
               placeholder="Indique hallazgos críticos según la norma NTP..."
               className="min-h-[120px] text-xs font-bold border-2 leading-relaxed rounded-2xl"
               value={techData.observations}
-              onChange={e => setTechData({...techData, observations: e.target.value})}
+              onChange={e => setTechData((prev: any) => ({...prev, observations: e.target.value}))}
             />
             <div className="grid grid-cols-2 gap-4">
               <Button type="button" variant="outline" className="h-20 border-dashed border-2 rounded-2xl flex flex-col gap-1 hover:bg-slate-50 hover:border-primary">
@@ -201,7 +209,7 @@ export default function ExecutionPage({ params }: { params: Promise<{ id: string
                 placeholder="Nombre y Apellidos" 
                 className="h-12 text-xs font-bold bg-white/5 border-white/10 text-white placeholder:text-white/20 rounded-xl"
                 value={techData.clientSignatureName}
-                onChange={e => setTechData({...techData, clientSignatureName: e.target.value})}
+                onChange={e => setTechData((prev: any) => ({...prev, clientSignatureName: e.target.value}))}
                 required
               />
             </div>
