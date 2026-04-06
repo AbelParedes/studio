@@ -51,7 +51,6 @@ export default function LoginPage() {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password)
         const newUser = userCredential.user
 
-        // Crear empresa con Plan Demo por defecto bajo la marca EXTINPRO
         const companyRef = await addDoc(collection(db, "companies"), {
           name: companyName || "Nueva Empresa de Extintores",
           taxId: "Pendiente",
@@ -95,6 +94,8 @@ export default function LoginPage() {
         setError("El correo ya está registrado.")
       } else if (err.code === 'auth/user-not-found') {
         setError("No existe una cuenta con este correo electrónico.")
+      } else if (err.code === 'auth/too-many-requests') {
+        setError("Demasiados intentos. Intente más tarde.")
       } else {
         setError("Error: " + err.message)
       }
@@ -167,7 +168,14 @@ export default function LoginPage() {
 
             <div className="space-y-2">
               <Label htmlFor="email" className="text-xs font-bold uppercase">Correo Electrónico</Label>
-              <Input id="email" type="email" placeholder="usuario@empresa.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Input 
+                id="email" 
+                type="email" 
+                placeholder="usuario@empresa.com" 
+                required 
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)} 
+              />
             </div>
 
             {mode !== "forgot" && (
@@ -204,6 +212,7 @@ export default function LoginPage() {
           {mode === "forgot" && (
             <div className="mt-6 text-center">
               <button 
+                type="button"
                 onClick={() => setMode("login")}
                 className="text-[11px] font-bold uppercase text-primary flex items-center justify-center w-full hover:underline"
               >
@@ -225,6 +234,7 @@ export default function LoginPage() {
           {mode !== "forgot" && (
             <div className="mt-6 text-center">
               <button 
+                type="button"
                 onClick={() => setMode(mode === "login" ? "register" : "login")}
                 className="text-[11px] font-bold uppercase text-primary hover:underline"
               >
