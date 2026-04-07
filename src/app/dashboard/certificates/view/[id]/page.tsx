@@ -109,15 +109,15 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
             
             <div className="pl-4 space-y-2">
               <div className="flex items-start">
-                <span className="font-bold uppercase w-40 shrink-0">A:</span> 
+                <span className="font-bold uppercase w-64 shrink-0">EMPRESA O RAZÓN SOCIAL:</span> 
                 <span className="text-[16px] font-bold uppercase">{cert.clienteNombre}</span>
               </div>
               <div className="flex items-start">
-                <span className="font-bold uppercase w-40 shrink-0">RUC:</span> 
+                <span className="font-bold uppercase w-64 shrink-0">RUC:</span> 
                 <span className="font-bold">{client?.taxId || "---"}</span>
               </div>
               <div className="flex items-start">
-                <span className="font-bold uppercase w-40 shrink-0">
+                <span className="font-bold uppercase w-64 shrink-0">
                   {cert.certificationType === "Vehículo" ? "PLACA / UNID:" : "DIRECCIÓN:"}
                 </span>
                 <span className="font-bold uppercase">{cert.targetDetail || client?.address || "---"}</span>
@@ -188,7 +188,7 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
             </p>
           </div>
 
-          <div className="mt-20 grid grid-cols-2 gap-24 text-center">
+          <div className="mt-20 grid grid-cols-2 gap-24 text-center break-inside-avoid">
             <div className="space-y-2">
               <div className="h-24 w-full border-b border-black flex flex-col items-center justify-end pb-2 relative">
                 {company?.signatureUrl && (
