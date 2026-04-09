@@ -1,7 +1,6 @@
-
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -66,6 +65,8 @@ import { useRouter } from "next/navigation"
 import { format, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
 import Image from "next/image"
+import html2canvas from "html2canvas"
+import jsPDF from "jspdf"
 
 export default function ServiceOrdersPage() {
   const db = useFirestore()
@@ -77,6 +78,8 @@ export default function ServiceOrdersPage() {
   const [editingOrder, setEditingOrder] = useState<any | null>(null)
   const [items, setItems] = useState<{description: string, quantity: number, unitPrice: number, catalogItemId?: string}[]>([])
   const [currentStatus, setCurrentStatus] = useState("Pendiente")
+  const [isDownloading, setIsDownloading] = useState(false)
+  const documentRef = useRef<HTMLDivElement>(null)
 
   // 1. Perfil y Empresa
   const userProfileQuery = useMemoFirebase(() => 
@@ -198,6 +201,54 @@ export default function ServiceOrdersPage() {
     router.push(`/dashboard/calendar?clientId=${order.clientId}&orderId=${order.id}`)
   }
 
+  const handleDownloadPDF = async () => {
+    if (!documentRef.current) return
+    setIsDownloading(true)
+    
+    try {
+      const canvas = await html2canvas(documentRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff"
+      })
+      
+      const imgData = canvas.toDataURL('image/png')
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      })
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth()
+      const pdfHeight = pdf.internal.pageSize.getHeight()
+      const imgWidth = canvas.width
+      const imgHeight = canvas.height
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight)
+      const finalWidth = imgWidth * ratio
+      const finalHeight = imgHeight * ratio
+      
+      let heightLeft = finalHeight
+      let position = 0
+      
+      pdf.addImage(imgData, 'PNG', 0, position, finalWidth, finalHeight)
+      heightLeft -= pdfHeight
+      
+      while (heightLeft >= 0) {
+        position = heightLeft - finalHeight
+        pdf.addPage()
+        pdf.addImage(imgData, 'PNG', 0, position, finalWidth, finalHeight)
+        heightLeft -= pdfHeight
+      }
+      
+      pdf.save(`ORDEN-SERVICIO-${viewingOrder?.orderNumber || 'DOCUMENTO'}.pdf`)
+    } catch (error) {
+      console.error("PDF Error:", error)
+    } finally {
+      setIsDownloading(false)
+    }
+  }
+
   const filteredOrders = orders?.filter(o => {
     const client = clients?.find(c => c.id === o.clientId)
     return o.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -216,13 +267,22 @@ export default function ServiceOrdersPage() {
             <Button variant="outline" size="sm" onClick={() => window.print()} className="font-bold uppercase text-[10px]">
               <Printer className="mr-2 h-3 w-3" /> Imprimir
             </Button>
-            <Button size="sm" onClick={() => window.print()} className="bg-primary text-white font-bold uppercase text-[10px]">
-              <Download className="mr-2 h-3 w-3" /> Descargar PDF
+            <Button 
+              size="sm" 
+              className="bg-primary text-white font-bold uppercase text-[10px]"
+              onClick={handleDownloadPDF}
+              disabled={isDownloading}
+            >
+              {isDownloading ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <Download className="mr-2 h-3 w-3" />}
+              Descargar PDF
             </Button>
           </div>
         </div>
 
-        <div className="proforma-container bg-white p-0 shadow-2xl mx-auto w-[210mm] min-h-[297mm] flex flex-col relative overflow-hidden text-[#1c1c1c] border print:shadow-none print:border-none print:m-0 print:w-full">
+        <div 
+          ref={documentRef}
+          className="proforma-container bg-white p-0 shadow-2xl mx-auto w-[210mm] min-h-[297mm] flex flex-col relative overflow-hidden text-[#1c1c1c] border print:shadow-none print:border-none print:m-0 print:w-full"
+        >
           <div className="pt-12 px-12 pb-8 shrink-0 flex items-center justify-between">
             <div className="relative h-20 w-64">
               {(company?.headerUrl || company?.logoUrl) ? (

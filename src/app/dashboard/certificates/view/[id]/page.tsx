@@ -1,7 +1,6 @@
-
 "use client"
 
-import { use, useEffect, useState, useMemo } from "react"
+import { use, useEffect, useState, useMemo, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useDoc, useFirestore, useMemoFirebase } from "@/firebase"
 import { doc } from "firebase/firestore"
@@ -13,11 +12,14 @@ import {
   Globe,
   MapPin,
   Phone,
-  Mail
+  Mail,
+  Loader2
 } from "lucide-react"
 import { format, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
 import Image from "next/image"
+import html2canvas from "html2canvas"
+import jsPDF from "jspdf"
 
 const EXTINPRO_DEFAULT_LOGO = "https://img.freepik.com/vector-gratis/estilo-plano-llama_78370-7477.jpg?semt=ais_incoming&w=740&q=80"
 
@@ -25,9 +27,8 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
   const { id } = use(params)
   const router = useRouter()
   const db = useFirestore()
-  const [currentUrl, setCurrentUrl] = useState("")
-
-  useEffect(() => { if (typeof window !== "undefined") setCurrentUrl(window.location.href) }, [])
+  const [isDownloading, setIsDownloading] = useState(false)
+  const documentRef = useRef<HTMLDivElement>(null)
 
   const certRef = useMemoFirebase(() => id ? doc(db, "certificates", id) : null, [db, id])
   const { data: cert, isLoading } = useDoc(certRef)
@@ -67,6 +68,55 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
     return `clase ${Array.from(classes).sort().join(" / ")}`
   }, [cert?.datosExtintor])
 
+  const handleDownloadPDF = async () => {
+    if (!documentRef.current) return
+    setIsDownloading(true)
+    
+    try {
+      const canvas = await html2canvas(documentRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff"
+      })
+      
+      const imgData = canvas.toDataURL('image/png')
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      })
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth()
+      const pdfHeight = pdf.internal.pageSize.getHeight()
+      const imgWidth = canvas.width
+      const imgHeight = canvas.height
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight)
+      const finalWidth = imgWidth * ratio
+      const finalHeight = imgHeight * ratio
+      
+      // If content is taller than A4, handle multiple pages
+      let heightLeft = finalHeight
+      let position = 0
+      
+      pdf.addImage(imgData, 'PNG', 0, position, finalWidth, finalHeight)
+      heightLeft -= pdfHeight
+      
+      while (heightLeft >= 0) {
+        position = heightLeft - finalHeight
+        pdf.addPage()
+        pdf.addImage(imgData, 'PNG', 0, position, finalWidth, finalHeight)
+        heightLeft -= pdfHeight
+      }
+      
+      pdf.save(`CERTIFICADO-${cert?.certificadoNumero || 'DOCUMENTO'}.pdf`)
+    } catch (error) {
+      console.error("PDF Error:", error)
+    } finally {
+      setIsDownloading(false)
+    }
+  }
+
   if (isLoading) return <div className="p-20 text-center font-bold uppercase animate-pulse text-primary">Generando Protocolo Oficial...</div>
   if (!cert) return <div className="p-20 text-center font-bold uppercase">Protocolo no encontrado</div>
 
@@ -76,16 +126,33 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
         <Button variant="ghost" onClick={() => router.back()} className="font-bold uppercase text-[10px] tracking-widest"><ArrowLeft className="mr-2 h-3 w-3" /> Regresar</Button>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => window.print()} className="font-bold uppercase text-[10px] tracking-widest border-2"><Printer className="mr-2 h-3.5 w-3.5" /> Imprimir</Button>
-          <Button size="sm" className="bg-primary text-white font-bold uppercase text-[10px] tracking-widest shadow-xl px-6"><Download className="mr-2 h-3.5 w-3.5" /> Descargar</Button>
+          <Button 
+            size="sm" 
+            className="bg-primary text-white font-bold uppercase text-[10px] tracking-widest shadow-xl px-6"
+            onClick={handleDownloadPDF}
+            disabled={isDownloading}
+          >
+            {isDownloading ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-2 h-3.5 w-3.5" />}
+            Descargar
+          </Button>
         </div>
       </div>
 
-      <div className="proforma-container bg-white mx-auto w-[210mm] min-h-[297mm] shadow-2xl p-0 border print:shadow-none print:border-none print:m-0 print:w-full overflow-hidden flex flex-col relative text-black font-serif">
-        
+      <div 
+        ref={documentRef}
+        className="proforma-container bg-white mx-auto w-[210mm] min-h-[297mm] shadow-2xl p-0 border print:shadow-none print:border-none print:m-0 print:w-full overflow-hidden flex flex-col relative text-black font-serif"
+      >
         <div className="pt-10 px-14 pb-4 shrink-0">
-          <div className="flex flex-col items-start">
+          <div className="flex justify-between items-start">
             <div className="relative h-20 w-64">
               <Image src={company?.headerUrl || company?.logoUrl || EXTINPRO_DEFAULT_LOGO} alt="Logo" fill className="object-contain object-left" unoptimized />
+            </div>
+            <div className="text-right">
+              <h2 className="text-sm font-black uppercase text-primary tracking-tighter mb-1">{company?.name || "EXTINPRO"}</h2>
+              <p className="text-[10px] font-bold text-slate-600">RUC: {company?.taxId || "---"}</p>
+              <div className="mt-2 bg-slate-100 px-4 py-1.5 rounded font-black text-[12px] shadow-sm border-b-2 border-slate-300">
+                N° {cert.certificadoNumero}
+              </div>
             </div>
           </div>
           <div className="mt-4 border-t-[3px] border-b-[1px] border-slate-300 h-1.5 w-full"></div>

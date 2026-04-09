@@ -1,7 +1,6 @@
-
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -48,6 +47,8 @@ import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { format, parseISO } from "date-fns"
 import { useRouter } from "next/navigation"
+import html2canvas from "html2canvas"
+import jsPDF from "jspdf"
 
 export default function QuotationsPage() {
   const db = useFirestore()
@@ -59,7 +60,9 @@ export default function QuotationsPage() {
   const [editingQuotation, setEditingQuotation] = useState<any | null>(null)
   const [items, setItems] = useState<{description: string, quantity: number, unitPrice: number, catalogItemId?: string}[]>([])
   const [isConverting, setIsConverting] = useState<string | null>(null)
+  const [isDownloading, setIsDownloading] = useState(false)
   const [currentStatus, setCurrentStatus] = useState("Borrador")
+  const documentRef = useRef<HTMLDivElement>(null)
 
   const userProfileQuery = useMemoFirebase(() => 
     user?.email ? query(collection(db, "company_users"), where("email", "==", user.email)) : null,
@@ -186,6 +189,54 @@ export default function QuotationsPage() {
     } catch (e) { toast({ variant: "destructive", title: "Error al convertir" }) } finally { setIsConverting(null) }
   }
 
+  const handleDownloadPDF = async () => {
+    if (!documentRef.current) return
+    setIsDownloading(true)
+    
+    try {
+      const canvas = await html2canvas(documentRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff"
+      })
+      
+      const imgData = canvas.toDataURL('image/png')
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      })
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth()
+      const pdfHeight = pdf.internal.pageSize.getHeight()
+      const imgWidth = canvas.width
+      const imgHeight = canvas.height
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight)
+      const finalWidth = imgWidth * ratio
+      const finalHeight = imgHeight * ratio
+      
+      let heightLeft = finalHeight
+      let position = 0
+      
+      pdf.addImage(imgData, 'PNG', 0, position, finalWidth, finalHeight)
+      heightLeft -= pdfHeight
+      
+      while (heightLeft >= 0) {
+        position = heightLeft - finalHeight
+        pdf.addPage()
+        pdf.addImage(imgData, 'PNG', 0, position, finalWidth, finalHeight)
+        heightLeft -= pdfHeight
+      }
+      
+      pdf.save(`COTIZACION-${viewingQuotation?.quotationNumber || 'DOCUMENTO'}.pdf`)
+    } catch (error) {
+      console.error("PDF Error:", error)
+    } finally {
+      setIsDownloading(false)
+    }
+  }
+
   const filteredQuotations = quotations?.filter(q => 
     q.quotationNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     clients?.find(c => c.id === q.clientId)?.name?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -214,10 +265,22 @@ export default function QuotationsPage() {
             <Button size="sm" onClick={() => window.print()} className="bg-primary text-white font-bold uppercase text-[10px] flex-1">
               <Printer className="mr-2 h-3 w-3" /> Imprimir
             </Button>
+            <Button 
+              size="sm" 
+              className="bg-accent text-white font-bold uppercase text-[10px] flex-1"
+              onClick={handleDownloadPDF}
+              disabled={isDownloading}
+            >
+              {isDownloading ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <Download className="mr-2 h-3 w-3" />}
+              PDF
+            </Button>
           </div>
         </div>
 
-        <div className="proforma-container bg-white shadow-2xl mx-auto w-[210mm] min-h-[297mm] flex flex-col relative text-[#1c1c1c] border print:shadow-none print:border-none print:m-0 print:w-full">
+        <div 
+          ref={documentRef}
+          className="proforma-container bg-white shadow-2xl mx-auto w-[210mm] min-h-[297mm] flex flex-col relative text-[#1c1c1c] border print:shadow-none print:border-none print:m-0 print:w-full"
+        >
           <div className="p-12 space-y-10 flex-1">
              <div className="flex justify-between items-start">
                 <div className="h-20 w-64 relative">
