@@ -31,7 +31,7 @@ import Image from "next/image"
 const DEFAULT_EXTINPRO_LOGO = "https://img.freepik.com/vector-gratis/estilo-plano-llama_78370-7477.jpg?semt=ais_incoming&w=740&q=80"
 
 const navItems = [
-  { name: "Resumen", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Empresas", href: "/dashboard/companies", icon: Building2, superAdminOnly: true },
   { name: "Clientes", href: "/dashboard/clients", icon: Users },
   { name: "Extintores", href: "/dashboard/equipment", icon: HardDrive },

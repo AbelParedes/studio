@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
@@ -22,7 +23,11 @@ import {
   Zap,
   CreditCard,
   PenTool,
-  CheckCircle2
+  CheckCircle2,
+  MapPin,
+  Phone,
+  Mail,
+  Globe
 } from "lucide-react"
 import { useUser, useFirestore, useDoc, useMemoFirebase, useAuth, useCollection } from "@/firebase"
 import { doc, setDoc, collection, query, where, limit } from "firebase/firestore"
@@ -268,10 +273,58 @@ export default function SettingsPage() {
           {activeTab === "company" && (
             <Card className="shadow-sm border-none">
               <CardHeader>
-                <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary">Identidad Corporativa y Firma Autorizada</CardTitle>
-                <CardDescription className="text-[10px] font-bold uppercase">Configure los elementos visuales y el sello oficial de EXTINPRO para sus documentos.</CardDescription>
+                <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary">Identidad Corporativa y Contacto</CardTitle>
+                <CardDescription className="text-[10px] font-bold uppercase">Configure los elementos visuales y datos de contacto de su empresa para los documentos oficiales.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-slate-500">Nombre Comercial / Razón Social</Label>
+                    <div className="relative">
+                      <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Input value={companyData.name} onChange={(e) => setCompanyData({...companyData, name: e.target.value})} className="pl-10 h-11 font-bold text-xs uppercase" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-slate-500">RUC de la Organización</Label>
+                    <Input value={companyData.taxId} onChange={(e) => setCompanyData({...companyData, taxId: e.target.value})} className="h-11 font-mono font-bold text-xs" />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-slate-500">Dirección Fiscal / Sede Central</Label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input value={companyData.address} onChange={(e) => setCompanyData({...companyData, address: e.target.value})} className="pl-10 h-11 font-bold text-xs uppercase" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-slate-500">Teléfono Corporativo</Label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Input value={companyData.phone} onChange={(e) => setCompanyData({...companyData, phone: e.target.value})} className="pl-10 h-11 font-bold text-xs" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-slate-500">Email Oficial</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Input value={companyData.email} onChange={(e) => setCompanyData({...companyData, email: e.target.value})} className="pl-10 h-11 font-bold text-xs" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-slate-500">Sitio Web</Label>
+                    <div className="relative">
+                      <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Input value={companyData.website} onChange={(e) => setCompanyData({...companyData, website: e.target.value})} className="pl-10 h-11 font-bold text-xs" />
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 text-[10px] font-black uppercase text-primary tracking-widest">
                     <PenTool className="h-3 w-3" /> Firma y Sello de Gerencia (Empresa)
