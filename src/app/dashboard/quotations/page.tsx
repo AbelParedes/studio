@@ -49,7 +49,7 @@ import { cn } from "@/lib/utils"
 import { format, parseISO } from "date-fns"
 import { useRouter } from "next/navigation"
 import html2canvas from "html2canvas"
-import jsPDF from "jsPDF"
+import jsPDF from "jspdf"
 
 export default function QuotationsPage() {
   const db = useFirestore()
