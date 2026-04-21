@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Company": {
@@ -130,6 +131,7 @@
         "clientId": { "type": "string" },
         "quotationNumber": { "type": "string" },
         "date": { "type": "string", "format": "date" },
+        "validityDays": { "type": "number", "default": 15 },
         "items": {
           "type": "array",
           "items": {

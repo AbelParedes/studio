@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo, useEffect, useRef } from "react"
@@ -48,7 +49,7 @@ import { cn } from "@/lib/utils"
 import { format, parseISO } from "date-fns"
 import { useRouter } from "next/navigation"
 import html2canvas from "html2canvas"
-import jsPDF from "jspdf"
+import jsPDF from "jsPDF"
 
 export default function QuotationsPage() {
   const db = useFirestore()
@@ -137,6 +138,7 @@ export default function QuotationsPage() {
       clientId: formData.get("clientId") as string,
       quotationNumber: formData.get("number") as string || suggestedQuotationNumber,
       date: formData.get("date") as string || format(new Date(), "yyyy-MM-dd"),
+      validityDays: Number(formData.get("validityDays") || 15),
       items: items.map(i => ({ 
         description: i.description, 
         quantity: Number(i.quantity || 0), 
@@ -298,7 +300,7 @@ export default function QuotationsPage() {
                     </div>
                   </div>
                   <div className="mt-4 bg-slate-50 px-4 py-1.5 rounded font-black text-[9px] uppercase inline-block border border-slate-200">
-                    Vigencia de Oferta: 15 Días
+                    Vigencia de Oferta: {viewingQuotation.validityDays || 15} Días
                   </div>
                 </div>
              </div>
@@ -426,7 +428,7 @@ export default function QuotationsPage() {
               </DialogHeader>
 
               <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 custom-scrollbar">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                   <div className="grid gap-1.5 md:col-span-1">
                     <Label className="text-[10px] font-black uppercase text-slate-500">Cliente</Label>
                     <Select name="clientId" defaultValue={editingQuotation?.clientId} required>
@@ -443,7 +445,11 @@ export default function QuotationsPage() {
                     <Input type="date" name="date" defaultValue={editingQuotation?.date || format(new Date(), "yyyy-MM-dd")} className="h-10 font-bold" />
                   </div>
                   <div className="grid gap-1.5">
-                    <Label className="text-[10px] font-black uppercase text-slate-500">Estado de Proforma</Label>
+                    <Label className="text-[10px] font-black uppercase text-slate-500">Validez (Días)</Label>
+                    <Input name="validityDays" type="number" defaultValue={editingQuotation?.validityDays || 15} className="h-10 font-bold" />
+                  </div>
+                  <div className="grid gap-1.5">
+                    <Label className="text-[10px] font-black uppercase text-slate-500">Estado</Label>
                     <Select value={currentStatus} onValueChange={setCurrentStatus}>
                       <SelectTrigger className="h-10 border-2 font-bold"><SelectValue /></SelectTrigger>
                       <SelectContent>
