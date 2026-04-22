@@ -239,10 +239,12 @@ export default function QuotationsPage() {
     }
   }
 
-  const filteredQuotations = quotations?.filter(q => 
-    q.quotationNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    clients?.find(c => c.id === q.clientId)?.name?.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const filteredQuotations = quotations
+    ?.filter(q => 
+      q.quotationNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      clients?.find(c => c.id === q.clientId)?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""))
 
   if (viewingQuotation) {
     const client = clients?.find(c => c.id === viewingQuotation.clientId)
@@ -570,7 +572,7 @@ export default function QuotationsPage() {
                             </Button>
                           </>
                         )}
-                        <Button variant="ghost" size="icon" title="Ver / Imprimir" className="h-8 w-8 text-[#d9534f]" onClick={() => setViewingQuotation(q)}><FileText className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" title="Ver / Imprimir" className="h-8 w-8 text-[#d9534f]" onClick={() => setViewingOrder(q)}><FileText className="h-4 w-4" /></Button>
                         <Button variant="ghost" size="icon" title="Eliminar" className="h-8 w-8 text-destructive" onClick={() => handleDelete(q.id)}><Trash2 className="h-4 w-4" /></Button>
                       </div>
                     </TableCell>

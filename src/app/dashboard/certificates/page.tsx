@@ -455,7 +455,10 @@ export default function CertificatesRegistryPage() {
             <Table className="dense-table min-w-[800px]">
               <TableHeader className="bg-[#1c1c1c]"><TableRow className="border-none"><TableHead className="text-white font-black uppercase text-[10px]">Certificado NTP</TableHead><TableHead className="text-white font-black uppercase text-[10px]">Beneficiario</TableHead><TableHead className="text-white font-black uppercase text-[10px]">Técnico</TableHead><TableHead className="text-white font-black uppercase text-[10px]">Estado</TableHead><TableHead className="text-white text-right pr-6 font-black uppercase text-[10px]">Acciones</TableHead></TableRow></TableHeader>
               <TableBody>
-                {certificates?.filter(c => c.certificadoNumero?.toLowerCase().includes(searchTerm.toLowerCase()) || c.clienteNombre?.toLowerCase().includes(searchTerm.toLowerCase())).map((cert) => (
+                {certificates
+                  ?.filter(c => c.certificadoNumero?.toLowerCase().includes(searchTerm.toLowerCase()) || c.clienteNombre?.toLowerCase().includes(searchTerm.toLowerCase()))
+                  .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""))
+                  .map((cert) => (
                   <TableRow key={cert.id} className="hover:bg-muted/30 transition-colors">
                     <TableCell className="font-black text-primary uppercase">{cert.certificadoNumero}</TableCell>
                     <TableCell className="font-bold uppercase text-[11px]">{cert.clienteNombre}</TableCell>

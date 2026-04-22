@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo, useEffect, useRef } from "react"
@@ -249,11 +250,13 @@ export default function ServiceOrdersPage() {
     }
   }
 
-  const filteredOrders = orders?.filter(o => {
-    const client = clients?.find(c => c.id === o.clientId)
-    return o.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           client?.name?.toLowerCase().includes(searchTerm.toLowerCase())
-  })
+  const filteredOrders = orders
+    ?.filter(o => {
+      const client = clients?.find(c => c.id === o.clientId)
+      return o.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+             client?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+    })
+    .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""))
 
   if (viewingOrder) {
     const client = clients?.find(c => c.id === viewingOrder.clientId)
@@ -322,7 +325,7 @@ export default function ServiceOrdersPage() {
               </div>
               <div className="space-y-4">
                 <div className="flex items-center gap-4">
-                  <h3 className="text-[10px] font-black text-slate-400 uppercase shrink-0">PROGRAMACIÓN</h3>
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase shrink-0">DETALLES SERVICIO</h3>
                   <div className="h-[1px] bg-slate-100 w-full"></div>
                 </div>
                 <div className="text-[11px] space-y-1 pt-1 text-right">
