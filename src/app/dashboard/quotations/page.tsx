@@ -572,7 +572,7 @@ export default function QuotationsPage() {
                             </Button>
                           </>
                         )}
-                        <Button variant="ghost" size="icon" title="Ver / Imprimir" className="h-8 w-8 text-[#d9534f]" onClick={() => setViewingOrder(q)}><FileText className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" title="Ver / Imprimir" className="h-8 w-8 text-[#d9534f]" onClick={() => setViewingQuotation(q)}><FileText className="h-4 w-4" /></Button>
                         <Button variant="ghost" size="icon" title="Eliminar" className="h-8 w-8 text-destructive" onClick={() => handleDelete(q.id)}><Trash2 className="h-4 w-4" /></Button>
                       </div>
                     </TableCell>
