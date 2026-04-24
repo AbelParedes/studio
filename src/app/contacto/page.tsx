@@ -1,11 +1,10 @@
-
 import { Header } from "@/components/marketing/header"
 import { Footer } from "@/components/marketing/footer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Phone, Mail, MapPin, Send, MessageSquare, Clock } from "lucide-react"
+import { Phone, Mail, MapPin, Send, MessageSquare, Clock, Shield, Zap } from "lucide-react"
 
 export default function ContactPage() {
   return (
