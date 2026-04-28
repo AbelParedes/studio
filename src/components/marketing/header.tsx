@@ -1,15 +1,16 @@
-
 "use client"
 
 import Link from "next/link"
 import { useState, useEffect } from "react"
+import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Flame, Menu, X, ShieldCheck } from "lucide-react"
+import { Flame, Menu, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useUser } from "@/firebase"
 
 export function Header() {
   const { user } = useUser()
+  const pathname = usePathname()
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
@@ -30,10 +31,15 @@ export function Header() {
     { name: "Contacto", href: "/contacto" },
   ]
 
+  const isHomePage = pathname === "/"
+  const showSolidHeader = isScrolled || !isHomePage
+
   return (
     <header className={cn(
       "fixed top-0 w-full z-50 transition-all duration-300 border-b",
-      isScrolled ? "bg-white/95 backdrop-blur-md py-3 shadow-md border-slate-200" : "bg-transparent py-5 border-transparent"
+      showSolidHeader 
+        ? "bg-white/95 backdrop-blur-md py-3 shadow-md border-slate-200" 
+        : "bg-transparent py-5 border-transparent"
     )}>
       <div className="container mx-auto px-4 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
