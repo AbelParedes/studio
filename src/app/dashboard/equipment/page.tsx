@@ -114,7 +114,7 @@ export default function ClientEquipmentPage() {
     return item.serialNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
            client?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
            item.location?.toLowerCase().includes(searchTerm.toLowerCase())
-  })
+  }).sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""))
 
   const suggestPHDate = (year: number) => {
     if (!year) return ""
@@ -454,7 +454,7 @@ export default function ClientEquipmentPage() {
             <div className="space-y-2">
               <h3 className="font-black text-2xl uppercase tracking-tighter leading-none">Hoja de Vida Técnica EXTINPRO</h3>
               <p className="text-sm opacity-70 font-bold uppercase text-[11px] tracking-wider max-w-xl">
-                Gestión automatizada de Recargas (Anuales) y Pruebas Hidrostáticas (5 años). Garantizamos el cumplimiento estricto de la NTP 350.043-1.
+                Gestión automatizada de Recargas (Anuales) y Pruebas Hidrostáticas (5 años). Garantizamos el cumplimiento estricto de la normativa NTP 350.043-1.
               </p>
             </div>
           </div>
