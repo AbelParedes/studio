@@ -335,14 +335,15 @@ export default function ClientEquipmentPage() {
             <Table className="dense-table min-w-[1200px]">
               <TableHeader className="bg-[#1c1c1c]">
                 <TableRow className="border-none">
-                  <TableHead className="text-white font-black uppercase text-[10px] py-4">Tipo / Agente</TableHead>
-                  <TableHead className="text-white font-black uppercase text-[10px]">Capacidad</TableHead>
-                  <TableHead className="text-white font-black uppercase text-[10px]">Serie (NS)</TableHead>
-                  <TableHead className="text-white font-black uppercase text-[10px] text-center">Año (FF)</TableHead>
-                  <TableHead className="text-white font-black uppercase text-[10px]">Propietario</TableHead>
-                  <TableHead className="text-white font-black uppercase text-[10px] text-center">Vto. Anual</TableHead>
-                  <TableHead className="text-white font-black uppercase text-[10px] text-center">Vto. P.H. (5A)</TableHead>
-                  <TableHead className="text-white text-right pr-8 font-black uppercase text-[10px]">Acciones</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px] py-4">TIPO / AGENTE</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px]">CAPACIDAD</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px]">SERIE (NS)</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px] text-center">AÑO (FF)</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px] text-center">RECARGA</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px] text-center">VTO REC.</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px] text-center">VTO P.H.</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px]">PROPIETARIO</TableHead>
+                  <TableHead className="text-white text-right pr-8 font-black uppercase text-[10px]">ACCIONES</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -369,13 +370,8 @@ export default function ClientEquipmentPage() {
                       <TableCell className="font-black text-[11px] text-slate-600 uppercase">{item.capacity || "---"}</TableCell>
                       <TableCell className="font-black text-primary uppercase text-[11px] tracking-tight">{item.serialNumber}</TableCell>
                       <TableCell className="text-center font-bold text-[11px] text-slate-500">{item.manufacturingYear || "---"}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <span className="font-black text-[10px] uppercase truncate max-w-[200px]">{client?.name || "SIN ASIGNAR"}</span>
-                          <span className="text-[9px] text-slate-400 flex items-center gap-1 uppercase font-bold">
-                            <MapPin className="h-2.5 w-2.5" /> {item.location || "---"}
-                          </span>
-                        </div>
+                      <TableCell className="text-center text-[10px] font-bold text-slate-400">
+                        {item.lastServiceDate ? format(parseISO(item.lastServiceDate), "MM/yy", { locale: es }).toUpperCase() : "---"}
                       </TableCell>
                       <TableCell className="text-center">
                         <div className="flex flex-col items-center justify-center">
@@ -383,9 +379,8 @@ export default function ClientEquipmentPage() {
                             "text-[11px] font-black tracking-tighter px-2 py-1 rounded",
                             isExpired ? "text-status-error bg-status-error/5 border border-status-error/20" : "text-status-success font-bold"
                           )}>
-                            {item.nextServiceDate ? format(parseISO(item.nextServiceDate), "dd MMM yyyy", { locale: es }).toUpperCase() : "---"}
+                            {item.nextServiceDate ? format(parseISO(item.nextServiceDate), "MM/yy", { locale: es }).toUpperCase() : "---"}
                           </span>
-                          {isExpired && <span className="text-[7px] font-black text-status-error uppercase mt-1">¡VENCIDO!</span>}
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
@@ -394,9 +389,16 @@ export default function ClientEquipmentPage() {
                             "text-[11px] font-black tracking-tighter px-2 py-1 rounded",
                             isPHExpired ? "text-blue-600 bg-blue-50 border border-blue-200" : "text-slate-500 font-bold"
                           )}>
-                            {item.nextHydrostaticTestDate ? format(parseISO(item.nextHydrostaticTestDate), "dd MMM yyyy", { locale: es }).toUpperCase() : "---"}
+                            {item.nextHydrostaticTestDate ? format(parseISO(item.nextHydrostaticTestDate), "MM/yy", { locale: es }).toUpperCase() : "---"}
                           </span>
-                          {isPHExpired && <span className="text-[7px] font-black text-blue-600 uppercase mt-1">¡PH REQ!</span>}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-black text-[10px] uppercase truncate max-w-[150px]">{client?.name || "SIN ASIGNAR"}</span>
+                          <span className="text-[8px] text-slate-400 flex items-center gap-1 uppercase font-bold">
+                            <MapPin className="h-2.5 w-2.5" /> {item.location || "---"}
+                          </span>
                         </div>
                       </TableCell>
                       <TableCell className="text-right pr-8">
@@ -414,7 +416,7 @@ export default function ClientEquipmentPage() {
                 })}
                 {filteredEquipment?.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-32 opacity-20">
+                    <TableCell colSpan={9} className="text-center py-32 opacity-20">
                       <HardDrive className="h-16 w-16 mx-auto mb-4 text-primary" />
                       <p className="text-sm font-black uppercase tracking-[0.3em]">Sin registros de equipos</p>
                     </TableCell>

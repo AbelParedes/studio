@@ -96,19 +96,7 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
       const finalWidth = imgWidth * ratio
       const finalHeight = imgHeight * ratio
       
-      // If content is taller than A4, handle multiple pages
-      let heightLeft = finalHeight
-      let position = 0
-      
-      pdf.addImage(imgData, 'PNG', 0, position, finalWidth, finalHeight)
-      heightLeft -= pdfHeight
-      
-      while (heightLeft >= 0) {
-        position = heightLeft - finalHeight
-        pdf.addPage()
-        pdf.addImage(imgData, 'PNG', 0, position, finalWidth, finalHeight)
-        heightLeft -= pdfHeight
-      }
+      pdf.addImage(imgData, 'PNG', 0, 0, finalWidth, finalHeight)
       
       pdf.save(`CERTIFICADO-${cert?.certificadoNumero || 'DOCUMENTO'}.pdf`)
     } catch (error) {
@@ -141,93 +129,96 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
 
       <div 
         ref={documentRef}
-        className="proforma-container bg-white mx-auto w-[210mm] min-h-[297mm] shadow-2xl p-0 border print:shadow-none print:border-none print:m-0 print:w-full overflow-hidden flex flex-col relative text-black font-serif"
+        className="proforma-container bg-white mx-auto w-[210mm] min-h-[297mm] shadow-2xl p-0 border print:shadow-none print:border-none print:m-0 print:w-full overflow-hidden flex flex-col relative text-black font-sans"
       >
-        <div className="pt-10 px-14 pb-4 shrink-0">
+        {/* Cabecera Compacta */}
+        <div className="pt-6 px-12 pb-2 shrink-0">
           <div className="flex justify-between items-start">
-            <div className="relative h-20 w-64">
+            <div className="relative h-16 w-56">
               <Image src={company?.headerUrl || company?.logoUrl || EXTINPRO_DEFAULT_LOGO} alt="Logo" fill className="object-contain object-left" unoptimized />
             </div>
             <div className="text-right">
-              <h2 className="text-sm font-black uppercase text-primary tracking-tighter mb-1">{company?.name || "EXTINPRO"}</h2>
-              <p className="text-[10px] font-bold text-slate-600">RUC: {company?.taxId || "---"}</p>
-              <div className="mt-2 bg-slate-100 px-4 py-1.5 rounded font-black text-[12px] shadow-sm border-b-2 border-slate-300">
-                N° {cert.certificadoNumero}
+              <h2 className="text-[12px] font-black uppercase text-primary tracking-tighter mb-0.5">{company?.name || "EXTINPRO"}</h2>
+              <p className="text-[9px] font-bold text-slate-600">RUC: {company?.taxId || "---"}</p>
+              <div className="mt-1 bg-slate-100 px-3 py-1 rounded font-black text-[11px] shadow-sm border-b-2 border-slate-300">
+                CERTIFICADO N° {cert.certificadoNumero}
               </div>
             </div>
           </div>
-          <div className="mt-4 border-t-[3px] border-b-[1px] border-slate-300 h-1.5 w-full"></div>
+          <div className="mt-2 border-t-[2px] border-b-[0.5px] border-slate-300 h-1 w-full"></div>
         </div>
 
-        <div className="px-14 flex-1 relative z-10">
-          <div className="absolute inset-0 flex items-center justify-center opacity-[0.05] pointer-events-none -rotate-12">
-            <div className="relative h-[400px] w-[400px]">
+        {/* Cuerpo del Certificado */}
+        <div className="px-12 flex-1 relative z-10">
+          <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none -rotate-12">
+            <div className="relative h-[350px] w-[350px]">
               <Image src={company?.logoUrl || EXTINPRO_DEFAULT_LOGO} alt="Watermark" fill className="object-contain" unoptimized />
             </div>
           </div>
 
-          <h1 className="text-center text-[26px] font-bold underline mb-10 mt-4 tracking-wide uppercase">
+          <h1 className="text-center text-[22px] font-bold underline mb-4 mt-2 tracking-wide uppercase">
             CERTIFICADO DE OPERATIVIDAD
           </h1>
 
-          <div className="space-y-6 text-[14px] leading-relaxed text-justify">
+          <div className="space-y-2 text-[12px] leading-tight text-justify">
             <p>
               La empresa <span className="font-bold">&quot;{company?.name || "EXTINPRO"}&quot;</span>, certifica que los extintores pertenecientes a:
             </p>
             
-            <div className="pl-4 space-y-2">
+            <div className="pl-2 space-y-1">
               <div className="flex items-start">
-                <span className="font-bold uppercase w-64 shrink-0">EMPRESA O RAZÓN SOCIAL:</span> 
-                <span className="text-[16px] font-bold uppercase">{cert.clienteNombre}</span>
+                <span className="font-bold uppercase w-56 shrink-0">EMPRESA O RAZÓN SOCIAL:</span> 
+                <span className="text-[13px] font-bold uppercase">{cert.clienteNombre}</span>
               </div>
               <div className="flex items-start">
-                <span className="font-bold uppercase w-64 shrink-0">RUC:</span> 
+                <span className="font-bold uppercase w-56 shrink-0">RUC:</span> 
                 <span className="font-bold">{client?.taxId || "---"}</span>
               </div>
               <div className="flex items-start">
-                <span className="font-bold uppercase w-64 shrink-0">
+                <span className="font-bold uppercase w-56 shrink-0">
                   {cert.certificationType === "Vehículo" ? "PLACA / UNID:" : "DIRECCIÓN:"}
                 </span>
                 <span className="font-bold uppercase">{cert.targetDetail || client?.address || "---"}</span>
               </div>
             </div>
 
-            <p className="mt-4">
+            <p className="mt-2">
               han sido inspeccionados y/o cargados bajo las especificaciones técnicas vigentes, cumpliendo estrictamente con la normativa <span className="font-bold">NTP 350.043 y ISO 9001</span>.
             </p>
 
             <p className="font-bold italic">Extinción de fuegos {dynamicFireClasses} / Operatividad Técnica.</p>
 
-            <div className="flex justify-around items-center font-mono text-[12px] border-y-2 border-black py-3 my-4 bg-slate-50/50">
+            <div className="flex justify-around items-center font-mono text-[10px] border-y-[1.5px] border-black py-2 my-2 bg-slate-50/50">
               <p className="flex gap-2">
                 <span className="uppercase font-bold">Presión Prueba:</span> <span>{cert.presionPrueba || "---"}</span>
               </p>
-              <div className="h-4 w-[1px] bg-slate-300"></div>
+              <div className="h-3 w-[1px] bg-slate-300"></div>
               <p className="flex gap-2">
-                <span className="uppercase font-bold">Presión Trabajo:</span> <span>{cert.presionPrueba || "---"}</span>
+                <span className="uppercase font-bold">Presión Trabajo:</span> <span>{cert.presionTrabajo || "---"}</span>
               </p>
-              <div className="h-4 w-[1px] bg-slate-300"></div>
+              <div className="h-3 w-[1px] bg-slate-300"></div>
               <p className="flex gap-2">
                 <span className="uppercase font-bold">Rating:</span> <span>{cert.rating || "---"}</span>
               </p>
             </div>
 
-            <h2 className="text-[15px] font-bold underline mt-8 uppercase">
+            <h2 className="text-[13px] font-bold underline mt-4 uppercase">
               ANEXO TÉCNICO DE EQUIPOS (NTP 350.026 / 350.043)
             </h2>
 
-            <div className="mt-4 border-2 border-black rounded shadow-sm overflow-hidden">
-              <table className="w-full text-[11px] border-collapse">
-                <thead className="bg-slate-50 text-black border-b-2 border-black">
+            {/* Tabla de Equipos Optimizada para 20 filas */}
+            <div className="mt-2 border-[1.5px] border-black rounded shadow-sm overflow-hidden">
+              <table className="w-full text-[10px] border-collapse">
+                <thead className="bg-slate-50 text-black border-b-[1.5px] border-black">
                   <tr className="font-bold uppercase text-center">
-                    <th className="p-2 border-r border-black w-8">N°</th>
-                    <th className="p-2 border-r border-black w-40">TIPO</th>
-                    <th className="p-2 border-r border-black w-16">CAP</th>
-                    <th className="p-2 border-r border-black">NS</th>
-                    <th className="p-2 border-r border-black">FF</th>
-                    <th className="p-2 border-r border-black">RECARGA</th>
-                    <th className="p-2 border-r border-black">VCTO RECARGA</th>
-                    <th className="p-2">VCTO PH</th>
+                    <th className="p-1 border-r border-black w-7">N°</th>
+                    <th className="p-1 border-r border-black">TIPO</th>
+                    <th className="p-1 border-r border-black w-14">CAP</th>
+                    <th className="p-1 border-r border-black w-24">NS (Serie)</th>
+                    <th className="p-1 border-r border-black w-14">FF (Fab.)</th>
+                    <th className="p-1 border-r border-black w-20">RECARGA</th>
+                    <th className="p-1 border-r border-black w-20">VCTO REC.</th>
+                    <th className="p-1 w-20">VCTO PH</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -237,67 +228,75 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
                       try { return format(parseISO(d), "MM / yy", { locale: es }).toUpperCase() } catch { return d }
                     }
                     return (
-                      <tr key={idx} className="border-b border-black last:border-0 text-center font-bold">
-                        <td className="p-2 border-r border-black">{(idx + 1).toString().padStart(2, '0')}</td>
-                        <td className="p-2 border-r border-black text-left">{formatAgentDisplay(item.tipo)}</td>
-                        <td className="p-2 border-r border-black">{item.cap}</td>
-                        <td className="p-2 border-r border-black">{item.ns}</td>
-                        <td className="p-2 border-r border-black">{item.ff}</td>
-                        <td className="p-2 border-r border-black">{formatMY(item.recarga)}</td>
-                        <td className="p-2 border-r border-black">{formatMY(item.vctoRecarga)}</td>
-                        <td className="p-2">{formatMY(item.vctoPH)}</td>
+                      <tr key={idx} className="border-b border-black last:border-0 text-center font-bold h-6">
+                        <td className="p-0.5 border-r border-black">{(idx + 1).toString().padStart(2, '0')}</td>
+                        <td className="p-0.5 border-r border-black text-left pl-2">{item.tipo}</td>
+                        <td className="p-0.5 border-r border-black">{item.cap}</td>
+                        <td className="p-0.5 border-r border-black">{item.ns}</td>
+                        <td className="p-0.5 border-r border-black">{item.ff}</td>
+                        <td className="p-0.5 border-r border-black">{formatMY(item.recarga)}</td>
+                        <td className="p-0.5 border-r border-black">{formatMY(item.vctoRecarga)}</td>
+                        <td className="p-0.5">{formatMY(item.vctoPH)}</td>
                       </tr>
                     )
                   })}
+                  {/* Filas vacías para mantener estructura visual si hay menos de 20 */}
+                  {cert.datosExtintor?.length < 20 && Array.from({ length: 20 - cert.datosExtintor.length }).map((_, i) => (
+                    <tr key={`empty-${i}`} className="border-b border-black/10 last:border-0 h-6">
+                      <td className="border-r border-black/10"></td><td className="border-r border-black/10"></td><td className="border-r border-black/10"></td><td className="border-r border-black/10"></td><td className="border-r border-black/10"></td><td className="border-r border-black/10"></td><td className="border-r border-black/10"></td><td></td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
 
-            <p className="mt-8">
-              Se emite el presente protocolo de operatividad para los fines que el beneficiario estime conveniente, garantizando la seguridad industrial en las instalaciones o unidades descritas.
+            <p className="mt-4 text-[11px]">
+              Se emite el presente protocolo de operatividad para los fines que el beneficiario estime conveniente, garantizando la seguridad industrial en las instalaciones o unidades descritas bajo responsabilidad del personal técnico acreditado.
             </p>
           </div>
 
-          <div className="mt-20 grid grid-cols-2 gap-24 text-center break-inside-avoid">
-            <div className="space-y-2">
-              <div className="h-24 w-full border-b border-black flex flex-col items-center justify-end pb-2 relative">
+          {/* Firmas Compactas */}
+          <div className="mt-6 grid grid-cols-2 gap-20 text-center break-inside-avoid">
+            <div className="space-y-1">
+              <div className="h-20 w-full border-b border-black flex flex-col items-center justify-end pb-1 relative">
                 {company?.signatureUrl && (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <Image src={company.signatureUrl} alt="Sello Empresa" width={160} height={80} className="object-contain opacity-90" unoptimized />
+                    <Image src={company.signatureUrl} alt="Sello Empresa" width={140} height={70} className="object-contain opacity-90" unoptimized />
                   </div>
                 )}
               </div>
-              <p className="text-[11px] font-bold uppercase">{company?.name || "GERENCIA GENERAL"}</p>
-              <p className="text-[10px] font-medium uppercase text-slate-500">Firma y Sello Autorizado</p>
+              <p className="text-[10px] font-bold uppercase">{company?.name || "GERENCIA GENERAL"}</p>
+              <p className="text-[9px] font-medium uppercase text-slate-500">Sello de Gerencia</p>
             </div>
 
-            <div className="space-y-2">
-              <div className="h-24 w-full border-b border-black flex flex-col items-center justify-end pb-2 relative">
+            <div className="space-y-1">
+              <div className="h-20 w-full border-b border-black flex flex-col items-center justify-end pb-1 relative">
                 {technician?.signatureUrl && (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <Image src={technician.signatureUrl} alt="Firma Técnico" width={160} height={80} className="object-contain" unoptimized />
+                    <Image src={technician.signatureUrl} alt="Firma Técnico" width={140} height={70} className="object-contain" unoptimized />
                   </div>
                 )}
               </div>
-              <p className="text-[11px] font-bold uppercase">{cert.technicianName}</p>
-              <p className="text-[10px] font-medium uppercase text-slate-500">Técnico Especialista NTP</p>
+              <p className="text-[10px] font-bold uppercase">{cert.technicianName}</p>
+              <p className="text-[9px] font-medium uppercase text-slate-500">Especialista Técnico NTP</p>
             </div>
           </div>
         </div>
 
+        {/* Pie de Página Compacto */}
         <div 
-          className="mt-auto py-6 px-14 border-t border-slate-100 print:bg-transparent"
+          className="mt-auto py-4 px-12 border-t border-slate-100 print:bg-transparent"
           style={{ backgroundColor: company?.footerBgColor || '#f8fafc' } as any}
         >
-          <div className="flex flex-col items-center gap-2">
-            <div className="flex flex-wrap justify-center gap-x-10 gap-y-1 text-[9px] font-black text-slate-600 uppercase">
-              {company?.address && <p className="flex items-center gap-1.5"><MapPin className="h-3 w-3" /> {company.address}</p>}
-              {company?.phone && <p className="flex items-center gap-1.5"><Phone className="h-3 w-3" /> {company.phone}</p>}
-              {company?.email && <p className="flex items-center gap-1.5"><Mail className="h-3 w-3" /> {company.email}</p>}
+          <div className="flex flex-col items-center gap-1">
+            <div className="flex flex-wrap justify-center gap-x-8 gap-y-0.5 text-[8px] font-black text-slate-600 uppercase">
+              {company?.address && <p className="flex items-center gap-1"><MapPin className="h-2.5 w-2.5" /> {company.address}</p>}
+              {company?.phone && <p className="flex items-center gap-1"><Phone className="h-2.5 w-2.5" /> {company.phone}</p>}
+              {company?.email && <p className="flex items-center gap-1"><Mail className="h-2.5 w-2.5" /> {company.email}</p>}
             </div>
-            <div className="flex justify-center items-center gap-6 text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">
-              {company?.website && <p className="flex items-center gap-1.5"><Globe className="h-3 w-3" /> {company.website}</p>}
-              <p>Validación Digital EXTINPRO v3.0</p>
+            <div className="flex justify-center items-center gap-4 text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+              {company?.website && <p className="flex items-center gap-1"><Globe className="h-2.5 w-2.5" /> {company.website}</p>}
+              <p>SOFTWARE DE GESTIÓN EXTINPRO v3.0</p>
             </div>
           </div>
         </div>
