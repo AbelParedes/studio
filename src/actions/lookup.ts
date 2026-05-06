@@ -15,12 +15,10 @@ async function secureFetch(url: string) {
     method: 'GET',
     headers: {
       'Accept': 'application/json',
-      // Algunas redes bloquean User-Agents específicos, usamos uno estándar de navegador
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     },
     cache: 'no-store',
-    // Timeout de 10 segundos
-    signal: AbortSignal.timeout(10000) 
+    signal: AbortSignal.timeout(15000) // 15 segundos de timeout
   });
 }
 
@@ -29,49 +27,37 @@ export async function lookupTaxId(taxId: string) {
   const cleanTaxId = taxId.trim();
   
   try {
-    // Usando el nuevo endpoint dniruc.apisperu.com proporcionado
-    const response = await secureFetch(`https://dniruc.apisperu.com/api/v1/ruc/${cleanTaxId}?token=${API_TOKEN}`);
+    const url = `https://dniruc.apisperu.com/api/v1/ruc/${cleanTaxId}?token=${API_TOKEN}`;
+    const response = await secureFetch(url);
 
     if (!response.ok) {
       if (response.status === 404) throw new Error("RUC no encontrado en los registros oficiales.");
       if (response.status === 401) throw new Error("Token de API inválido o expirado.");
-      
-      let errorMsg = "Error en el servicio de consulta";
-      try {
-        const errorData = await response.json();
-        errorMsg = errorData.message || errorMsg;
-      } catch (e) {
-        errorMsg = `Error del servidor (${response.status})`;
-      }
-      throw new Error(errorMsg);
+      throw new Error(`Error del servicio externo (${response.status})`);
     }
 
     const data = await response.json();
     
-    // Si la API devuelve success: false incluso con status 200
-    if (data.success === false) {
-      throw new Error(data.message || "No se pudo encontrar el RUC.");
+    // Si la API devuelve success: false o mensaje de error
+    if (data.success === false || data.message === "No se encontraron resultados.") {
+      throw new Error(data.message || "RUC no encontrado.");
     }
 
     return data;
   } catch (error: any) {
-    console.error("DETALLE ERROR RUC:", error.message);
+    console.error("LOG SERVIDOR - ERROR RUC:", error.message);
     
-    // Identificar errores de conectividad del entorno
-    if (error.name === 'TimeoutError') {
-      throw new Error("La consulta tardó demasiado. El servicio externo podría estar lento.");
-    }
+    if (error.name === 'TimeoutError') throw new Error("La consulta tardó demasiado. Intente nuevamente.");
     
-    // Si falla el fetch por red (ENOTFOUND, EAI_AGAIN, etc)
     const isNetworkError = error.message.toLowerCase().includes('fetch failed') || 
                           error.message.toLowerCase().includes('undici') || 
                           error.message.toLowerCase().includes('enotfound');
 
     if (isNetworkError) {
-      throw new Error("ERROR DE RED: El servidor no tiene acceso a internet para consultar dniruc.apisperu.com. Por favor, verifique las restricciones de red de su entorno o intente más tarde.");
+      throw new Error("ERROR DE RED: No se pudo alcanzar el servidor de SUNAT. Verifique la conexión del servidor.");
     }
     
-    throw new Error(error.message || "Error inesperado al conectar con el servicio de consulta.");
+    throw new Error(error.message || "Error inesperado al consultar RUC.");
   }
 }
 
@@ -80,29 +66,35 @@ export async function lookupDni(dni: string) {
   const cleanDni = dni.trim();
   
   try {
-    // Usando el nuevo endpoint dniruc.apisperu.com proporcionado
-    const response = await secureFetch(`https://dniruc.apisperu.com/api/v1/dni/${cleanDni}?token=${API_TOKEN}`);
+    const url = `https://dniruc.apisperu.com/api/v1/dni/${cleanDni}?token=${API_TOKEN}`;
+    const response = await secureFetch(url);
 
     if (!response.ok) {
       if (response.status === 404) throw new Error("DNI no encontrado.");
-      throw new Error("Error en el servidor de consulta de DNI.");
+      throw new Error(`Error en servidor de DNI (${response.status})`);
     }
 
     const data = await response.json();
+    console.log("LOG SERVIDOR - RESPUESTA DNI:", JSON.stringify(data));
 
-    // Si la API devuelve success: false incluso con status 200
-    if (data.success === false) {
-      throw new Error(data.message || "No se pudo encontrar el DNI.");
+    // La API de apisperu a veces devuelve success: false o mensajes específicos
+    if (data.success === false || data.message === "No se encontraron resultados.") {
+      throw new Error(data.message || "El número de DNI no existe o no devolvió datos.");
+    }
+
+    // Verificar si tenemos datos mínimos
+    if (!data.nombres && !data.nombre) {
+      throw new Error("La consulta no devolvió información legible para este DNI.");
     }
 
     return data;
   } catch (error: any) {
-    console.error("DETALLE ERROR DNI:", error.message);
+    console.error("LOG SERVIDOR - ERROR DNI:", error.message);
     
     if (error.message.toLowerCase().includes('fetch failed') || error.message.toLowerCase().includes('enotfound')) {
-      throw new Error("ERROR DE RED: No se pudo alcanzar el servidor de RENIEC. El entorno podría tener el acceso a internet restringido.");
+      throw new Error("ERROR DE RED: El servidor no tiene acceso a internet para consultar RENIEC.");
     }
     
-    throw new Error(error.message || "Error al conectar con el servicio de consulta de DNI.");
+    throw new Error(error.message || "Error al conectar con el servicio de DNI.");
   }
 }

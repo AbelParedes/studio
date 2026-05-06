@@ -41,14 +41,12 @@ export default function ClientsPage() {
   const [legalName, setLegalName] = useState("")
   const [address, setAddress] = useState("")
 
-  // Obtener perfil para companyId
   const userProfileQuery = useMemoFirebase(() => 
     user?.email ? query(collection(db, "company_users"), where("email", "==", user.email)) : null,
   [db, user?.email])
   const { data: profiles } = useCollection(userProfileQuery)
   const companyId = profiles?.[0]?.companyId
 
-  // Filtrar clientes por empresa
   const clientsRef = useMemoFirebase(() => 
     companyId ? query(collection(db, "clients"), where("companyId", "==", companyId)) : null,
   [db, companyId])
@@ -58,7 +56,7 @@ export default function ClientsPage() {
     c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.taxId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  ).sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""))
 
   const handleConsultTaxId = async () => {
     if (!taxId || (clientType === "Empresa" && taxId.length !== 11) || (clientType === "Persona" && taxId.length !== 8)) {
@@ -73,38 +71,30 @@ export default function ClientsPage() {
     setIsConsulting(true)
     
     try {
-      // Llamada a Server Action para evitar CORS
       const data = clientType === "Empresa" 
         ? await lookupTaxId(taxId)
         : await lookupDni(taxId)
 
-      if (data && (data.razonSocial || data.nombre || data.nombres)) {
+      if (data) {
         if (clientType === "Empresa") {
           const mainName = data.nombreComercial && data.nombreComercial !== "-" ? data.nombreComercial : data.razonSocial
           setName(mainName.toUpperCase())
           setLegalName(data.razonSocial.toUpperCase())
           setAddress((data.direccion || "").toUpperCase())
         } else {
-          // APIs Perú para DNI devuelve nombres, apellidoPaterno, apellidoMaterno
+          // Reconstruir nombre completo desde campos individuales o campo único
           const fullName = data.nombre || `${data.nombres || ''} ${data.apellidoPaterno || ''} ${data.apellidoMaterno || ''}`.trim()
           setName(fullName.toUpperCase())
           setAddress((data.direccion || "").toUpperCase())
           setLegalName("")
         }
-        toast({ title: "Datos obtenidos correctamente", description: "Verifique la información antes de guardar." })
-      } else {
-        toast({ 
-          variant: "destructive", 
-          title: "No encontrado", 
-          description: "No se hallaron registros oficiales para este número." 
-        })
+        toast({ title: "Datos obtenidos", description: "Información recuperada de registros oficiales." })
       }
     } catch (error: any) {
-      console.error("Lookup Error:", error)
       toast({ 
         variant: "destructive", 
-        title: "Error de Consulta", 
-        description: error.message || "No se pudo conectar con el servicio." 
+        title: "Consulta Fallida", 
+        description: error.message || "No se pudo recuperar la información." 
       })
     } finally {
       setIsConsulting(false)
@@ -132,6 +122,7 @@ export default function ClientsPage() {
         phone: formData.get("contactPhone") as string,
       },
       notes: formData.get("notes") as string,
+      updatedAt: new Date().toISOString()
     }
 
     if (editingClient) {
