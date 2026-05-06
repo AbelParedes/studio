@@ -275,13 +275,13 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
           style={{ backgroundColor: company?.footerBgColor || '#f8fafc' } as any}
         >
           <div className="flex flex-col items-center gap-2">
-            <div className="flex flex-wrap justify-center gap-x-8 gap-y-1 text-[10px] font-black text-slate-700 uppercase">
-              {company?.address && <p className="flex items-center gap-1.5"><MapPin className="h-3 w-3 text-slate-500" /> {company.address}</p>}
-              {company?.phone && <p className="flex items-center gap-1.5"><Phone className="h-3 w-3 text-slate-500" /> {company.phone}</p>}
-              {company?.email && <p className="flex items-center gap-1.5"><Mail className="h-3 w-3 text-slate-500" /> {company.email}</p>}
+            <div className="flex flex-wrap justify-center gap-x-12 gap-y-1 text-[11px] font-black text-slate-700 uppercase">
+              {company?.address && <p className="flex items-center gap-2"><MapPin className="h-4 w-4 text-slate-500" /> {company.address}</p>}
+              {company?.phone && <p className="flex items-center gap-2"><Phone className="h-4 w-4 text-slate-500" /> {company.phone}</p>}
+              {company?.email && <p className="flex items-center gap-2"><Mail className="h-4 w-4 text-slate-500" /> {company.email}</p>}
             </div>
-            <div className="flex justify-center items-center text-[10px] font-bold text-slate-400 uppercase tracking-[0.4em] mt-1">
-              {company?.website && <p className="flex items-center gap-2"><Globe className="h-3 w-3 text-slate-400" /> {company.website}</p>}
+            <div className="flex justify-center items-center text-[11px] font-bold text-slate-400 uppercase tracking-[0.4em] mt-1">
+              {company?.website && <p className="flex items-center gap-2"><Globe className="h-4 w-4 text-slate-400" /> {company.website}</p>}
             </div>
           </div>
         </div>

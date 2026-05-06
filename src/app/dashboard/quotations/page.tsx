@@ -402,13 +402,13 @@ export default function QuotationsPage() {
             } as any}
           >
             <div className="px-12 w-full flex flex-col items-center text-center gap-2">
-              <div className="flex flex-wrap justify-center gap-x-12 gap-y-1 text-[10px] font-black text-slate-600 uppercase">
+              <div className="flex flex-wrap justify-center gap-x-12 gap-y-1 text-[11px] font-black text-slate-600 uppercase">
                 {company?.address && <p className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5" /> {company.address}</p>}
                 {company?.phone && <p className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" /> {company.phone}</p>}
                 {company?.email && <p className="flex items-center gap-2"><Mail className="h-3.5 w-3.5" /> {company.email}</p>}
               </div>
               <div className="mt-1 pt-3 border-t border-slate-200/30 w-full max-w-md">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] flex items-center justify-center gap-3">
+                <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.4em] flex items-center justify-center gap-3">
                   <Globe className="h-3.5 w-3.5" /> {company?.website || "WWW.EXTINPRO.PE"}
                 </p>
               </div>
@@ -446,7 +446,7 @@ export default function QuotationsPage() {
                         {editingQuotation ? "Editar Proforma Oficial" : "Nueva Proforma Oficial"}
                       </DialogTitle>
                       <DialogDescription className="text-[9px] font-bold uppercase">
-                        {editingQuotation ? `Editando: ${editingQuotation.quotationNumber}` : `Correlativo Sugerido: ${suggestationNumber}`}
+                        {editingQuotation ? `Editando: ${editingQuotation.quotationNumber}` : `Correlativo Sugerido: ${suggestedQuotationNumber}`}
                       </DialogDescription>
                     </div>
                   </div>
