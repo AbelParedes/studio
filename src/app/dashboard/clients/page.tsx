@@ -32,7 +32,7 @@ export default function ClientsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [isAdding, setIsAdding] = useState(false)
   const [isConsulting, setIsConsulting] = useState(false)
-  const [editingClient, setEditingClient] = useState<any | null>(null)
+  const [editingClient, setEditingUser] = useState<any | null>(null)
   const [clientType, setClientType] = useState<"Empresa" | "Persona">("Empresa")
   
   // States for controlled inputs during lookup
@@ -78,16 +78,18 @@ export default function ClientsPage() {
         ? await lookupTaxId(taxId)
         : await lookupDni(taxId)
 
-      if (data && (data.razonSocial || data.nombre)) {
+      if (data && (data.razonSocial || data.nombre || data.nombres)) {
         if (clientType === "Empresa") {
           const mainName = data.nombreComercial && data.nombreComercial !== "-" ? data.nombreComercial : data.razonSocial
           setName(mainName.toUpperCase())
           setLegalName(data.razonSocial.toUpperCase())
           setAddress((data.direccion || "").toUpperCase())
         } else {
-          const fullName = data.nombre || `${data.nombres} ${data.apellidoPaterno} ${data.apellidoMaterno}`
+          // APIs Perú para DNI devuelve nombres, apellidoPaterno, apellidoMaterno
+          const fullName = data.nombre || `${data.nombres || ''} ${data.apellidoPaterno || ''} ${data.apellidoMaterno || ''}`.trim()
           setName(fullName.toUpperCase())
           setAddress((data.direccion || "").toUpperCase())
+          setLegalName("")
         }
         toast({ title: "Datos obtenidos correctamente", description: "Verifique la información antes de guardar." })
       } else {
@@ -146,7 +148,7 @@ export default function ClientsPage() {
 
   const resetForm = () => {
     setIsAdding(false)
-    setEditingClient(null)
+    setEditingUser(null)
     setTaxId("")
     setName("")
     setLegalName("")
@@ -160,7 +162,7 @@ export default function ClientsPage() {
   }
 
   const openEdit = (client: any) => {
-    setEditingClient(client)
+    setEditingUser(client)
     setClientType(client.clientType)
     setTaxId(client.taxId || "")
     setName(client.name || "")
@@ -194,7 +196,7 @@ export default function ClientsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label className="text-[10px] font-bold uppercase text-slate-500">Tipo de Contribuyente</Label>
-                    <Select value={clientType} onValueChange={(val: any) => setClientType(val)} required>
+                    <Select value={clientType} onValueChange={(val: any) => { setClientType(val); resetForm(); setIsAdding(true); setClientType(val); }} required>
                       <SelectTrigger className="h-11 border-2 font-bold">
                         <SelectValue />
                       </SelectTrigger>
@@ -230,12 +232,12 @@ export default function ClientsPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label className="text-[10px] font-bold uppercase text-slate-500">Nombre Comercial</Label>
+                    <Label className="text-[10px] font-bold uppercase text-slate-500">{clientType === "Persona" ? "Nombre Completo" : "Nombre Comercial"}</Label>
                     <Input value={name} onChange={(e) => setName(e.target.value)} required className="h-11 border-2 font-bold text-xs uppercase" />
                   </div>
                   <div className="grid gap-2">
                     <Label className="text-[10px] font-bold uppercase text-slate-500">Razón Social (Si aplica)</Label>
-                    <Input value={legalName} onChange={(e) => setLegalName(e.target.value)} className="h-11 border-2 font-bold text-xs uppercase" />
+                    <Input value={legalName} onChange={(e) => setLegalName(e.target.value)} className="h-11 border-2 font-bold text-xs uppercase" disabled={clientType === "Persona"} />
                   </div>
                 </div>
 

@@ -46,7 +46,14 @@ export async function lookupTaxId(taxId: string) {
       throw new Error(errorMsg);
     }
 
-    return await response.json();
+    const data = await response.json();
+    
+    // Si la API devuelve success: false incluso con status 200
+    if (data.success === false) {
+      throw new Error(data.message || "No se pudo encontrar el RUC.");
+    }
+
+    return data;
   } catch (error: any) {
     console.error("DETALLE ERROR RUC:", error.message);
     
@@ -81,7 +88,14 @@ export async function lookupDni(dni: string) {
       throw new Error("Error en el servidor de consulta de DNI.");
     }
 
-    return await response.json();
+    const data = await response.json();
+
+    // Si la API devuelve success: false incluso con status 200
+    if (data.success === false) {
+      throw new Error(data.message || "No se pudo encontrar el DNI.");
+    }
+
+    return data;
   } catch (error: any) {
     console.error("DETALLE ERROR DNI:", error.message);
     
