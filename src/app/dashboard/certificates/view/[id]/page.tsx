@@ -14,7 +14,8 @@ import {
   MapPin,
   Phone,
   Mail,
-  Loader2
+  Loader2,
+  Wrench
 } from "lucide-react"
 import { format, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
@@ -42,16 +43,6 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
 
   const techRef = useMemoFirebase(() => cert?.technicianId ? doc(db, "company_users", cert.technicianId) : null, [db, cert?.technicianId])
   const { data: technician } = useDoc(techRef)
-
-  const formatAgentDisplay = (type: string) => {
-    const t = type?.toUpperCase() || ""
-    if (t.includes("PQS")) return "POLVO QUÍMICO SECO"
-    if (t.includes("CO2")) return "ANHÍDRIDO CARBÓNICO"
-    if (t.includes("H2O") || t.includes("AGUA")) return "AGUA (H2O)"
-    if (t.includes("K") || t.includes("ACETATO") || t.includes("POTASIO")) return "ACETATO DE POTASIO"
-    if (t.includes("HALOTRON")) return "HALOTRÓN"
-    return type
-  }
 
   const dynamicFireClasses = useMemo(() => {
     if (!cert?.datosExtintor || cert.datosExtintor.length === 0) return "clase ABC"
@@ -206,7 +197,7 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
               ANEXO TÉCNICO DE EQUIPOS (NTP 350.026 / 350.043)
             </h2>
 
-            {/* Tabla de Equipos Optimizada para 20 filas */}
+            {/* Tabla de Equipos Limpia (Sin líneas vacías) */}
             <div className="mt-2 border-[1.5px] border-black rounded shadow-sm overflow-hidden">
               <table className="w-full text-[10px] border-collapse">
                 <thead className="bg-slate-50 text-black border-b-[1.5px] border-black">
@@ -240,12 +231,6 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
                       </tr>
                     )
                   })}
-                  {/* Filas vacías para mantener estructura visual si hay menos de 20 */}
-                  {cert.datosExtintor?.length < 20 && Array.from({ length: 20 - cert.datosExtintor.length }).map((_, i) => (
-                    <tr key={`empty-${i}`} className="border-b border-black/10 last:border-0 h-6">
-                      <td className="border-r border-black/10"></td><td className="border-r border-black/10"></td><td className="border-r border-black/10"></td><td className="border-r border-black/10"></td><td className="border-r border-black/10"></td><td className="border-r border-black/10"></td><td className="border-r border-black/10"></td><td></td>
-                    </tr>
-                  ))}
                 </tbody>
               </table>
             </div>

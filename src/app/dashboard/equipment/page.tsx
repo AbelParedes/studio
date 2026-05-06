@@ -43,7 +43,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { format, isAfter, parseISO, addYears } from "date-fns"
+import { format, isAfter, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
 
 export default function ClientEquipmentPage() {
@@ -335,6 +335,7 @@ export default function ClientEquipmentPage() {
             <Table className="dense-table min-w-[1200px]">
               <TableHeader className="bg-[#1c1c1c]">
                 <TableRow className="border-none">
+                  <TableHead className="text-white font-black uppercase text-[10px] w-8">N°</TableHead>
                   <TableHead className="text-white font-black uppercase text-[10px] py-4">TIPO / AGENTE</TableHead>
                   <TableHead className="text-white font-black uppercase text-[10px]">CAPACIDAD</TableHead>
                   <TableHead className="text-white font-black uppercase text-[10px]">SERIE (NS)</TableHead>
@@ -347,12 +348,13 @@ export default function ClientEquipmentPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredEquipment?.map((item) => {
+                {filteredEquipment?.map((item, idx) => {
                   const client = clients?.find(c => c.id === item.clientId)
                   const isExpired = item.nextServiceDate && !isAfter(parseISO(item.nextServiceDate), new Date())
                   const isPHExpired = item.nextHydrostaticTestDate && !isAfter(parseISO(item.nextHydrostaticTestDate), new Date())
                   return (
                     <TableRow key={item.id} className="hover:bg-slate-50 border-slate-100 transition-colors">
+                      <TableCell className="text-[10px] font-bold text-center">{(idx + 1).toString().padStart(2, '0')}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <div className={cn(
@@ -362,7 +364,7 @@ export default function ClientEquipmentPage() {
                             <Flame className="h-5 w-5" />
                           </div>
                           <div className="flex flex-col">
-                            <span className="font-black text-primary uppercase text-[11px] leading-none mb-1">{item.extinguishingAgent || "PQS"}</span>
+                            <span className="font-black text-primary uppercase text-[11px] leading-none mb-1">{item.extinguishingAgent || item.type}</span>
                             <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">{item.brand}</span>
                           </div>
                         </div>
@@ -416,7 +418,7 @@ export default function ClientEquipmentPage() {
                 })}
                 {filteredEquipment?.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-32 opacity-20">
+                    <TableCell colSpan={10} className="text-center py-32 opacity-20">
                       <HardDrive className="h-16 w-16 mx-auto mb-4 text-primary" />
                       <p className="text-sm font-black uppercase tracking-[0.3em]">Sin registros de equipos</p>
                     </TableCell>
