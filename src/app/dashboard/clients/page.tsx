@@ -31,8 +31,15 @@ export default function ClientsPage() {
   const { user } = useUser()
   const [searchTerm, setSearchTerm] = useState("")
   const [isAdding, setIsAdding] = useState(false)
+  const [isConsulting, setIsConsulting] = useState(false)
   const [editingClient, setEditingClient] = useState<any | null>(null)
   const [clientType, setClientType] = useState<"Empresa" | "Persona">("Empresa")
+  
+  // States for controlled inputs during lookup
+  const [taxId, setTaxId] = useState("")
+  const [name, setName] = useState("")
+  const [legalName, setLegalName] = useState("")
+  const [address, setAddress] = useState("")
 
   // Obtener perfil para companyId
   const userProfileQuery = useMemoFirebase(() => 
@@ -53,6 +60,40 @@ export default function ClientsPage() {
     c.email?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
+  const handleConsultTaxId = async () => {
+    if (!taxId || taxId.length < 8) {
+      toast({ variant: "destructive", title: "Documento inválido", description: "Ingrese un DNI o RUC correcto." })
+      return
+    }
+
+    setIsConsulting(true)
+    
+    try {
+      // Nota: Aquí se conectaría con un API Real (Ej. apisperu o similares)
+      // Por propósitos de la demo, simulamos la respuesta técnica
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      
+      if (clientType === "Empresa" && taxId.length === 11) {
+        // Simulación RUC
+        setName("EMPRESA CONSULTADA SAC")
+        setLegalName("RAZON SOCIAL CONSULTADA SAC")
+        setAddress("AV. INDUSTRIAL 123, LIMA, PERÚ")
+        toast({ title: "Datos de RUC cargados" })
+      } else if (clientType === "Persona" && taxId.length === 8) {
+        // Simulación DNI
+        setName("JUAN PEREZ CONSULTADO")
+        setLegalName("")
+        toast({ title: "Datos de DNI cargados" })
+      } else {
+        toast({ variant: "destructive", title: "Error de Formato", description: "Verifique que el número coincida con el tipo seleccionado." })
+      }
+    } catch (error) {
+      toast({ variant: "destructive", title: "Error de Consulta", description: "No se pudo conectar con el servicio de SUNAT/RENIEC." })
+    } finally {
+      setIsConsulting(false)
+    }
+  }
+
   const handleSaveClient = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!companyId) return
@@ -61,13 +102,13 @@ export default function ClientsPage() {
     const clientData = {
       companyId: companyId,
       clientType: clientType,
-      taxId: formData.get("taxId") as string,
-      name: formData.get("name") as string,
-      legalName: formData.get("legalName") as string,
+      taxId: taxId,
+      name: name,
+      legalName: legalName,
       industry: formData.get("industry") as string,
       email: formData.get("email") as string,
       phone: formData.get("phone") as string,
-      address: formData.get("address") as string,
+      address: address,
       contactPerson: {
         name: formData.get("contactName") as string,
         position: formData.get("contactPosition") as string,
@@ -85,11 +126,20 @@ export default function ClientsPage() {
       toast({ title: "Cliente registrado" })
     }
 
+    resetForm()
+  }
+
+  const resetForm = () => {
     setIsAdding(false)
     setEditingClient(null)
+    setTaxId("")
+    setName("")
+    setLegalName("")
+    setAddress("")
   }
 
   const handleDeleteClient = (id: string) => {
+    if(!confirm("¿Eliminar expediente de cliente?")) return
     deleteDocumentNonBlocking(doc(db, "clients", id))
     toast({ variant: "destructive", title: "Cliente eliminado" })
   }
@@ -97,6 +147,10 @@ export default function ClientsPage() {
   const openEdit = (client: any) => {
     setEditingClient(client)
     setClientType(client.clientType)
+    setTaxId(client.taxId || "")
+    setName(client.name || "")
+    setLegalName(client.legalName || "")
+    setAddress(client.address || "")
     setIsAdding(true)
   }
 
@@ -104,175 +158,201 @@ export default function ClientsPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase">Clientes</h2>
-          <p className="text-muted-foreground text-sm">Gestione la base de datos exclusiva de su empresa.</p>
+          <h2 className="text-2xl font-bold tracking-tight mb-1 uppercase text-primary">Cartera de Clientes</h2>
+          <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest">Base de datos técnica para facturación y servicios.</p>
         </div>
         
-        <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) setEditingClient(null); }}>
+        <Dialog open={isAdding} onOpenChange={(open) => { if (!open) resetForm(); else setIsAdding(true); }}>
           <DialogTrigger asChild>
-            <Button className="bg-primary text-white h-9">
+            <Button className="bg-primary text-white h-10 font-bold uppercase text-xs shadow-lg">
               <Plus className="mr-2 h-4 w-4" /> Nuevo Cliente
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0">
             <form onSubmit={handleSaveClient}>
-              <DialogHeader>
-                <DialogTitle>{editingClient ? "Editar Cliente" : "Registrar Nuevo Cliente"}</DialogTitle>
-                <DialogDescription>Los datos serán visibles solo para los colaboradores de su empresa.</DialogDescription>
+              <DialogHeader className="p-6 bg-slate-50 border-b">
+                <DialogTitle className="uppercase font-black text-primary">Expediente de Cliente</DialogTitle>
+                <DialogDescription className="text-[10px] font-bold uppercase">Registro oficial para la gestión técnica de extintores.</DialogDescription>
               </DialogHeader>
-              <div className="grid gap-6 py-4">
-                <div className="grid grid-cols-2 gap-4">
+              
+              <div className="grid gap-6 p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="clientType">Tipo de Cliente</Label>
+                    <Label className="text-[10px] font-bold uppercase text-slate-500">Tipo de Contribuyente</Label>
                     <Select value={clientType} onValueChange={(val: any) => setClientType(val)} required>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccione tipo" />
+                      <SelectTrigger className="h-11 border-2 font-bold">
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Empresa">Empresa </SelectItem>
-                        <SelectItem value="Persona">Persona Natural</SelectItem>
+                        <SelectItem value="Empresa" className="font-bold">Jurídica (RUC)</SelectItem>
+                        <SelectItem value="Persona" className="font-bold">Natural (DNI)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="taxId">{clientType === "Empresa" ? "RUC" : "DNI"}</Label>
-                    <Input id="taxId" name="taxId" defaultValue={editingClient?.taxId} required placeholder="Identificación fiscal" />
+                    <Label className="text-[10px] font-bold uppercase text-slate-500">{clientType === "Empresa" ? "RUC" : "DNI"}</Label>
+                    <div className="flex gap-2">
+                      <Input 
+                        value={taxId} 
+                        onChange={(e) => setTaxId(e.target.value)} 
+                        required 
+                        placeholder={clientType === "Empresa" ? "20XXXXXXXXX" : "7XXXXXXX"} 
+                        className="h-11 border-2 font-mono font-bold" 
+                      />
+                      <Button 
+                        type="button" 
+                        variant="secondary" 
+                        className="h-11 px-4 bg-accent text-white font-black uppercase text-[10px]"
+                        onClick={handleConsultTaxId}
+                        disabled={isConsulting}
+                      >
+                        {isConsulting ? <Loader2 className="animate-spin h-4 w-4" /> : <Search className="h-4 w-4 mr-2" />}
+                        Consultar
+                      </Button>
+                    </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="name">Nombre Comercial</Label>
-                    <Input id="name" name="name" defaultValue={editingClient?.name} required />
+                    <Label className="text-[10px] font-bold uppercase text-slate-500">Nombre Comercial</Label>
+                    <Input value={name} onChange={(e) => setName(e.target.value)} required className="h-11 border-2 font-bold text-xs uppercase" />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="legalName">Razón Social</Label>
-                    <Input id="legalName" name="legalName" defaultValue={editingClient?.legalName} />
+                    <Label className="text-[10px] font-bold uppercase text-slate-500">Razón Social (Si aplica)</Label>
+                    <Input value={legalName} onChange={(e) => setLegalName(e.target.value)} className="h-11 border-2 font-bold text-xs uppercase" />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="industry">Giro del Negocio</Label>
-                    <Input id="industry" name="industry" defaultValue={editingClient?.industry} />
+                    <Label className="text-[10px] font-bold uppercase text-slate-500">Giro / Industria</Label>
+                    <Input name="industry" defaultValue={editingClient?.industry} placeholder="Ej. Minería, Retail, Almacén" className="h-11 border-2 font-bold text-xs uppercase" />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="phone">Teléfono</Label>
-                    <Input id="phone" name="phone" defaultValue={editingClient?.phone} required />
+                    <Label className="text-[10px] font-bold uppercase text-slate-500">Teléfono Central</Label>
+                    <Input name="phone" defaultValue={editingClient?.phone} required className="h-11 border-2 font-bold text-xs" />
                   </div>
                 </div>
 
                 <div className="grid gap-2">
-                  <Label htmlFor="email">Email Principal</Label>
-                  <Input id="email" name="email" defaultValue={editingClient?.email} type="email" required />
+                  <Label className="text-[10px] font-bold uppercase text-slate-500">Email Principal para Notificaciones</Label>
+                  <Input name="email" defaultValue={editingClient?.email} type="email" required className="h-11 border-2 font-bold text-xs" />
                 </div>
 
                 <div className="grid gap-2">
-                  <Label htmlFor="address">Dirección</Label>
-                  <Input id="address" name="address" defaultValue={editingClient?.address} required />
+                  <Label className="text-[10px] font-bold uppercase text-slate-500">Dirección de Sede / Oficina</Label>
+                  <Input value={address} onChange={(e) => setAddress(e.target.value)} required className="h-11 border-2 font-bold text-xs uppercase" />
                 </div>
 
                 <Separator />
-                <div className="text-primary font-bold text-xs uppercase">Persona de Contacto</div>
+                <div className="text-primary font-black text-[10px] uppercase tracking-widest flex items-center gap-2">
+                  <Users className="h-4 w-4" /> Persona de Contacto Directo
+                </div>
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="contactName">Nombre</Label>
-                    <Input id="contactName" name="contactName" defaultValue={editingClient?.contactPerson?.name} />
+                    <Label className="text-[10px] font-bold uppercase text-slate-500">Nombre</Label>
+                    <Input name="contactName" defaultValue={editingClient?.contactPerson?.name} className="h-11 border-2 font-bold text-xs" />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="contactPosition">Cargo</Label>
-                    <Input id="contactPosition" name="contactPosition" defaultValue={editingClient?.contactPerson?.position} />
+                    <Label className="text-[10px] font-bold uppercase text-slate-500">Cargo</Label>
+                    <Input name="contactPosition" defaultValue={editingClient?.contactPerson?.position} className="h-11 border-2 font-bold text-xs" />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="contactPhone">Celular</Label>
-                    <Input id="contactPhone" name="contactPhone" defaultValue={editingClient?.contactPerson?.phone} />
+                    <Label className="text-[10px] font-bold uppercase text-slate-500">Celular / WhatsApp</Label>
+                    <Input name="contactPhone" defaultValue={editingClient?.contactPerson?.phone} className="h-11 border-2 font-bold text-xs" />
                   </div>
                 </div>
 
                 <Separator />
                 <div className="grid gap-2">
-                  <Label htmlFor="notes" className="flex items-center gap-2">Nota</Label>
-                  <Textarea id="notes" name="notes" defaultValue={editingClient?.notes} className="min-h-[100px]" />
+                  <Label className="text-[10px] font-bold uppercase text-slate-500">Observaciones Técnicas del Cliente</Label>
+                  <Textarea name="notes" defaultValue={editingClient?.notes} className="min-h-[100px] border-2 font-medium text-xs uppercase" />
                 </div>
               </div>
-              <DialogFooter>
-                <Button type="submit" className="w-full">{editingClient ? "Actualizar" : "Crear Expediente"}</Button>
+              <DialogFooter className="p-6 bg-slate-50 border-t">
+                <Button type="submit" className="w-full h-12 bg-primary text-white font-black uppercase text-xs tracking-widest shadow-xl">
+                  {editingClient ? "Actualizar Expediente" : "Crear Expediente Industrial"}
+                </Button>
               </DialogFooter>
             </form>
           </DialogContent>
         </Dialog>
       </div>
 
-      <Card className="shadow-sm border-none">
-        <CardHeader className="pb-3 border-b">
+      <Card className="shadow-sm border-none overflow-hidden">
+        <CardHeader className="pb-3 border-b bg-white">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
-              placeholder="Buscar clientes de mi empresa..." 
-              className="pl-9 h-9" 
+              placeholder="Buscar por nombre, RUC o email..." 
+              className="pl-9 h-10 text-xs font-bold uppercase" 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent className="p-0 overflow-x-auto">
           {isLoading ? (
-            <div className="flex items-center justify-center p-20">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className="flex items-center justify-center p-32">
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
             </div>
           ) : (
-            <Table className="dense-table">
-              <TableHeader className="bg-primary">
-                <TableRow>
-                  <TableHead className="text-white">Identidad</TableHead>
-                  <TableHead className="text-white">Nombre / Empresa</TableHead>
-                  <TableHead className="text-white">Contacto</TableHead>
-                  <TableHead className="text-white">Dirección</TableHead>
-                  <TableHead className="text-white w-[100px]"></TableHead>
+            <Table className="dense-table min-w-[1000px]">
+              <TableHeader className="bg-[#1c1c1c]">
+                <TableRow className="border-none">
+                  <TableHead className="text-white font-black uppercase text-[10px] py-4">Identidad Fiscal</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px]">Nombre / Empresa</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px]">Contacto Técnico</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px]">Ubicación</TableHead>
+                  <TableHead className="text-white text-right pr-8 font-black uppercase text-[10px]">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredClients?.map((client) => (
-                  <TableRow key={client.id} className="hover:bg-muted/30 transition-colors">
+                  <TableRow key={client.id} className="hover:bg-slate-50 border-slate-100 transition-colors">
                     <TableCell>
                       <div className="flex flex-col gap-1">
-                        <Badge variant="outline" className="text-[9px] uppercase font-bold w-fit">
+                        <Badge variant="outline" className={cn(
+                          "text-[9px] uppercase font-black w-fit",
+                          client.clientType === "Empresa" ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-green-50 text-green-700 border-green-200"
+                        )}>
                           {client.clientType}
                         </Badge>
-                        <span className="font-mono text-[10px]">{client.taxId}</span>
+                        <span className="font-mono text-[10px] font-black text-primary">{client.taxId}</span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
-                        <span className="font-bold text-primary">{client.name}</span>
-                        <span className="text-[10px] text-muted-foreground">{client.industry}</span>
+                        <span className="font-black text-primary uppercase text-[11px] leading-tight mb-1">{client.name}</span>
+                        <span className="text-[9px] text-slate-400 font-bold uppercase">{client.industry || "General"}</span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex flex-col text-[11px]">
-                        <span className="font-bold">{client.contactPerson?.name}</span>
-                        <span className="text-muted-foreground">{client.phone}</span>
+                      <div className="flex flex-col text-[10px] font-bold">
+                        <span className="text-slate-700 uppercase">{client.contactPerson?.name || "Sin contacto"}</span>
+                        <span className="text-slate-400 font-medium">{client.phone}</span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center text-[11px] text-muted-foreground max-w-[200px] truncate">
-                        <MapPin className="h-3 w-3 mr-1 shrink-0" />
+                      <div className="flex items-center text-[10px] text-slate-500 font-bold uppercase max-w-[250px] truncate">
+                        <MapPin className="h-3 w-3 mr-1.5 shrink-0 text-accent" />
                         {client.address}
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(client)}>
-                          <Edit2 className="h-3.5 w-3.5" />
+                    <TableCell className="text-right pr-8">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="h-9 w-9 text-primary hover:bg-primary/5" onClick={() => openEdit(client)}>
+                          <Edit2 className="h-4 w-4" />
                         </Button>
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="h-8 w-8 hover:text-destructive"
+                          className="h-9 w-9 text-destructive hover:bg-destructive/5"
                           onClick={() => handleDeleteClient(client.id)}
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>
@@ -280,8 +360,9 @@ export default function ClientsPage() {
                 ))}
                 {filteredClients?.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-20 text-muted-foreground">
-                      No hay clientes registrados en su empresa.
+                    <TableCell colSpan={5} className="text-center py-32 opacity-20">
+                      <Users className="h-16 w-16 mx-auto mb-4 text-primary" />
+                      <p className="text-sm font-black uppercase tracking-[0.3em]">No hay clientes registrados</p>
                     </TableCell>
                   </TableRow>
                 )}
