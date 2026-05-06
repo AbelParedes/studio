@@ -203,7 +203,7 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
               </p>
               <div className="h-4 w-[1px] bg-slate-300"></div>
               <p className="flex gap-2">
-                <span className="uppercase font-bold">Presión Trabajo:</span> <span>{cert.presionTrabajo || "---"}</span>
+                <span className="uppercase font-bold">Presión Trabajo:</span> <span>{cert.presionPrueba || "---"}</span>
               </p>
               <div className="h-4 w-[1px] bg-slate-300"></div>
               <p className="flex gap-2">
@@ -219,13 +219,14 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
               <table className="w-full text-[11px] border-collapse">
                 <thead className="bg-slate-50 text-black border-b-2 border-black">
                   <tr className="font-bold uppercase text-center">
-                    <th className="p-2 border-r border-black w-10">N°</th>
-                    <th className="p-2 border-r border-black w-20">CAP</th>
-                    <th className="p-2 border-r border-black w-48">TIPO</th>
-                    <th className="p-2 border-r border-black">NS - FF</th>
-                    <th className="p-2 border-r border-black">VCTO - PH</th>
+                    <th className="p-2 border-r border-black w-8">N°</th>
+                    <th className="p-2 border-r border-black w-40">TIPO</th>
+                    <th className="p-2 border-r border-black w-16">CAP</th>
+                    <th className="p-2 border-r border-black">NS</th>
+                    <th className="p-2 border-r border-black">FF</th>
                     <th className="p-2 border-r border-black">RECARGA</th>
-                    <th className="p-2">VCTO RECARGA</th>
+                    <th className="p-2 border-r border-black">VCTO RECARGA</th>
+                    <th className="p-2">VCTO PH</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -237,12 +238,13 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
                     return (
                       <tr key={idx} className="border-b border-black last:border-0 text-center font-bold">
                         <td className="p-2 border-r border-black">{(idx + 1).toString().padStart(2, '0')}</td>
+                        <td className="p-2 border-r border-black text-left">{formatAgentDisplay(item.tipo)}</td>
                         <td className="p-2 border-r border-black">{item.cap}</td>
-                        <td className="p-2 border-r border-black">{formatAgentDisplay(item.tipo)}</td>
-                        <td className="p-2 border-r border-black">{item.ns} - {item.ff}</td>
-                        <td className="p-2 border-r border-black">{formatMY(item.vctoPH)}</td>
+                        <td className="p-2 border-r border-black">{item.ns}</td>
+                        <td className="p-2 border-r border-black">{item.ff}</td>
                         <td className="p-2 border-r border-black">{formatMY(item.recarga)}</td>
-                        <td className="p-2">{formatMY(item.vctoRecarga)}</td>
+                        <td className="p-2 border-r border-black">{formatMY(item.vctoRecarga)}</td>
+                        <td className="p-2">{formatMY(item.vctoPH)}</td>
                       </tr>
                     )
                   })}
