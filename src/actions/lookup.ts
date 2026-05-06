@@ -29,7 +29,8 @@ export async function lookupTaxId(taxId: string) {
   const cleanTaxId = taxId.trim();
   
   try {
-    const response = await secureFetch(`https://api.apisperu.com/v1/ruc/${cleanTaxId}?token=${API_TOKEN}`);
+    // Usando el nuevo endpoint dniruc.apisperu.com proporcionado
+    const response = await secureFetch(`https://dniruc.apisperu.com/api/v1/ruc/${cleanTaxId}?token=${API_TOKEN}`);
 
     if (!response.ok) {
       if (response.status === 404) throw new Error("RUC no encontrado en los registros oficiales.");
@@ -60,7 +61,7 @@ export async function lookupTaxId(taxId: string) {
                           error.message.toLowerCase().includes('enotfound');
 
     if (isNetworkError) {
-      throw new Error("ERROR DE RED: El servidor no tiene acceso a internet para consultar apisperu.com. Por favor, verifique las restricciones de red de su entorno o intente más tarde.");
+      throw new Error("ERROR DE RED: El servidor no tiene acceso a internet para consultar dniruc.apisperu.com. Por favor, verifique las restricciones de red de su entorno o intente más tarde.");
     }
     
     throw new Error(error.message || "Error inesperado al conectar con el servicio de consulta.");
@@ -72,7 +73,8 @@ export async function lookupDni(dni: string) {
   const cleanDni = dni.trim();
   
   try {
-    const response = await secureFetch(`https://api.apisperu.com/v1/dni/${cleanDni}?token=${API_TOKEN}`);
+    // Usando el nuevo endpoint dniruc.apisperu.com proporcionado
+    const response = await secureFetch(`https://dniruc.apisperu.com/api/v1/dni/${cleanDni}?token=${API_TOKEN}`);
 
     if (!response.ok) {
       if (response.status === 404) throw new Error("DNI no encontrado.");
