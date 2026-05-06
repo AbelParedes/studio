@@ -61,34 +61,74 @@ export default function ClientsPage() {
   )
 
   const handleConsultTaxId = async () => {
-    if (!taxId || taxId.length < 8) {
-      toast({ variant: "destructive", title: "Documento inválido", description: "Ingrese un DNI o RUC correcto." })
+    if (!taxId || (clientType === "Empresa" && taxId.length !== 11) || (clientType === "Persona" && taxId.length !== 8)) {
+      toast({ 
+        variant: "destructive", 
+        title: "Documento inválido", 
+        description: `Ingrese ${clientType === "Empresa" ? '11 dígitos para RUC' : '8 dígitos para DNI'}.` 
+      })
       return
     }
 
     setIsConsulting(true)
     
     try {
-      // Nota: Aquí se conectaría con un API Real (Ej. apisperu o similares)
-      // Por propósitos de la demo, simulamos la respuesta técnica
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      /**
+       * CONFIGURACIÓN DE API REAL (Ejemplo con apisperu.com)
+       * Reemplaza 'TU_TOKEN_AQUI' con tu token real para que funcione.
+       */
+      const API_TOKEN = "TU_TOKEN_AQUI" 
       
-      if (clientType === "Empresa" && taxId.length === 11) {
-        // Simulación RUC
-        setName("EMPRESA CONSULTADA SAC")
-        setLegalName("RAZON SOCIAL CONSULTADA SAC")
-        setAddress("AV. INDUSTRIAL 123, LIMA, PERÚ")
-        toast({ title: "Datos de RUC cargados" })
-      } else if (clientType === "Persona" && taxId.length === 8) {
-        // Simulación DNI
-        setName("JUAN PEREZ CONSULTADO")
-        setLegalName("")
-        toast({ title: "Datos de DNI cargados" })
+      if (API_TOKEN === "TU_TOKEN_AQUI") {
+        // LÓGICA DE SIMULACIÓN (MODO DEMO)
+        await new Promise(resolve => setTimeout(resolve, 1200))
+        
+        if (clientType === "Empresa") {
+          setName("EXTINTORES INDUSTRIALES SAC")
+          setLegalName("EXTINTORES INDUSTRIALES DEL PERÚ SAC")
+          setAddress("CALLE MERCADERES 123, SURCO, LIMA")
+          toast({ title: "Modo Demo: RUC Simulado", description: "Configura tu API Token para datos reales." })
+        } else {
+          setName("CARLOS MENDOZA RIVERA")
+          setAddress("AV. AREQUIPA 4567, MIRAFLORES, LIMA")
+          toast({ title: "Modo Demo: DNI Simulado", description: "Configura tu API Token para datos reales." })
+        }
       } else {
-        toast({ variant: "destructive", title: "Error de Formato", description: "Verifique que el número coincida con el tipo seleccionado." })
+        // LÓGICA DE CONEXIÓN REAL
+        const endpoint = clientType === "Empresa" 
+          ? `https://api.apisperu.com/v1/ruc/${taxId}?token=${API_TOKEN}`
+          : `https://api.apisperu.com/v1/dni/${taxId}?token=${API_TOKEN}`
+
+        const response = await fetch(endpoint)
+        const data = await response.json()
+
+        if (data.success || data.nombre || data.razonSocial) {
+          if (clientType === "Empresa") {
+            setName(data.nombreComercial || data.razonSocial || data.nombre)
+            setLegalName(data.razonSocial || data.nombre)
+            setAddress(data.direccion || "")
+          } else {
+            // Para DNI, algunos APIs devuelven nombres y apellidos por separado
+            const full = data.nombre || `${data.nombres} ${data.apellidoPaterno} ${data.apellidoMaterno}`
+            setName(full.toUpperCase())
+            setAddress(data.direccion || "")
+          }
+          toast({ title: "Datos obtenidos correctamente" })
+        } else {
+          toast({ 
+            variant: "destructive", 
+            title: "No encontrado", 
+            description: "No se hallaron registros oficiales para este número." 
+          })
+        }
       }
     } catch (error) {
-      toast({ variant: "destructive", title: "Error de Consulta", description: "No se pudo conectar con el servicio de SUNAT/RENIEC." })
+      console.error("Lookup Error:", error)
+      toast({ 
+        variant: "destructive", 
+        title: "Error de Conexión", 
+        description: "No se pudo conectar con el servicio de SUNAT/RENIEC." 
+      })
     } finally {
       setIsConsulting(false)
     }
