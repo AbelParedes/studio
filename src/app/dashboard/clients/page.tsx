@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState } from "react"
@@ -73,61 +72,45 @@ export default function ClientsPage() {
     setIsConsulting(true)
     
     try {
-      /**
-       * CONFIGURACIÓN DE API REAL (Ejemplo con apisperu.com)
-       * Reemplaza 'TU_TOKEN_AQUI' con tu token real para que funcione.
-       */
-      const API_TOKEN = "TU_TOKEN_AQUI" 
+      const API_TOKEN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImFwZXZhMTk4OUBnbWFpbC5jb20ifQ.LMX5XM-xgVwQvrWSiglrtSFwwYfb2OiFxs3YA8vjVoQ" 
       
-      if (API_TOKEN === "TU_TOKEN_AQUI") {
-        // LÓGICA DE SIMULACIÓN (MODO DEMO)
-        await new Promise(resolve => setTimeout(resolve, 1200))
-        
+      const endpoint = clientType === "Empresa" 
+        ? `https://api.apisperu.com/v1/ruc/${taxId}?token=${API_TOKEN}`
+        : `https://api.apisperu.com/v1/dni/${taxId}?token=${API_TOKEN}`
+
+      const response = await fetch(endpoint)
+      
+      if (!response.ok) {
+        throw new Error("Error en el servidor de consulta")
+      }
+
+      const data = await response.json()
+
+      if (data && (data.razonSocial || data.nombre)) {
         if (clientType === "Empresa") {
-          setName("EXTINTORES INDUSTRIALES SAC")
-          setLegalName("EXTINTORES INDUSTRIALES DEL PERÚ SAC")
-          setAddress("CALLE MERCADERES 123, SURCO, LIMA")
-          toast({ title: "Modo Demo: RUC Simulado", description: "Configura tu API Token para datos reales." })
+          const mainName = data.nombreComercial && data.nombreComercial !== "-" ? data.nombreComercial : data.razonSocial
+          setName(mainName.toUpperCase())
+          setLegalName(data.razonSocial.toUpperCase())
+          setAddress((data.direccion || "").toUpperCase())
         } else {
-          setName("CARLOS MENDOZA RIVERA")
-          setAddress("AV. AREQUIPA 4567, MIRAFLORES, LIMA")
-          toast({ title: "Modo Demo: DNI Simulado", description: "Configura tu API Token para datos reales." })
+          const fullName = data.nombre || `${data.nombres} ${data.apellidoPaterno} ${data.apellidoMaterno}`
+          setName(fullName.toUpperCase())
+          setAddress((data.direccion || "").toUpperCase())
         }
+        toast({ title: "Datos obtenidos correctamente", description: "Verifique la información antes de guardar." })
       } else {
-        // LÓGICA DE CONEXIÓN REAL
-        const endpoint = clientType === "Empresa" 
-          ? `https://api.apisperu.com/v1/ruc/${taxId}?token=${API_TOKEN}`
-          : `https://api.apisperu.com/v1/dni/${taxId}?token=${API_TOKEN}`
-
-        const response = await fetch(endpoint)
-        const data = await response.json()
-
-        if (data.success || data.nombre || data.razonSocial) {
-          if (clientType === "Empresa") {
-            setName(data.nombreComercial || data.razonSocial || data.nombre)
-            setLegalName(data.razonSocial || data.nombre)
-            setAddress(data.direccion || "")
-          } else {
-            // Para DNI, algunos APIs devuelven nombres y apellidos por separado
-            const full = data.nombre || `${data.nombres} ${data.apellidoPaterno} ${data.apellidoMaterno}`
-            setName(full.toUpperCase())
-            setAddress(data.direccion || "")
-          }
-          toast({ title: "Datos obtenidos correctamente" })
-        } else {
-          toast({ 
-            variant: "destructive", 
-            title: "No encontrado", 
-            description: "No se hallaron registros oficiales para este número." 
-          })
-        }
+        toast({ 
+          variant: "destructive", 
+          title: "No encontrado", 
+          description: "No se hallaron registros oficiales para este número en SUNAT/RENIEC." 
+        })
       }
     } catch (error) {
       console.error("Lookup Error:", error)
       toast({ 
         variant: "destructive", 
         title: "Error de Conexión", 
-        description: "No se pudo conectar con el servicio de SUNAT/RENIEC." 
+        description: "No se pudo conectar con el servicio de SUNAT/RENIEC. Verifique su conexión o vigencia del API." 
       })
     } finally {
       setIsConsulting(false)
