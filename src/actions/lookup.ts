@@ -8,17 +8,18 @@
 const API_TOKEN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImFwZXZhMTk4OUBnbWFpbC5jb20ifQ.LMX5XM-xgVwQvrWSiglrtSFwwYfb2OiFxs3YA8vjVoQ";
 
 /**
- * Realiza una petición fetch segura con headers de navegador para evitar bloqueos.
+ * Realiza una petición fetch segura con headers mínimos para evitar bloqueos.
  */
 async function secureFetch(url: string) {
   return fetch(url, {
     method: 'GET',
     headers: {
       'Accept': 'application/json',
+      // Algunas redes bloquean User-Agents específicos, usamos uno estándar de navegador
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     },
     cache: 'no-store',
-    // Establecer un timeout razonable
+    // Timeout de 10 segundos
     signal: AbortSignal.timeout(10000) 
   });
 }
@@ -31,27 +32,35 @@ export async function lookupTaxId(taxId: string) {
     const response = await secureFetch(`https://api.apisperu.com/v1/ruc/${cleanTaxId}?token=${API_TOKEN}`);
 
     if (!response.ok) {
-      let errorMsg = "Error en el servidor de consulta";
+      if (response.status === 404) throw new Error("RUC no encontrado en los registros oficiales.");
+      if (response.status === 401) throw new Error("Token de API inválido o expirado.");
+      
+      let errorMsg = "Error en el servicio de consulta";
       try {
         const errorData = await response.json();
         errorMsg = errorData.message || errorMsg;
       } catch (e) {
-        errorMsg = `Error ${response.status}: ${response.statusText}`;
+        errorMsg = `Error del servidor (${response.status})`;
       }
       throw new Error(errorMsg);
     }
 
     return await response.json();
   } catch (error: any) {
-    console.error("Lookup RUC Error Details:", error);
+    console.error("DETALLE ERROR RUC:", error.message);
     
-    // Manejo de errores de conexión (DNS, Timeout, Bloqueo de Red)
+    // Identificar errores de conectividad del entorno
     if (error.name === 'TimeoutError') {
-      throw new Error("La consulta tardó demasiado. Intente nuevamente.");
+      throw new Error("La consulta tardó demasiado. El servicio externo podría estar lento.");
     }
     
-    if (error.message && (error.message.includes('fetch failed') || error.message.includes('undici') || error.message.includes('ENOTFOUND'))) {
-      throw new Error("No se pudo establecer conexión con APIs Perú. Es posible que el acceso a internet esté restringido en este entorno o el servicio esté caído.");
+    // Si falla el fetch por red (ENOTFOUND, EAI_AGAIN, etc)
+    const isNetworkError = error.message.toLowerCase().includes('fetch failed') || 
+                          error.message.toLowerCase().includes('undici') || 
+                          error.message.toLowerCase().includes('enotfound');
+
+    if (isNetworkError) {
+      throw new Error("ERROR DE RED: El servidor no tiene acceso a internet para consultar apisperu.com. Por favor, verifique las restricciones de red de su entorno o intente más tarde.");
     }
     
     throw new Error(error.message || "Error inesperado al conectar con el servicio de consulta.");
@@ -66,26 +75,16 @@ export async function lookupDni(dni: string) {
     const response = await secureFetch(`https://api.apisperu.com/v1/dni/${cleanDni}?token=${API_TOKEN}`);
 
     if (!response.ok) {
-      let errorMsg = "Error en el servidor de consulta";
-      try {
-        const errorData = await response.json();
-        errorMsg = errorData.message || errorMsg;
-      } catch (e) {
-        errorMsg = `Error ${response.status}: ${response.statusText}`;
-      }
-      throw new Error(errorMsg);
+      if (response.status === 404) throw new Error("DNI no encontrado.");
+      throw new Error("Error en el servidor de consulta de DNI.");
     }
 
     return await response.json();
   } catch (error: any) {
-    console.error("Lookup DNI Error Details:", error);
+    console.error("DETALLE ERROR DNI:", error.message);
     
-    if (error.name === 'TimeoutError') {
-      throw new Error("La consulta de DNI tardó demasiado.");
-    }
-
-    if (error.message && (error.message.includes('fetch failed') || error.message.includes('undici') || error.message.includes('ENOTFOUND'))) {
-      throw new Error("Error de red: No se pudo alcanzar el servidor de RENIEC/APIs Perú.");
+    if (error.message.toLowerCase().includes('fetch failed') || error.message.toLowerCase().includes('enotfound')) {
+      throw new Error("ERROR DE RED: No se pudo alcanzar el servidor de RENIEC. El entorno podría tener el acceso a internet restringido.");
     }
     
     throw new Error(error.message || "Error al conectar con el servicio de consulta de DNI.");
