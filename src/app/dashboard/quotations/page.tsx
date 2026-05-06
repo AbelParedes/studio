@@ -283,10 +283,10 @@ export default function QuotationsPage() {
 
         <div 
           ref={documentRef}
-          className="proforma-container bg-white shadow-2xl mx-auto w-[210mm] min-h-[297mm] flex flex-col relative text-[#1c1c1c] border print:shadow-none print:border-none print:m-0 print:w-full"
+          className="proforma-container bg-white shadow-2xl mx-auto w-[210mm] min-h-[297mm] flex flex-col relative text-[#1c1c1c] border print:shadow-none print:border-none print:m-0 print:w-full overflow-hidden"
         >
-          <div className="p-12 space-y-10 flex-1">
-             <div className="flex justify-between items-start">
+          <div className="p-12 space-y-10 flex-1 flex flex-col min-h-0">
+             <div className="flex justify-between items-start shrink-0">
                 <div className="h-20 w-64 relative">
                   {(company?.headerUrl || company?.logoUrl) && <Image src={company.headerUrl || company.logoUrl} alt="Logo" fill className="object-contain object-left" unoptimized />}
                 </div>
@@ -307,67 +307,89 @@ export default function QuotationsPage() {
                 </div>
              </div>
              
-             <div className="grid grid-cols-2 gap-12 text-[11px]">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4"><h3 className="text-[9px] font-black text-slate-400 uppercase shrink-0">CLIENTE / ENTIDAD</h3><div className="h-[1px] bg-slate-100 w-full"></div></div>
-                  <div className="space-y-1 pt-1">
-                    <p className="font-black text-sm uppercase">{client?.name || "---"}</p>
-                    <p className="font-bold text-slate-500 uppercase">RUC/DNI: {client?.taxId || "---"}</p>
-                    <p className="text-slate-500 uppercase leading-tight">{client?.address || "---"}</p>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4"><h3 className="text-[9px] font-black text-slate-400 uppercase shrink-0">DETALLES EMISIÓN</h3><div className="h-[1px] bg-slate-100 w-full"></div></div>
-                  <div className="text-right space-y-1 pt-1">
-                    <p className="font-bold uppercase text-slate-700">Fecha de Emisión: <span className="font-black">{viewingQuotation.date}</span></p>
-                    <p className="font-bold uppercase text-slate-700">Moneda: <span className="font-black">Soles (S/)</span></p>
-                    <div className="mt-2 inline-block">
-                      <Badge variant="outline" className="text-[9px] font-black uppercase bg-status-success/5 text-status-success border-status-success/20">
-                        Estado: {viewingQuotation.status}
-                      </Badge>
+             <div className="flex-1 space-y-10">
+               <div className="grid grid-cols-2 gap-12 text-[11px]">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4"><h3 className="text-[9px] font-black text-slate-400 uppercase shrink-0">CLIENTE / ENTIDAD</h3><div className="h-[1px] bg-slate-100 w-full"></div></div>
+                    <div className="space-y-1 pt-1">
+                      <p className="font-black text-sm uppercase">{client?.name || "---"}</p>
+                      <p className="font-bold text-slate-500 uppercase">RUC/DNI: {client?.taxId || "---"}</p>
+                      <p className="text-slate-500 uppercase leading-tight">{client?.address || "---"}</p>
                     </div>
                   </div>
-                </div>
-             </div>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4"><h3 className="text-[9px] font-black text-slate-400 uppercase shrink-0">DETALLES EMISIÓN</h3><div className="h-[1px] bg-slate-100 w-full"></div></div>
+                    <div className="text-right space-y-1 pt-1">
+                      <p className="font-bold uppercase text-slate-700">Fecha de Emisión: <span className="font-black">{viewingQuotation.date}</span></p>
+                      <p className="font-bold uppercase text-slate-700">Moneda: <span className="font-black">Soles (S/)</span></p>
+                      <div className="mt-2 inline-block">
+                        <Badge variant="outline" className="text-[9px] font-black uppercase bg-status-success/5 text-status-success border-status-success/20">
+                          Estado: {viewingQuotation.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+               </div>
 
-             <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-                <table className="w-full text-[11px] border-collapse">
-                  <thead className="bg-slate-50 border-b border-slate-200 text-slate-800">
-                    <tr>
-                      <th className="p-4 text-center w-16 border-r border-slate-200 font-black uppercase">CANT</th>
-                      <th className="p-4 text-left font-black uppercase">DESCRIPCIÓN DE PRODUCTO / SERVICIO</th>
-                      <th className="p-4 text-right w-28 border-l border-slate-200 font-black uppercase">UNIT (S/)</th>
-                      <th className="p-4 text-right w-28 border-l border-slate-200 font-black uppercase">TOTAL (S/)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {viewingQuotation.items?.map((item: any, i: number) => (
-                      <tr key={i} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
-                        <td className="p-4 text-center font-black text-primary border-r border-slate-100">{item.quantity}</td>
-                        <td className="p-4 uppercase font-medium text-slate-700">{item.description}</td>
-                        <td className="p-4 text-right border-l border-slate-100 text-slate-600">{(Number(item.unitPrice || 0)).toFixed(2)}</td>
-                        <td className="p-4 text-right font-black border-l border-slate-100 text-primary">{(Number(item.total || 0)).toFixed(2)}</td>
+               <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                  <table className="w-full text-[11px] border-collapse">
+                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-800">
+                      <tr>
+                        <th className="p-4 text-center w-16 border-r border-slate-200 font-black uppercase">CANT</th>
+                        <th className="p-4 text-left font-black uppercase">DESCRIPCIÓN DE PRODUCTO / SERVICIO</th>
+                        <th className="p-4 text-right w-28 border-l border-slate-200 font-black uppercase">UNIT (S/)</th>
+                        <th className="p-4 text-right w-28 border-l border-slate-200 font-black uppercase">TOTAL (S/)</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {viewingQuotation.items?.map((item: any, i: number) => (
+                        <tr key={i} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
+                          <td className="p-4 text-center font-black text-primary border-r border-slate-100">{item.quantity}</td>
+                          <td className="p-4 uppercase font-medium text-slate-700">{item.description}</td>
+                          <td className="p-4 text-right border-l border-slate-100 text-slate-600">{(Number(item.unitPrice || 0)).toFixed(2)}</td>
+                          <td className="p-4 text-right font-black border-l border-slate-100 text-primary">{(Number(item.total || 0)).toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+               </div>
+
+               <div className="flex justify-between items-start gap-12">
+                  <div className="flex-1">
+                    {viewingQuotation.conditions && (
+                      <div className="space-y-2">
+                        <h3 className="text-[9px] font-black uppercase text-primary border-b border-primary/10 pb-1 tracking-widest">Condiciones Comerciales</h3>
+                        <p className="text-[10px] text-slate-500 whitespace-pre-line leading-relaxed font-medium">
+                          {viewingQuotation.conditions}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="w-72 space-y-1.5 p-6 bg-slate-50 rounded-2xl border border-slate-200">
+                    <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase"><span>Subtotal</span><span>S/ {(Number(viewingQuotation.subtotal || 0)).toFixed(2)}</span></div>
+                    <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase"><span>I.G.V (18%)</span><span>S/ {(Number(viewingQuotation.tax || 0)).toFixed(2)}</span></div>
+                    <div className="flex justify-between text-lg font-black border-t-2 border-slate-200 pt-3 text-primary mt-2 uppercase tracking-tighter"><span>Total Neto</span><span>S/ {(Number(viewingQuotation.total || 0)).toFixed(2)}</span></div>
+                  </div>
+               </div>
              </div>
 
-             <div className="flex justify-between items-start gap-12">
-                <div className="flex-1">
-                  {viewingQuotation.conditions && (
-                    <div className="space-y-2">
-                      <h3 className="text-[9px] font-black uppercase text-primary border-b border-primary/10 pb-1 tracking-widest">Condiciones Comerciales</h3>
-                      <p className="text-[10px] text-slate-500 whitespace-pre-line leading-relaxed font-medium">
-                        {viewingQuotation.conditions}
-                      </p>
-                    </div>
-                  )}
+             {/* Líneas de Firma - Posicionadas abajo */}
+             <div className="mt-auto pt-10 pb-6 grid grid-cols-2 gap-24">
+                <div className="text-center space-y-3">
+                  <div className="h-20 w-full border-b-2 border-slate-300 flex items-center justify-center">
+                    <span className="text-[9px] uppercase font-bold text-slate-300">Aceptado por el Cliente</span>
+                  </div>
+                  <p className="text-[10px] font-black uppercase text-primary">FIRMA AUTORIZADA</p>
                 </div>
-                <div className="w-72 space-y-1.5 p-6 bg-slate-50 rounded-2xl border border-slate-200">
-                  <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase"><span>Subtotal</span><span>S/ {(Number(viewingQuotation.subtotal || 0)).toFixed(2)}</span></div>
-                  <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase"><span>I.G.V (18%)</span><span>S/ {(Number(viewingQuotation.tax || 0)).toFixed(2)}</span></div>
-                  <div className="flex justify-between text-lg font-black border-t-2 border-slate-200 pt-3 text-primary mt-2 uppercase tracking-tighter"><span>Total Neto</span><span>S/ {(Number(viewingQuotation.total || 0)).toFixed(2)}</span></div>
+                <div className="text-center space-y-3">
+                  <div className="h-20 w-full border-b-2 border-slate-300 flex items-center justify-center relative">
+                    {company?.signatureUrl && (
+                      <div className="absolute inset-0 flex items-center justify-center -top-6">
+                        <Image src={company.signatureUrl} alt="Sello" width={120} height={60} className="object-contain opacity-80" unoptimized />
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-[10px] font-black uppercase text-primary">{company?.name || "EXTINPRO"}</p>
                 </div>
              </div>
           </div>
@@ -405,125 +427,127 @@ export default function QuotationsPage() {
           <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest">Emisión de proformas industriales.</p>
         </div>
         
-        <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) { setEditingQuotation(null); setItems([]); setCurrentStatus("Borrador"); } }}>
-          <DialogTrigger asChild>
-            <Button className="bg-[#d9534f] hover:bg-[#c9302c] text-white h-10 font-bold uppercase text-xs shadow-lg w-full sm:w-auto px-8">
-              <Plus className="mr-2 h-4 w-4" /> Nueva Proforma
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-5xl max-h-[95vh] flex flex-col p-0 overflow-hidden">
-            <form onSubmit={handleSaveQuotation} className="flex flex-col h-full overflow-hidden">
-              <DialogHeader className="p-4 sm:p-6 border-b bg-slate-50">
-                <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 bg-[#d9534f] rounded-xl flex items-center justify-center text-white shadow-md">
-                    <FileText className="h-6 w-6" />
+        <div className="flex gap-2">
+          <Dialog open={isAdding} onOpenChange={(open) => { setIsAdding(open); if (!open) { setEditingQuotation(null); setItems([]); setCurrentStatus("Borrador"); } }}>
+            <DialogTrigger asChild>
+              <Button className="bg-[#d9534f] hover:bg-[#c9302c] text-white h-10 font-bold uppercase text-xs shadow-lg w-full sm:w-auto px-8">
+                <Plus className="mr-2 h-4 w-4" /> Nueva Proforma
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-5xl max-h-[95vh] flex flex-col p-0 overflow-hidden">
+              <form onSubmit={handleSaveQuotation} className="flex flex-col h-full overflow-hidden">
+                <DialogHeader className="p-4 sm:p-6 border-b bg-slate-50">
+                  <div className="flex items-center gap-4">
+                    <div className="h-12 w-12 bg-[#d9534f] rounded-xl flex items-center justify-center text-white shadow-md">
+                      <FileText className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <DialogTitle className="uppercase font-black text-[#d9534f] text-lg">
+                        {editingQuotation ? "Editar Proforma Oficial" : "Nueva Proforma Oficial"}
+                      </DialogTitle>
+                      <DialogDescription className="text-[9px] font-bold uppercase">
+                        {editingQuotation ? `Editando: ${editingQuotation.quotationNumber}` : `Correlativo Sugerido: ${suggestationNumber}`}
+                      </DialogDescription>
+                    </div>
                   </div>
-                  <div>
-                    <DialogTitle className="uppercase font-black text-[#d9534f] text-lg">
-                      {editingQuotation ? "Editar Proforma Oficial" : "Nueva Proforma Oficial"}
-                    </DialogTitle>
-                    <DialogDescription className="text-[9px] font-bold uppercase">
-                      {editingQuotation ? `Editando: ${editingQuotation.quotationNumber}` : `Correlativo Sugerido: ${suggestedQuotationNumber}`}
-                    </DialogDescription>
-                  </div>
-                </div>
-              </DialogHeader>
+                </DialogHeader>
 
-              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 custom-scrollbar">
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                  <div className="grid gap-1.5 md:col-span-1">
-                    <Label className="text-[10px] font-black uppercase text-slate-500">Cliente</Label>
-                    <Select name="clientId" defaultValue={editingQuotation?.clientId} required>
-                      <SelectTrigger className="h-10 border-2"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
-                      <SelectContent>{clients?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-                    </Select>
+                <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 custom-scrollbar">
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <div className="grid gap-1.5 md:col-span-1">
+                      <Label className="text-[10px] font-black uppercase text-slate-500">Cliente</Label>
+                      <Select name="clientId" defaultValue={editingQuotation?.clientId} required>
+                        <SelectTrigger className="h-10 border-2"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                        <SelectContent>{clients?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid gap-1.5">
+                      <Label className="text-[10px] font-black uppercase text-slate-500">N° Proforma</Label>
+                      <Input name="number" defaultValue={editingQuotation?.quotationNumber || suggestedQuotationNumber} className="h-10 uppercase font-mono font-bold" />
+                    </div>
+                    <div className="grid gap-1.5">
+                      <Label className="text-[10px] font-black uppercase text-slate-500">Fecha</Label>
+                      <Input type="date" name="date" defaultValue={editingQuotation?.date || format(new Date(), "yyyy-MM-dd")} className="h-10 font-bold" />
+                    </div>
+                    <div className="grid gap-1.5">
+                      <Label className="text-[10px] font-black uppercase text-slate-500">Validez (Días)</Label>
+                      <Input name="validityDays" type="number" defaultValue={editingQuotation?.validityDays || 15} className="h-10 font-bold" />
+                    </div>
+                    <div className="grid gap-1.5">
+                      <Label className="text-[10px] font-black uppercase text-slate-500">Estado</Label>
+                      <Select value={currentStatus} onValueChange={setCurrentStatus}>
+                        <SelectTrigger className="h-10 border-2 font-bold"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Borrador">Borrador</SelectItem>
+                          <SelectItem value="Enviado">Enviado</SelectItem>
+                          <SelectItem value="Aceptado">Aceptado</SelectItem>
+                          <SelectItem value="Rechazado">Rechazado</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                  <div className="grid gap-1.5">
-                    <Label className="text-[10px] font-black uppercase text-slate-500">N° Proforma</Label>
-                    <Input name="number" defaultValue={editingQuotation?.quotationNumber || suggestedQuotationNumber} className="h-10 uppercase font-mono font-bold" />
-                  </div>
-                  <div className="grid gap-1.5">
-                    <Label className="text-[10px] font-black uppercase text-slate-500">Fecha</Label>
-                    <Input type="date" name="date" defaultValue={editingQuotation?.date || format(new Date(), "yyyy-MM-dd")} className="h-10 font-bold" />
-                  </div>
-                  <div className="grid gap-1.5">
-                    <Label className="text-[10px] font-black uppercase text-slate-500">Validez (Días)</Label>
-                    <Input name="validityDays" type="number" defaultValue={editingQuotation?.validityDays || 15} className="h-10 font-bold" />
-                  </div>
-                  <div className="grid gap-1.5">
-                    <Label className="text-[10px] font-black uppercase text-slate-500">Estado</Label>
-                    <Select value={currentStatus} onValueChange={setCurrentStatus}>
-                      <SelectTrigger className="h-10 border-2 font-bold"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Borrador">Borrador</SelectItem>
-                        <SelectItem value="Enviado">Enviado</SelectItem>
-                        <SelectItem value="Aceptado">Aceptado</SelectItem>
-                        <SelectItem value="Rechazado">Rechazado</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
 
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between border-b pb-2">
-                    <h3 className="text-[10px] font-black uppercase text-[#d9534f]">Conceptos</h3>
-                    <Button type="button" variant="outline" size="sm" onClick={handleAddItem} className="h-8 text-[9px] font-black uppercase">
-                      <Plus className="h-3 w-3 mr-1" /> Añadir Ítem
-                    </Button>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between border-b pb-2">
+                      <h3 className="text-[10px] font-black uppercase text-[#d9534f]">Conceptos</h3>
+                      <Button type="button" variant="outline" size="sm" onClick={handleAddItem} className="h-8 text-[9px] font-black uppercase">
+                        <Plus className="h-3 w-3 mr-1" /> Añadir Ítem
+                      </Button>
+                    </div>
+                    <div className="space-y-3">
+                      {items.map((item, idx) => (
+                        <div key={idx} className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-3 border-2 rounded-xl bg-slate-50/50">
+                          <div className="sm:col-span-4 grid gap-1">
+                            <Label className="text-[8px] font-black uppercase opacity-50">Catálogo</Label>
+                            <Select value={item.catalogItemId || ""} onValueChange={(val) => handleSelectFromCatalog(idx, val)}>
+                              <SelectTrigger className="h-8 text-[10px] bg-white border-none"><SelectValue placeholder="Catálogo..." /></SelectTrigger>
+                              <SelectContent>{catalog?.map(p => <SelectItem key={p.id} value={p.id} className="text-[10px] font-bold">[{p.category}] {p.description}</SelectItem>)}</SelectContent>
+                            </Select>
+                          </div>
+                          <div className="sm:col-span-4 grid gap-1">
+                            <Label className="text-[8px] font-black uppercase opacity-50">Descripción Proforma</Label>
+                            <Input value={item.description} onChange={(e) => handleItemChange(idx, "description", e.target.value)} className="h-8 text-[10px] font-bold" required />
+                          </div>
+                          <div className="sm:col-span-1 grid gap-1">
+                            <Label className="text-[8px] font-black uppercase opacity-50">Cant.</Label>
+                            <Input type="number" min="1" value={item.quantity} onChange={(e) => handleItemChange(idx, "quantity", Number(e.target.value))} className="h-8 text-[10px] text-center font-black" required />
+                          </div>
+                          <div className="sm:col-span-2 grid gap-1">
+                            <Label className="text-[8px] font-black uppercase opacity-50">P. Unit.</Label>
+                            <Input type="number" step="0.01" value={item.unitPrice} onChange={(e) => handleItemChange(idx, "unitPrice", Number(e.target.value))} className="h-8 text-[10px] text-right font-black" required />
+                          </div>
+                          <div className="sm:col-span-1 flex items-end justify-center">
+                            <Button type="button" variant="ghost" size="icon" onClick={() => setItems(items.filter((_, i) => i !== idx))} className="h-8 w-8 text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="space-y-3">
-                    {items.map((item, idx) => (
-                      <div key={idx} className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-3 border-2 rounded-xl bg-slate-50/50">
-                        <div className="sm:col-span-4 grid gap-1">
-                          <Label className="text-[8px] font-black uppercase opacity-50">Catálogo</Label>
-                          <Select value={item.catalogItemId || ""} onValueChange={(val) => handleSelectFromCatalog(idx, val)}>
-                            <SelectTrigger className="h-8 text-[10px] bg-white border-none"><SelectValue placeholder="Catálogo..." /></SelectTrigger>
-                            <SelectContent>{catalog?.map(p => <SelectItem key={p.id} value={p.id} className="text-[10px] font-bold">[{p.category}] {p.description}</SelectItem>)}</SelectContent>
-                          </Select>
-                        </div>
-                        <div className="sm:col-span-4 grid gap-1">
-                          <Label className="text-[8px] font-black uppercase opacity-50">Descripción Proforma</Label>
-                          <Input value={item.description} onChange={(e) => handleItemChange(idx, "description", e.target.value)} className="h-8 text-[10px] font-bold" required />
-                        </div>
-                        <div className="sm:col-span-1 grid gap-1">
-                          <Label className="text-[8px] font-black uppercase opacity-50">Cant.</Label>
-                          <Input type="number" min="1" value={item.quantity} onChange={(e) => handleItemChange(idx, "quantity", Number(e.target.value))} className="h-8 text-[10px] text-center font-black" required />
-                        </div>
-                        <div className="sm:col-span-2 grid gap-1">
-                          <Label className="text-[8px] font-black uppercase opacity-50">P. Unit.</Label>
-                          <Input type="number" step="0.01" value={item.unitPrice} onChange={(e) => handleItemChange(idx, "unitPrice", Number(e.target.value))} className="h-8 text-[10px] text-right font-black" required />
-                        </div>
-                        <div className="sm:col-span-1 flex items-end justify-center">
-                          <Button type="button" variant="ghost" size="icon" onClick={() => setItems(items.filter((_, i) => i !== idx))} className="h-8 w-8 text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
-                        </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                    <div className="grid gap-2">
+                      <Label className="text-[10px] font-black uppercase text-slate-500">Condiciones Comerciales</Label>
+                      <Textarea name="conditions" className="min-h-[120px] text-[10px] font-medium leading-relaxed" defaultValue={editingQuotation?.conditions || "• Validez de la oferta: 15 días calendario.\n• Forma de pago: Contado / Contra entrega.\n• Tiempo de entrega: Inmediato / A coordinar.\n• Garantía de fábrica: 12 meses contra defectos de fabricación."} />
+                    </div>
+                    <div className="bg-[#1c1c1c] text-white p-6 rounded-2xl flex flex-col justify-center gap-4 shadow-xl">
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between text-[10px] opacity-80 font-bold uppercase"><span>SUBTOTAL</span><span>S/ {subtotal.toFixed(2)}</span></div>
+                        <div className="flex justify-between text-[10px] opacity-80 font-bold uppercase"><span>I.G.V (18%)</span><span>S/ {tax.toFixed(2)}</span></div>
+                        <div className="flex justify-between text-2xl font-black text-accent pt-2 tracking-tighter uppercase"><span>TOTAL NETO</span><span>S/ {total.toFixed(2)}</span></div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-                  <div className="grid gap-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-500">Condiciones Comerciales</Label>
-                    <Textarea name="conditions" className="min-h-[120px] text-[10px] font-medium leading-relaxed" defaultValue={editingQuotation?.conditions || "• Validez de la oferta: 15 días calendario.\n• Forma de pago: Contado / Contra entrega.\n• Tiempo de entrega: Inmediato / A coordinar.\n• Garantía de fábrica: 12 meses contra defectos de fabricación."} />
-                  </div>
-                  <div className="bg-[#1c1c1c] text-white p-6 rounded-2xl flex flex-col justify-center gap-4 shadow-xl">
-                    <div className="space-y-1.5">
-                      <div className="flex justify-between text-[10px] opacity-80 font-bold uppercase"><span>SUBTOTAL</span><span>S/ {subtotal.toFixed(2)}</span></div>
-                      <div className="flex justify-between text-[10px] opacity-80 font-bold uppercase"><span>I.G.V (18%)</span><span>S/ {tax.toFixed(2)}</span></div>
-                      <div className="flex justify-between text-2xl font-black text-accent pt-2 tracking-tighter uppercase"><span>TOTAL NETO</span><span>S/ {total.toFixed(2)}</span></div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <DialogFooter className="p-4 sm:p-6 border-t bg-slate-50">
-                <Button type="submit" className="w-full h-12 uppercase font-black text-xs bg-[#d9534f] text-white shadow-xl">
-                  {editingQuotation ? "Actualizar Proforma" : "Generar Proforma Maestra"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+                <DialogFooter className="p-4 sm:p-6 border-t bg-slate-50">
+                  <Button type="submit" className="w-full h-12 uppercase font-black text-xs bg-[#d9534f] text-white shadow-xl">
+                    {editingQuotation ? "Actualizar Proforma" : "Generar Proforma Maestra"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <Card className="shadow-sm border-none overflow-hidden">

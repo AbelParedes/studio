@@ -310,69 +310,72 @@ export default function ServiceOrdersPage() {
             </div>
           </div>
 
-          <div className="px-12 py-10 space-y-10 flex-1 bg-white custom-scrollbar overflow-y-auto">
-            <div className="grid grid-cols-2 gap-12">
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <h3 className="text-[10px] font-black text-slate-400 uppercase shrink-0">ENTIDAD SOLICITANTE</h3>
-                  <div className="h-[1px] bg-slate-100 w-full"></div>
+          <div className="px-12 py-10 space-y-10 flex-1 bg-white flex flex-col min-h-0">
+            <div className="flex-1 space-y-10">
+              <div className="grid grid-cols-2 gap-12">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase shrink-0">ENTIDAD SOLICITANTE</h3>
+                    <div className="h-[1px] bg-slate-100 w-full"></div>
+                  </div>
+                  <div className="text-[11px] space-y-1 pt-1">
+                    <p className="font-black uppercase text-[#1c1c1c] text-sm">{client?.name || "---"}</p>
+                    <p className="text-slate-500 font-bold uppercase">RUC/DNI: {client?.taxId || "---"}</p>
+                    <p className="text-slate-500 font-bold uppercase truncate">DIRECCIÓN: {client?.address || "---"}</p>
+                  </div>
                 </div>
-                <div className="text-[11px] space-y-1 pt-1">
-                  <p className="font-black uppercase text-[#1c1c1c] text-sm">{client?.name || "---"}</p>
-                  <p className="text-slate-500 font-bold uppercase">RUC/DNI: {client?.taxId || "---"}</p>
-                  <p className="text-slate-500 font-bold uppercase truncate">DIRECCIÓN: {client?.address || "---"}</p>
-                </div>
-              </div>
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <h3 className="text-[10px] font-black text-slate-400 uppercase shrink-0">DETALLES SERVICIO</h3>
-                  <div className="h-[1px] bg-slate-100 w-full"></div>
-                </div>
-                <div className="text-[11px] space-y-1 pt-1 text-right">
-                  <p className="font-bold text-slate-700 uppercase">FECHA DE REGISTRO: {viewingOrder.date}</p>
-                  <p className="font-bold text-slate-700 uppercase">TIPO: SERVICIO TÉCNICO NTP</p>
-                  <div className="mt-2">
-                    <Badge variant="outline" className="text-[9px] font-black uppercase bg-slate-50 text-slate-600 border-slate-200 px-3">
-                      ESTADO: {viewingOrder.status}
-                    </Badge>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase shrink-0">DETALLES SERVICIO</h3>
+                    <div className="h-[1px] bg-slate-100 w-full"></div>
+                  </div>
+                  <div className="text-[11px] space-y-1 pt-1 text-right">
+                    <p className="font-bold text-slate-700 uppercase">FECHA DE REGISTRO: {viewingOrder.date}</p>
+                    <p className="font-bold text-slate-700 uppercase">TIPO: SERVICIO TÉCNICO NTP</p>
+                    <div className="mt-2">
+                      <Badge variant="outline" className="text-[9px] font-black uppercase bg-slate-50 text-slate-600 border-slate-200 px-3">
+                        ESTADO: {viewingOrder.status}
+                      </Badge>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div className="space-y-4">
-              <h3 className="text-[10px] font-black text-[#1c1c1c] uppercase flex items-center gap-2 tracking-widest bg-slate-50 p-2 rounded">
-                <ClipboardList className="h-4 w-4 text-slate-400" /> DETALLE DE REQUERIMIENTOS TÉCNICOS
-              </h3>
-              <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-                <table className="w-full text-[11px] border-collapse">
-                  <thead className="bg-slate-50 text-slate-800 border-b border-slate-200">
-                    <tr>
-                      <th className="p-4 text-center font-black uppercase w-24 border-r border-slate-200">CANT.</th>
-                      <th className="p-4 text-left font-black uppercase">DESCRIPCIÓN DEL SERVICIO / PRODUCTO</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(viewingOrder.items || []).map((item: any, idx: number) => (
-                      <tr key={idx} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
-                        <td className="p-4 text-center font-bold border-r border-slate-100">{item.quantity}</td>
-                        <td className="p-4 font-medium uppercase text-slate-700">{item.description}</td>
+              <div className="space-y-4">
+                <h3 className="text-[10px] font-black text-[#1c1c1c] uppercase flex items-center gap-2 tracking-widest bg-slate-50 p-2 rounded">
+                  <ClipboardList className="h-4 w-4 text-slate-400" /> DETALLE DE REQUERIMIENTOS TÉCNICOS
+                </h3>
+                <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                  <table className="w-full text-[11px] border-collapse">
+                    <thead className="bg-slate-50 text-slate-800 border-b border-slate-200">
+                      <tr>
+                        <th className="p-4 text-center font-black uppercase w-24 border-r border-slate-200">CANT.</th>
+                        <th className="p-4 text-left font-black uppercase">DESCRIPCIÓN DEL SERVICIO / PRODUCTO</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {(viewingOrder.items || []).map((item: any, idx: number) => (
+                        <tr key={idx} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
+                          <td className="p-4 text-center font-bold border-r border-slate-100">{item.quantity}</td>
+                          <td className="p-4 font-medium uppercase text-slate-700">{item.description}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
 
-            <div className="mt-20 grid grid-cols-2 gap-24">
+            {/* Firmas Compactas - Posicionadas abajo */}
+            <div className="mt-auto pt-10 pb-6 grid grid-cols-2 gap-24">
               <div className="text-center space-y-3">
-                <div className="h-24 w-full border-b-2 border-slate-300 flex items-center justify-center">
+                <div className="h-20 w-full border-b-2 border-slate-300 flex items-center justify-center">
                   <span className="text-[9px] uppercase font-bold text-slate-300">Firma Técnico Responsable</span>
                 </div>
                 <p className="text-[10px] font-black uppercase text-primary">DPTO. OPERACIONES</p>
               </div>
               <div className="text-center space-y-3">
-                <div className="h-24 w-full border-b-2 border-slate-300 flex items-center justify-center">
+                <div className="h-20 w-full border-b-2 border-slate-300 flex items-center justify-center">
                   <span className="text-[9px] uppercase font-bold text-slate-300">Conformidad del Cliente</span>
                 </div>
                 <p className="text-[10px] font-black uppercase text-primary">RECEPTOR AUTORIZADO</p>

@@ -140,108 +140,109 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
         </div>
 
         {/* Cuerpo del Certificado */}
-        <div className="px-12 flex-1 relative z-10">
+        <div className="px-12 flex-1 relative z-10 flex flex-col">
           <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none -rotate-12">
             <div className="relative h-[350px] w-[350px]">
               <Image src={company?.logoUrl || EXTINPRO_DEFAULT_LOGO} alt="Watermark" fill className="object-contain" unoptimized />
             </div>
           </div>
 
-          <h1 className="text-center text-[22px] font-bold underline mb-4 mt-2 tracking-wide uppercase">
-            CERTIFICADO DE OPERATIVIDAD
-          </h1>
+          <div className="flex-1">
+            <h1 className="text-center text-[22px] font-bold underline mb-4 mt-2 tracking-wide uppercase">
+              CERTIFICADO DE OPERATIVIDAD
+            </h1>
 
-          <div className="space-y-2 text-[12px] leading-tight text-justify">
-            <p>
-              La empresa <span className="font-bold">&quot;{company?.name || "EXTINPRO"}&quot;</span>, certifica que los extintores pertenecientes a:
-            </p>
-            
-            <div className="pl-2 space-y-1">
-              <div className="flex items-start">
-                <span className="font-bold uppercase w-56 shrink-0">EMPRESA O RAZÓN SOCIAL:</span> 
-                <span className="text-[13px] font-bold uppercase">{cert.clienteNombre}</span>
-              </div>
-              <div className="flex items-start">
-                <span className="font-bold uppercase w-56 shrink-0">RUC:</span> 
-                <span className="font-bold">{client?.taxId || "---"}</span>
-              </div>
-              <div className="flex items-start">
-                <span className="font-bold uppercase w-56 shrink-0">
-                  {cert.certificationType === "Vehículo" ? "PLACA / UNID:" : "DIRECCIÓN:"}
-                </span>
-                <span className="font-bold uppercase">{cert.targetDetail || client?.address || "---"}</span>
-              </div>
-            </div>
-
-            <p className="mt-2">
-              han sido inspeccionados y/o cargados bajo las especificaciones técnicas vigentes, cumpliendo estrictamente con la normativa <span className="font-bold">NTP 350.043 y ISO 9001</span>.
-            </p>
-
-            <p className="font-bold italic">Extinción de fuegos {dynamicFireClasses} / Operatividad Técnica.</p>
-
-            <div className="flex justify-around items-center font-mono text-[10px] border-y-[1.5px] border-black py-2 my-2 bg-slate-50/50">
-              <p className="flex gap-2">
-                <span className="uppercase font-bold">Presión Prueba:</span> <span>{cert.presionPrueba || "---"}</span>
+            <div className="space-y-2 text-[12px] leading-tight text-justify">
+              <p>
+                La empresa <span className="font-bold">&quot;{company?.name || "EXTINPRO"}&quot;</span>, certifica que los extintores pertenecientes a:
               </p>
-              <div className="h-3 w-[1px] bg-slate-300"></div>
-              <p className="flex gap-2">
-                <span className="uppercase font-bold">Presión Trabajo:</span> <span>{cert.presionTrabajo || "---"}</span>
+              
+              <div className="pl-2 space-y-1">
+                <div className="flex items-start">
+                  <span className="font-bold uppercase w-56 shrink-0">EMPRESA O RAZÓN SOCIAL:</span> 
+                  <span className="text-[13px] font-bold uppercase">{cert.clienteNombre}</span>
+                </div>
+                <div className="flex items-start">
+                  <span className="font-bold uppercase w-56 shrink-0">RUC:</span> 
+                  <span className="font-bold">{client?.taxId || "---"}</span>
+                </div>
+                <div className="flex items-start">
+                  <span className="font-bold uppercase w-56 shrink-0">
+                    {cert.certificationType === "Vehículo" ? "PLACA / UNID:" : "DIRECCIÓN:"}
+                  </span>
+                  <span className="font-bold uppercase">{cert.targetDetail || client?.address || "---"}</span>
+                </div>
+              </div>
+
+              <p className="mt-2">
+                han sido inspeccionados y/o cargados bajo las especificaciones técnicas vigentes, cumpliendo estrictamente con la normativa <span className="font-bold">NTP 350.043 y ISO 9001</span>.
               </p>
-              <div className="h-3 w-[1px] bg-slate-300"></div>
-              <p className="flex gap-2">
-                <span className="uppercase font-bold">Rating:</span> <span>{cert.rating || "---"}</span>
+
+              <p className="font-bold italic">Extinción de fuegos {dynamicFireClasses} / Operatividad Técnica.</p>
+
+              <div className="flex justify-around items-center font-mono text-[10px] border-y-[1.5px] border-black py-2 my-2 bg-slate-50/50">
+                <p className="flex gap-2">
+                  <span className="uppercase font-bold">Presión Prueba:</span> <span>{cert.presionPrueba || "---"}</span>
+                </p>
+                <div className="h-3 w-[1px] bg-slate-300"></div>
+                <p className="flex gap-2">
+                  <span className="uppercase font-bold">Presión Trabajo:</span> <span>{cert.presionTrabajo || "---"}</span>
+                </p>
+                <div className="h-3 w-[1px] bg-slate-300"></div>
+                <p className="flex gap-2">
+                  <span className="uppercase font-bold">Rating:</span> <span>{cert.rating || "---"}</span>
+                </p>
+              </div>
+
+              <h2 className="text-[13px] font-bold underline mt-4 uppercase">
+                ANEXO TÉCNICO DE EQUIPOS (NTP 350.026 / 350.043)
+              </h2>
+
+              <div className="mt-2 border-[1.5px] border-black rounded shadow-sm overflow-hidden">
+                <table className="w-full text-[10px] border-collapse">
+                  <thead className="bg-slate-50 text-black border-b-[1.5px] border-black">
+                    <tr className="font-bold uppercase text-center">
+                      <th className="p-1 border-r border-black w-7">N°</th>
+                      <th className="p-1 border-r border-black">TIPO</th>
+                      <th className="p-1 border-r border-black w-14">CAP</th>
+                      <th className="p-1 border-r border-black w-24">NS (Serie)</th>
+                      <th className="p-1 border-r border-black w-14">FF (Fab.)</th>
+                      <th className="p-1 border-r border-black w-20">RECARGA</th>
+                      <th className="p-1 border-r border-black w-20">VCTO REC.</th>
+                      <th className="p-1 w-20">VCTO PH</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cert.datosExtintor?.map((item: any, idx: number) => {
+                      const formatMY = (d: string) => {
+                        if (!d || d === "---") return "---"
+                        try { return format(parseISO(d), "MM / yy", { locale: es }).toUpperCase() } catch { return d }
+                      }
+                      return (
+                        <tr key={idx} className="border-b border-black last:border-0 text-center font-bold h-6">
+                          <td className="p-0.5 border-r border-black">{(idx + 1).toString().padStart(2, '0')}</td>
+                          <td className="p-0.5 border-r border-black text-left pl-2">{item.tipo}</td>
+                          <td className="p-0.5 border-r border-black">{item.cap}</td>
+                          <td className="p-0.5 border-r border-black">{item.ns}</td>
+                          <td className="p-0.5 border-r border-black">{item.ff}</td>
+                          <td className="p-0.5 border-r border-black">{formatMY(item.recarga)}</td>
+                          <td className="p-0.5 border-r border-black">{formatMY(item.vctoRecarga)}</td>
+                          <td className="p-0.5">{formatMY(item.vctoPH)}</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <p className="mt-4 text-[11px]">
+                Se emite el presente protocolo de operatividad para los fines que el beneficiario estime conveniente, garantizando la seguridad industrial en las instalaciones o unidades descritas bajo responsabilidad del personal técnico acreditado.
               </p>
             </div>
-
-            <h2 className="text-[13px] font-bold underline mt-4 uppercase">
-              ANEXO TÉCNICO DE EQUIPOS (NTP 350.026 / 350.043)
-            </h2>
-
-            {/* Tabla de Equipos Limpia (Sin líneas vacías) */}
-            <div className="mt-2 border-[1.5px] border-black rounded shadow-sm overflow-hidden">
-              <table className="w-full text-[10px] border-collapse">
-                <thead className="bg-slate-50 text-black border-b-[1.5px] border-black">
-                  <tr className="font-bold uppercase text-center">
-                    <th className="p-1 border-r border-black w-7">N°</th>
-                    <th className="p-1 border-r border-black">TIPO</th>
-                    <th className="p-1 border-r border-black w-14">CAP</th>
-                    <th className="p-1 border-r border-black w-24">NS (Serie)</th>
-                    <th className="p-1 border-r border-black w-14">FF (Fab.)</th>
-                    <th className="p-1 border-r border-black w-20">RECARGA</th>
-                    <th className="p-1 border-r border-black w-20">VCTO REC.</th>
-                    <th className="p-1 w-20">VCTO PH</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {cert.datosExtintor?.map((item: any, idx: number) => {
-                    const formatMY = (d: string) => {
-                      if (!d || d === "---") return "---"
-                      try { return format(parseISO(d), "MM / yy", { locale: es }).toUpperCase() } catch { return d }
-                    }
-                    return (
-                      <tr key={idx} className="border-b border-black last:border-0 text-center font-bold h-6">
-                        <td className="p-0.5 border-r border-black">{(idx + 1).toString().padStart(2, '0')}</td>
-                        <td className="p-0.5 border-r border-black text-left pl-2">{item.tipo}</td>
-                        <td className="p-0.5 border-r border-black">{item.cap}</td>
-                        <td className="p-0.5 border-r border-black">{item.ns}</td>
-                        <td className="p-0.5 border-r border-black">{item.ff}</td>
-                        <td className="p-0.5 border-r border-black">{formatMY(item.recarga)}</td>
-                        <td className="p-0.5 border-r border-black">{formatMY(item.vctoRecarga)}</td>
-                        <td className="p-0.5">{formatMY(item.vctoPH)}</td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            <p className="mt-4 text-[11px]">
-              Se emite el presente protocolo de operatividad para los fines que el beneficiario estime conveniente, garantizando la seguridad industrial en las instalaciones o unidades descritas bajo responsabilidad del personal técnico acreditado.
-            </p>
           </div>
 
-          {/* Firmas Compactas */}
-          <div className="mt-6 grid grid-cols-2 gap-20 text-center break-inside-avoid">
+          {/* Firmas Compactas - Posicionadas abajo */}
+          <div className="mt-auto pt-10 pb-6 grid grid-cols-2 gap-20 text-center break-inside-avoid">
             <div className="space-y-1">
               <div className="h-20 w-full border-b border-black flex flex-col items-center justify-end pb-1 relative">
                 {company?.signatureUrl && (
@@ -270,7 +271,7 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
 
         {/* Pie de Página Compacto */}
         <div 
-          className="mt-auto py-4 px-12 border-t border-slate-100 print:bg-transparent"
+          className="mt-auto py-4 px-12 border-t border-slate-100 print:bg-transparent shrink-0"
           style={{ backgroundColor: company?.footerBgColor || '#f8fafc' } as any}
         >
           <div className="flex flex-col items-center gap-1">
