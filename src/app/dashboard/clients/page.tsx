@@ -62,7 +62,7 @@ export default function ClientsPage() {
     if (!taxId || (clientType === "Empresa" && taxId.length !== 11) || (clientType === "Persona" && taxId.length !== 8)) {
       toast({ 
         variant: "destructive", 
-        title: "Documento inválido", 
+        title: "Documento incompleto", 
         description: `Ingrese ${clientType === "Empresa" ? '11 dígitos para RUC' : '8 dígitos para DNI'}.` 
       })
       return
@@ -77,24 +77,27 @@ export default function ClientsPage() {
 
       if (data) {
         if (clientType === "Empresa") {
+          // Normalización para empresas
           const mainName = data.nombreComercial && data.nombreComercial !== "-" ? data.nombreComercial : data.razonSocial
-          setName(mainName.toUpperCase())
-          setLegalName(data.razonSocial.toUpperCase())
+          setName((mainName || data.nombre || "").toUpperCase())
+          setLegalName((data.razonSocial || "").toUpperCase())
           setAddress((data.direccion || "").toUpperCase())
         } else {
-          // Reconstruir nombre completo desde campos individuales o campo único
-          const fullName = data.nombre || `${data.nombres || ''} ${data.apellidoPaterno || ''} ${data.apellidoMaterno || ''}`.trim()
+          // Normalización para personas (maneja múltiples variantes de la API)
+          const fullName = data.nombreCompleto || data.nombre || 
+            `${data.nombres || ''} ${data.apellidoPaterno || ''} ${data.apellidoMaterno || ''}`.trim()
+          
           setName(fullName.toUpperCase())
           setAddress((data.direccion || "").toUpperCase())
           setLegalName("")
         }
-        toast({ title: "Datos obtenidos", description: "Información recuperada de registros oficiales." })
+        toast({ title: "Datos recuperados", description: "La información ha sido cargada correctamente." })
       }
     } catch (error: any) {
       toast({ 
         variant: "destructive", 
         title: "Consulta Fallida", 
-        description: error.message || "No se pudo recuperar la información." 
+        description: error.message || "No se pudo recuperar la información del servidor." 
       })
     } finally {
       setIsConsulting(false)
@@ -127,11 +130,11 @@ export default function ClientsPage() {
 
     if (editingClient) {
       updateDocumentNonBlocking(doc(db, "clients", editingClient.id), clientData)
-      toast({ title: "Cliente actualizado" })
+      toast({ title: "Expediente Actualizado" })
     } else {
       const newClient = { ...clientData, id: crypto.randomUUID(), createdAt: new Date().toISOString() }
       addDocumentNonBlocking(collection(db, "clients"), newClient)
-      toast({ title: "Cliente registrado" })
+      toast({ title: "Cliente Registrado" })
     }
 
     resetForm()
@@ -198,12 +201,13 @@ export default function ClientsPage() {
                     </Select>
                   </div>
                   <div className="grid gap-2">
-                    <Label className="text-[10px] font-bold uppercase text-slate-500">{clientType === "Empresa" ? "RUC" : "DNI"}</Label>
+                    <Label className="text-[10px] font-bold uppercase text-slate-500">{clientType === "Empresa" ? "RUC (11 dígitos)" : "DNI (8 dígitos)"}</Label>
                     <div className="flex gap-2">
                       <Input 
                         value={taxId} 
                         onChange={(e) => setTaxId(e.target.value)} 
                         required 
+                        maxLength={clientType === "Empresa" ? 11 : 8}
                         placeholder={clientType === "Empresa" ? "20XXXXXXXXX" : "7XXXXXXX"} 
                         className="h-11 border-2 font-mono font-bold" 
                       />
@@ -227,7 +231,7 @@ export default function ClientsPage() {
                     <Input value={name} onChange={(e) => setName(e.target.value)} required className="h-11 border-2 font-bold text-xs uppercase" />
                   </div>
                   <div className="grid gap-2">
-                    <Label className="text-[10px] font-bold uppercase text-slate-500">Razón Social (Si aplica)</Label>
+                    <Label className="text-[10px] font-bold uppercase text-slate-500">Razón Social (Legal)</Label>
                     <Input value={legalName} onChange={(e) => setLegalName(e.target.value)} className="h-11 border-2 font-bold text-xs uppercase" disabled={clientType === "Persona"} />
                   </div>
                 </div>
