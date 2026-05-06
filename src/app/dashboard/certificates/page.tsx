@@ -96,17 +96,17 @@ const CertificateForm = React.memo(({
       if (equip && (isLinking || !existing || existing.ns === "---")) {
         return {
           equipmentId: id,
-          ns: equip.serialNumber || "---",
-          ff: equip.manufacturingYear?.toString() || "---",
           tipo: equip.extinguishingAgent || equip.type || "---",
           cap: equip.capacity || "---",
+          ns: equip.serialNumber || "---",
+          ff: equip.manufacturingYear?.toString() || "---",
           recarga: equip.lastServiceDate || "---",
           vctoRecarga: equip.nextServiceDate || "---",
           vctoPH: equip.nextHydrostaticTestDate || "---"
         };
       }
       
-      return existing || { equipmentId: id, ns: "---", ff: "---", tipo: "---", cap: "---", recarga: "", vctoRecarga: "", vctoPH: "" };
+      return existing || { equipmentId: id, tipo: "---", cap: "---", ns: "---", ff: "---", recarga: "", vctoRecarga: "", vctoPH: "" };
     });
 
     setCertificateItems(newItems);
@@ -330,11 +330,12 @@ const CertificateForm = React.memo(({
             <Table className="dense-table min-w-[1000px]">
               <TableHeader className="bg-slate-50">
                 <TableRow>
-                  <TableHead className="text-[9px] font-black uppercase w-32">Serie</TableHead>
-                  <TableHead className="text-[9px] font-black uppercase w-24">Año Fab.</TableHead>
-                  <TableHead className="text-[9px] font-black uppercase w-32">Agente</TableHead>
-                  <TableHead className="text-[9px] font-black uppercase w-24">Capacidad</TableHead>
-                  <TableHead className="text-[9px] font-black uppercase">Últ. Recarga</TableHead>
+                  <TableHead className="text-[9px] font-black uppercase w-8">N°</TableHead>
+                  <TableHead className="text-[9px] font-black uppercase w-32">Tipo</TableHead>
+                  <TableHead className="text-[9px] font-black uppercase w-24">Cap.</TableHead>
+                  <TableHead className="text-[9px] font-black uppercase w-32">NS (Serie)</TableHead>
+                  <TableHead className="text-[9px] font-black uppercase w-24">FF (Fab.)</TableHead>
+                  <TableHead className="text-[9px] font-black uppercase">Recarga</TableHead>
                   <TableHead className="text-[9px] font-black uppercase">Vto. Recarga</TableHead>
                   <TableHead className="text-[9px] font-black uppercase">Vto. P.H.</TableHead>
                 </TableRow>
@@ -342,16 +343,17 @@ const CertificateForm = React.memo(({
               <TableBody>
                 {certificateItems.length > 0 ? certificateItems.map((item, idx) => (
                   <TableRow key={item.equipmentId || idx} className="hover:bg-slate-50/50">
-                    <TableCell><Input value={item.ns} onChange={(e) => handleItemChange(idx, 'ns', e.target.value)} className="h-8 text-[10px] font-black uppercase border-none bg-transparent focus:ring-0" /></TableCell>
-                    <TableCell><Input value={item.ff} onChange={(e) => handleItemChange(idx, 'ff', e.target.value)} className="h-8 text-[10px] font-bold text-center border-none bg-transparent" /></TableCell>
+                    <TableCell className="text-[10px] font-bold text-center">{(idx + 1).toString().padStart(2, '0')}</TableCell>
                     <TableCell><Input value={item.tipo} onChange={(e) => handleItemChange(idx, 'tipo', e.target.value)} className="h-8 text-[10px] font-bold uppercase border-none bg-transparent" /></TableCell>
                     <TableCell><Input value={item.cap} onChange={(e) => handleItemChange(idx, 'cap', e.target.value)} className="h-8 text-[10px] font-bold text-center border-none bg-transparent" /></TableCell>
+                    <TableCell><Input value={item.ns} onChange={(e) => handleItemChange(idx, 'ns', e.target.value)} className="h-8 text-[10px] font-black uppercase border-none bg-transparent focus:ring-0" /></TableCell>
+                    <TableCell><Input value={item.ff} onChange={(e) => handleItemChange(idx, 'ff', e.target.value)} className="h-8 text-[10px] font-bold text-center border-none bg-transparent" /></TableCell>
                     <TableCell><Input type="date" value={item.recarga} onChange={(e) => handleItemChange(idx, 'recarga', e.target.value)} className="h-8 text-[10px] font-medium border-none bg-transparent" /></TableCell>
                     <TableCell><Input type="date" value={item.vctoRecarga} onChange={(e) => handleItemChange(idx, 'vctoRecarga', e.target.value)} className="h-8 text-[10px] font-black text-primary border-none bg-transparent" /></TableCell>
                     <TableCell><Input type="date" value={item.vctoPH} onChange={(e) => handleItemChange(idx, 'vctoPH', e.target.value)} className="h-8 text-[10px] font-bold text-blue-600 border-none bg-transparent" /></TableCell>
                   </TableRow>
                 )) : (
-                  <TableRow><TableCell colSpan={7} className="text-center py-10 opacity-30 italic text-[10px] font-bold uppercase">Seleccione equipos o vincule una Orden de Trabajo (OT)</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="text-center py-10 opacity-30 italic text-[10px] font-bold uppercase">Seleccione equipos o vincule una Orden de Trabajo (OT)</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>

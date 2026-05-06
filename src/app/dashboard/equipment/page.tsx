@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState } from "react"
@@ -334,10 +335,11 @@ export default function ClientEquipmentPage() {
             <Table className="dense-table min-w-[1200px]">
               <TableHeader className="bg-[#1c1c1c]">
                 <TableRow className="border-none">
-                  <TableHead className="text-white font-black uppercase text-[10px] py-4">Serie / Identificador</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px] py-4">Tipo / Agente</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px]">Capacidad</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px]">Serie (NS)</TableHead>
+                  <TableHead className="text-white font-black uppercase text-[10px] text-center">Año (FF)</TableHead>
                   <TableHead className="text-white font-black uppercase text-[10px]">Propietario</TableHead>
-                  <TableHead className="text-white font-black uppercase text-[10px]">Ficha Técnica</TableHead>
-                  <TableHead className="text-white font-black uppercase text-[10px]">Estado Operativo</TableHead>
                   <TableHead className="text-white font-black uppercase text-[10px] text-center">Vto. Anual</TableHead>
                   <TableHead className="text-white font-black uppercase text-[10px] text-center">Vto. P.H. (5A)</TableHead>
                   <TableHead className="text-white text-right pr-8 font-black uppercase text-[10px]">Acciones</TableHead>
@@ -359,11 +361,14 @@ export default function ClientEquipmentPage() {
                             <Flame className="h-5 w-5" />
                           </div>
                           <div className="flex flex-col">
-                            <span className="font-black text-primary uppercase text-[11px] leading-none mb-1">{item.serialNumber}</span>
-                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">FAB: {item.manufacturingYear}</span>
+                            <span className="font-black text-primary uppercase text-[11px] leading-none mb-1">{item.extinguishingAgent || "PQS"}</span>
+                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">{item.brand}</span>
                           </div>
                         </div>
                       </TableCell>
+                      <TableCell className="font-black text-[11px] text-slate-600 uppercase">{item.capacity || "---"}</TableCell>
+                      <TableCell className="font-black text-primary uppercase text-[11px] tracking-tight">{item.serialNumber}</TableCell>
+                      <TableCell className="text-center font-bold text-[11px] text-slate-500">{item.manufacturingYear || "---"}</TableCell>
                       <TableCell>
                         <div className="flex flex-col">
                           <span className="font-black text-[10px] uppercase truncate max-w-[200px]">{client?.name || "SIN ASIGNAR"}</span>
@@ -371,24 +376,6 @@ export default function ClientEquipmentPage() {
                             <MapPin className="h-2.5 w-2.5" /> {item.location || "---"}
                           </span>
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col text-[10px] font-black text-slate-600 uppercase">
-                          <span>{item.type} • {item.brand}</span>
-                          <Badge variant="outline" className="text-[8px] mt-1 w-fit font-black bg-slate-50">
-                            {item.extinguishingAgent || "PQS"} • {item.capacity}
-                          </Badge>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={cn(
-                          "text-[9px] font-black uppercase px-3 py-1 rounded-md",
-                          item.status === "Operativo" ? "bg-status-success text-white" : 
-                          item.status === "Vencido" ? "bg-status-error text-white animate-pulse" :
-                          "bg-slate-200 text-slate-600"
-                        )}>
-                          {item.status}
-                        </Badge>
                       </TableCell>
                       <TableCell className="text-center">
                         <div className="flex flex-col items-center justify-center">
@@ -427,7 +414,7 @@ export default function ClientEquipmentPage() {
                 })}
                 {filteredEquipment?.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-32 opacity-20">
+                    <TableCell colSpan={8} className="text-center py-32 opacity-20">
                       <HardDrive className="h-16 w-16 mx-auto mb-4 text-primary" />
                       <p className="text-sm font-black uppercase tracking-[0.3em]">Sin registros de equipos</p>
                     </TableCell>

@@ -135,8 +135,8 @@ export default function ExecutionPage({ params }: { params: Promise<{ id: string
                           <Checkbox checked={isChecked} onCheckedChange={() => {}} />
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-[11px] font-black uppercase">{item.serialNumber}</span>
-                          <span className="text-[9px] font-bold text-slate-400 uppercase">{item.type} • {item.location}</span>
+                          <span className="text-[11px] font-black uppercase">{item.extinguishingAgent || item.type} • {item.capacity}</span>
+                          <span className="text-[9px] font-bold text-slate-400 uppercase">Serie: {item.serialNumber} • Loc: {item.location}</span>
                         </div>
                       </div>
                       <Badge variant="outline" className="text-[8px] font-black uppercase">{item.status}</Badge>
