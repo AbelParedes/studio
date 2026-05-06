@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState } from "react"
@@ -24,6 +25,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
+import { lookupTaxId, lookupDni } from "@/actions/lookup"
 
 export default function ClientsPage() {
   const db = useFirestore()
@@ -72,19 +74,10 @@ export default function ClientsPage() {
     setIsConsulting(true)
     
     try {
-      const API_TOKEN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImFwZXZhMTk4OUBnbWFpbC5jb20ifQ.LMX5XM-xgVwQvrWSiglrtSFwwYfb2OiFxs3YA8vjVoQ" 
-      
-      const endpoint = clientType === "Empresa" 
-        ? `https://api.apisperu.com/v1/ruc/${taxId}?token=${API_TOKEN}`
-        : `https://api.apisperu.com/v1/dni/${taxId}?token=${API_TOKEN}`
-
-      const response = await fetch(endpoint)
-      
-      if (!response.ok) {
-        throw new Error("Error en el servidor de consulta")
-      }
-
-      const data = await response.json()
+      // Llamada a Server Action para evitar CORS
+      const data = clientType === "Empresa" 
+        ? await lookupTaxId(taxId)
+        : await lookupDni(taxId)
 
       if (data && (data.razonSocial || data.nombre)) {
         if (clientType === "Empresa") {
@@ -102,15 +95,15 @@ export default function ClientsPage() {
         toast({ 
           variant: "destructive", 
           title: "No encontrado", 
-          description: "No se hallaron registros oficiales para este número en SUNAT/RENIEC." 
+          description: "No se hallaron registros oficiales para este número." 
         })
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Lookup Error:", error)
       toast({ 
         variant: "destructive", 
-        title: "Error de Conexión", 
-        description: "No se pudo conectar con el servicio de SUNAT/RENIEC. Verifique su conexión o vigencia del API." 
+        title: "Error de Consulta", 
+        description: error.message || "No se pudo conectar con el servicio." 
       })
     } finally {
       setIsConsulting(false)
