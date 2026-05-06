@@ -116,11 +116,6 @@ export default function ClientEquipmentPage() {
            item.location?.toLowerCase().includes(searchTerm.toLowerCase())
   }).sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""))
 
-  const suggestPHDate = (year: number) => {
-    if (!year) return ""
-    return format(addYears(new Date(year, 0, 1), 5), "yyyy-MM-dd")
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

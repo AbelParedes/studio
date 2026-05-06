@@ -59,7 +59,8 @@ export default function ClientsPage() {
   ).sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""))
 
   const handleConsultTaxId = async () => {
-    if (!taxId || (clientType === "Empresa" && taxId.length !== 11) || (clientType === "Persona" && taxId.length !== 8)) {
+    const cleanId = taxId.trim();
+    if (!cleanId || (clientType === "Empresa" && cleanId.length !== 11) || (clientType === "Persona" && cleanId.length !== 8)) {
       toast({ 
         variant: "destructive", 
         title: "Documento incompleto", 
@@ -72,23 +73,25 @@ export default function ClientsPage() {
     
     try {
       const data = clientType === "Empresa" 
-        ? await lookupTaxId(taxId)
-        : await lookupDni(taxId)
+        ? await lookupTaxId(cleanId)
+        : await lookupDni(cleanId)
 
       if (data) {
         if (clientType === "Empresa") {
           // Normalización para empresas
           const mainName = data.nombreComercial && data.nombreComercial !== "-" ? data.nombreComercial : data.razonSocial
-          setName((mainName || data.nombre || "").toUpperCase())
-          setLegalName((data.razonSocial || "").toUpperCase())
-          setAddress((data.direccion || "").toUpperCase())
+          setName((mainName || data.nombre || data.razonSocial || "").toUpperCase())
+          setLegalName((data.razonSocial || data.nombre || "").toUpperCase())
+          setAddress((data.direccion || data.direccion_completa || "").toUpperCase())
         } else {
-          // Normalización para personas (maneja múltiples variantes de la API)
-          const fullName = data.nombreCompleto || data.nombre || 
-            `${data.nombres || ''} ${data.apellidoPaterno || ''} ${data.apellidoMaterno || ''}`.trim()
+          // Normalización exhaustiva para personas
+          const fullName = data.nombreCompleto || data.nombre_completo || data.nombre || 
+            `${data.nombres || ''} ${data.apellidoPaterno || data.apellido_paterno || ''} ${data.apellidoMaterno || data.apellido_materno || ''}`.trim();
+          
+          if (!fullName) throw new Error("La consulta no devolvió un nombre válido.");
           
           setName(fullName.toUpperCase())
-          setAddress((data.direccion || "").toUpperCase())
+          setAddress((data.direccion || data.direccion_completa || "").toUpperCase())
           setLegalName("")
         }
         toast({ title: "Datos recuperados", description: "La información ha sido cargada correctamente." })
@@ -112,7 +115,7 @@ export default function ClientsPage() {
     const clientData = {
       companyId: companyId,
       clientType: clientType,
-      taxId: taxId,
+      taxId: taxId.trim(),
       name: name,
       legalName: legalName,
       industry: formData.get("industry") as string,
