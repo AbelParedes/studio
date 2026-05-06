@@ -269,19 +269,24 @@ export default function CertificateViewPage({ params }: { params: Promise<{ id: 
           </div>
         </div>
 
-        {/* Pie de Página - Fuente Ajustada */}
+        {/* Pie de Página Unificado (OS Model) */}
         <div 
-          className="mt-auto py-6 px-12 border-t border-slate-100 print:bg-transparent shrink-0"
-          style={{ backgroundColor: company?.footerBgColor || '#f8fafc' } as any}
+          className="mt-auto shrink-0 flex flex-col items-center justify-center py-8 print-footer"
+          style={{ 
+            backgroundColor: company?.footerBgColor || '#f8fafc',
+            borderTop: '1px solid #e2e8f0'
+          } as any}
         >
-          <div className="flex flex-col items-center gap-2">
+          <div className="px-12 w-full flex flex-col items-center text-center gap-2">
             <div className="flex flex-wrap justify-center gap-x-12 gap-y-1 text-[11px] font-black text-slate-700 uppercase">
               {company?.address && <p className="flex items-center gap-2"><MapPin className="h-4 w-4 text-slate-500" /> {company.address}</p>}
               {company?.phone && <p className="flex items-center gap-2"><Phone className="h-4 w-4 text-slate-500" /> {company.phone}</p>}
               {company?.email && <p className="flex items-center gap-2"><Mail className="h-4 w-4 text-slate-500" /> {company.email}</p>}
             </div>
-            <div className="flex justify-center items-center text-[11px] font-bold text-slate-400 uppercase tracking-[0.4em] mt-1">
-              {company?.website && <p className="flex items-center gap-2"><Globe className="h-4 w-4 text-slate-400" /> {company.website}</p>}
+            <div className="mt-1 pt-3 border-t border-slate-200/30 w-full max-w-md">
+              <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.4em] flex items-center justify-center gap-3">
+                <Globe className="h-3.5 w-3.5" /> {company?.website || "WWW.EXTINPRO.PE"}
+              </p>
             </div>
           </div>
         </div>

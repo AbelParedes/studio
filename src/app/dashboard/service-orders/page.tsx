@@ -383,21 +383,22 @@ export default function ServiceOrdersPage() {
             </div>
           </div>
 
+          {/* Pie de Página Unificado (OS Model) */}
           <div 
-            className="mt-auto shrink-0 flex flex-col items-center justify-center py-6 print-footer"
+            className="mt-auto shrink-0 flex flex-col items-center justify-center py-8 print-footer"
             style={{ 
               backgroundColor: company?.footerBgColor || '#f8fafc',
               borderTop: '1px solid #e2e8f0'
             } as any}
           >
             <div className="px-12 w-full flex flex-col items-center text-center gap-2">
-              <div className="flex flex-wrap justify-center gap-x-10 gap-y-1 text-[10px] font-black text-slate-600 uppercase">
-                {company?.address && <p className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5" /> {company.address}</p>}
-                {company?.phone && <p className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" /> {company.phone}</p>}
-                {company?.email && <p className="flex items-center gap-2"><Mail className="h-3.5 w-3.5" /> {company.email}</p>}
+              <div className="flex flex-wrap justify-center gap-x-12 gap-y-1 text-[11px] font-black text-slate-700 uppercase">
+                {company?.address && <p className="flex items-center gap-2"><MapPin className="h-4 w-4 text-slate-500" /> {company.address}</p>}
+                {company?.phone && <p className="flex items-center gap-2"><Phone className="h-4 w-4 text-slate-500" /> {company.phone}</p>}
+                {company?.email && <p className="flex items-center gap-2"><Mail className="h-4 w-4 text-slate-500" /> {company.email}</p>}
               </div>
-              <div className="mt-1">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+              <div className="mt-1 pt-3 border-t border-slate-200/30 w-full max-w-md">
+                <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.4em] flex items-center justify-center gap-3">
                   <Globe className="h-3.5 w-3.5" /> {company?.website || "WWW.EXTINPRO.PE"}
                 </p>
               </div>
